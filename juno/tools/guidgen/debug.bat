@@ -1,3 +1,0 @@
-cd C:\Documents and Settings\John Chapman\My Documents\Visual Studio 2005\Projects\juno\tools\guidgen
-
-c:\dmd\bin\dmd main.d ..\..\juno\base\all ..\..\juno\base\core ..\..\juno\base\text ..\..\juno\base\events ..\..\juno\com\all ..\..\juno\com\core ..\..\juno\com\client ..\..\juno\base\memory ..\..\juno\base\threading ..\..\juno\base\win32 ..\..\juno\utils\registry  -of"..\bin\guidgen.exe" -op -inline -debug -g -O -L/EXET:NT
