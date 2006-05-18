@@ -120,3 +120,4 @@ int RegSetValueExW(Handle hKey, wchar* lpValueName, uint reserved, uint dwType, 
 int RegQueryValueExW(Handle hKey, wchar* lpValueName, uint* lpReserved, out uint lpType, void* lpData, inout uint lpcbData);
 int RegQueryInfoKeyW(Handle hKey, wchar* lpClass, uint* lpcchClass, uint* lpReserved, uint* lpcSubKeys, uint* lpcbMaxSubKeyLen, uint* lpcbMaxClassLen, uint* lpcValues, uint* lpcbMaxValueNameLen, uint* lpcbMaxValueLen, uint* lpcbSecurityDescriptor, FILETIME* lpftLastWriteTime);
 int RegCloseKey(Handle hKey);
+int RegEnumKeyExW(Handle hKey, uint dwIndex, wchar* lpName, inout uint lpcchName, uint* lpReserved, wchar* lpClass, uint* lpcchClass, FILETIME* lpftLastWriteTime);

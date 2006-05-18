@@ -4,6 +4,29 @@ private import juno.base.core,
   juno.base.text,
   juno.base.win32;
 
+public class IOException : Exception {
+
+  private int errorCode_;
+
+  public this(char[] message) {
+    super(message);
+  }
+
+  public this(char[] message, int error) {
+    super(message);
+    errorCode_ = error;
+  }
+
+  package static char[] getMessage(int error) {
+    wchar[256] buffer;
+    uint r = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, error, 0, buffer, buffer.length + 1, null);
+    if (r != 0)
+      return .toUtf8(buffer[0 .. r]);
+    return "Unspecified Error";
+  }
+
+}
+
 public class Registry {
 
   public static const RegistryKey classesRoot;
@@ -121,6 +144,21 @@ public class RegistryKey {
     RegSetValueExW(hkey_, name.toUtf16z(), 0, REG_QWORD, &value, long.sizeof);
   }
 
+  public char[][] getSubKeyNames() {
+    int keyCount = subKeyCount;
+    char[][] keyNames = new char[][keyCount];
+    if (keyCount > 0) {
+      wchar[256] buffer;
+      for (int i = 0; i < keyCount; i++) {
+        uint bufLen = buffer.length;
+        if (int r = RegEnumKeyExW(hkey_, i, buffer, bufLen, null, null, null, null))
+          throw new IOException(IOException.getMessage(r));
+        keyNames[i] = toUtf8(buffer.ptr);
+      }
+    }
+    return keyNames;
+  }
+
   public char[] name() {
     return keyName_;
   }
@@ -131,7 +169,7 @@ public class RegistryKey {
     return value;
   }
 
-  public uint subKeyCount() {
+  public int subKeyCount() {
     uint value;
     RegQueryInfoKeyW(hkey_, null, null, null, &value, null, null, null, null, null, null, null);
     return value;

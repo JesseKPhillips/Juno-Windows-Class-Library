@@ -1,4 +1,4 @@
-import juno.com.all,
+import juno.com.core,
   std.stdio;
 
 private char[] formatGuid(GUID guid) {

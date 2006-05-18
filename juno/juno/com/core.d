@@ -490,6 +490,24 @@ enum TYPEKIND {
   TKIND_MAX
 }
 
+enum TYPEFLAGS : ushort {
+  TYPEFLAG_FAPPOBJECT = 0x1,
+  TYPEFLAG_FCANCREATE = 0x2,
+  TYPEFLAG_FLICENSED = 0x4,
+  TYPEFLAG_FPREDECLID = 0x8,
+  TYPEFLAG_FHIDDEN = 0x10,
+  TYPEFLAG_FCONTROL = 0x20,
+  TYPEFLAG_FDUAL = 0x40,
+  TYPEFLAG_FNONEXTENSIBLE = 0x80,
+  TYPEFLAG_FOLEAUTOMATION = 0x100,
+  TYPEFLAG_FRESTRICTED = 0x200,
+  TYPEFLAG_FAGGREGATABLE = 0x400,
+  TYPEFLAG_FREPLACEABLE = 0x800,
+  TYPEFLAG_FDISPATCHABLE = 0x1000,
+  TYPEFLAG_FREVERSEBIND = 0x2000,
+  TYPEFLAG_FPROXY = 0x4000
+}
+
 struct TYPEATTR {
   GUID guid;
   uint lcid;
@@ -772,6 +790,73 @@ interface IEnumVARIANT : IUnknown {
   int Clone(out IEnumVARIANT ppenum);
 }
 
+interface ICreateTypeInfo : IUnknown {
+  static GUID IID = { 0x00020404, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  int SetGuid(inout GUID guid);
+  int SetTypeFlags(uint uTypeFlags);
+  int SetDocString(wchar* szStrDoc);
+  int SetHelpContext(uint dwHelpContext);
+  int SetVersion(ushort wMajorVerNum, ushort wMinorVerNum);
+  int AddRefTypeInfo(ITypeInfo pTInfo, inout uint phRefType);
+  int AddFuncDesc(uint index, FUNCDESC* pFuncDesc);
+  int AddImplType(uint index, uint hRefType);
+  int SetTypeImplFlags(uint index, int implTypeFlags);
+  int SetAlignment(ushort cbAlignment);
+  int SetSchema(wchar* pStrSchema);
+  int AddVarDesc(uint index, VARDESC* pVarDesc);
+  int SetFuncAndParamNames(uint index, wchar** rgszNames, uint cNames);
+  int SetVarName(uint index, wchar* szName);
+  int SetTypeDescAlias(TYPEDESC* pTDescAlias);
+  int DefineFuncAsDllEntry(uint index, wchar* szDllName, wchar* szProcName);
+  int SetFuncDocString(uint index, wchar* szDocString);
+  int SetVarDocString(uint index, wchar* szDocString);
+  int SetFuncHelpContext(uint index, uint dwHelpContext);
+  int SetVarHelpContext(uint index, uint dwHelpContext);
+  int SetMops(uint index, wchar* bstrMops);
+  int SetTypeIdldesc(IDLDESC* pIdlDesc);
+  int LayOut();
+}
+
+interface ICreateTypeInfo2 : ICreateTypeInfo {
+  static GUID IID = { 0x0002040E, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  int DeleteFuncDesc(uint index);
+  int DeleteFuncDescByMemId(int memid, INVOKEKIND invKind);
+  int DeleteVarDesc(uint index);
+  int DeleteVarDescByMemId(int memid);
+  int DeleteImplType(uint index);
+  int SetCustData(inout GUID guid, inout VARIANT pVarVal);
+  int SetFuncCustData(uint index, inout GUID guid, inout VARIANT pVarVal);
+  int SetParamCustData(uint indexFunc, uint indexParam, inout GUID guid, inout VARIANT pVarVal);
+  int SetVarCustData(uint index, inout GUID guid, inout VARIANT pVarVal);
+  int SetImplTypeCustData(uint index, inout GUID guid, inout VARIANT pVarVal);
+  int SetHelpStringContext(uint dwHelpStringContext);
+  int SetFuncHelpStringContext(uint index, uint dwHelpStringContext);
+  int SetVarHelpStringContext(uint index, uint dwHelpStringContext);
+  int Invalidate();
+}
+
+interface ICreateTypeLib : IUnknown {
+  static GUID IID = { 0x00020406, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  int CreateTypeInfo(wchar* szName, TYPEKIND tkind, out ICreateTypeInfo ppCTInfo);
+  int SetName(wchar* szName);
+  int SetVersion(ushort wMajorVerNum, ushort wMinorVerNum);
+  int SetGuid(inout GUID guid);
+  int SetDocString(wchar* szDoc);
+  int SetHelpFileName(wchar* szHelpFileName);
+  int SetHelpContext(uint dwHelpContext);
+  int SetLcid(uint lcid);
+  int SetLibFlags(uint uLibFlags);
+  int SaveAllChanges();
+}
+
+interface ICreateTypeLib2 : ICreateTypeLib {
+  static GUID IID = { 0x0002040F, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  int DeleteTypeInfo(wchar* szName);
+  int SetCustData(inout GUID guid, inout VARIANT pVarVal);
+  int SetHelpStringContext(uint dwHelpStringContext);
+  int SetHelpStringDll(wchar* szFileName);
+}
+
 interface ITypeLib2 : ITypeLib {
   static GUID IID = { 0x00020411, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
   int GetCustData(inout GUID guid, out VARIANT pVarVal);
@@ -830,7 +915,8 @@ enum {
   E_NOINTERFACE           = 0x80004002,
   E_FAIL                  = 0x80004005,
   DISP_E_MEMBERNOTFOUND   = 0x80020003,
-  DISP_E_UNKNOWNNAME      = 0x80020006
+  DISP_E_UNKNOWNNAME      = 0x80020006,
+  TYPE_E_ELEMENTNOTFOUND  = 0x8002802B
 }
 
 enum : uint {
@@ -909,6 +995,10 @@ int SysStringLen(wchar*);
 
 int LoadTypeLib(wchar* szFile, out ITypeLib pptlib);
 int LoadRegTypeLib(inout GUID rguid, ushort wVerMajor, ushort wVerMinor, uint lcid, out ITypeLib pptlib);
+int RegisterTypeLib(ITypeLib ptlib, wchar* szFullPath, wchar* szHelpDir);
+int UnRegisterTypeLib(inout GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
+int CreateTypeLib(SYSKIND syskind, wchar* szFile, out ICreateTypeLib ppctlib);
+int CreateTypeLib2(SYSKIND syskind, wchar* szFile, out ICreateTypeLib2 ppctlib);
 
 extern (D) :
 

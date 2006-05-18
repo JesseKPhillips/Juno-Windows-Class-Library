@@ -1,5 +1,8 @@
 module juno.base.text;
 
+extern (C)
+private size_t wcslen(wchar*);
+
 wchar[] toUtf16(char[] s) {
   char* p = s;
   char* end = p + s.length;
@@ -63,9 +66,6 @@ char[] toUtf8(wchar[] s) {
   }
   return ret[0 .. p - ret.ptr];
 }
-
-extern (C)
-private size_t wcslen(wchar*);
 
 char[] toUtf8(wchar* s) {
   return toUtf8(s[0 .. wcslen(s)]);

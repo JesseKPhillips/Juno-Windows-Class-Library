@@ -2,6 +2,52 @@ module juno.base.core;
 
 typedef int Handle = 0;
 
+public struct Version {
+
+  public int major;
+  public int minor;
+  public int build = -1;
+  public int revision = -1;
+
+  public static Version opCall(int major, int minor, int build = -1, int revision = -1) {
+    Version v;
+    return v.major = major, v.minor = minor, v.build = build, v.revision = revision, v;
+  }
+
+  public bool opEquals(Version other) {
+    return major == other.major && minor == other.minor && build == other.build && revision == other.revision;
+  }
+
+  public int opCmp(Version other) {
+    if (major != other.major) {
+      if (major > other.major)
+        return 1;
+      return -1;
+    }
+    if (minor != other.minor) {
+      if (minor > other.minor)
+        return 1;
+      return -1;
+    }
+    if (build != other.build) {
+      if (build > other.build)
+        return 1;
+      return -1;
+    }
+    if (revision != other.revision) {
+      if (revision > other.revision)
+        return 1;
+      return -1;
+    }
+    return 0;
+  }
+
+  public uint toHash() {
+    return ((major & 0x000F) << 28) | ((minor & 0x00FF) << 20) | ((build & 0x00FF) << 12) | (revision & 0x0FFF);
+  }
+
+}
+
 public enum TypeCode {
   EMPTY = 0,
   BOOL = 'x',
