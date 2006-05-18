@@ -55,6 +55,7 @@ public class TypeLibrary {
   private GUID guid_;
   private Version version_;
   private Type[] types_;
+  private Module[] modules_;
 
   public Type[] findTypes(TypeFilter filter) {
     Type[] filteredTypes;
@@ -124,6 +125,27 @@ public class TypeLibrary {
     if (types_ is null)
       types_ = new Type[0];
     return types_;
+  }
+
+  public Module[] getModules() {
+    if (modules_ is null) {
+      int hr;
+      for (uint i = 0; i < typeLib_.GetTypeInfoCount(); i++) {
+        TYPEKIND typeKind;
+        hr = typeLib_.GetTypeInfoType(i, typeKind);
+        checkHResult(hr);
+        if (typeKind == TYPEKIND.TKIND_MODULE) {
+          ITypeInfo typeInfo;
+          hr = typeLib_.GetTypeInfo(i, typeInfo);
+          checkHResult(hr);
+          modules_ ~= new Module(typeInfo, this);
+          typeInfo.Release();
+        }
+      }
+    }
+    else
+      modules_ = new Module[0];
+    return modules_;
   }
 
   public static TypeLibrary load(char[] fileNameOrGuid) {
@@ -198,6 +220,59 @@ public class TypeLibrary {
     guid_ = libAttr.guid;
     version_ = Version(libAttr.wMajorVerNum, libAttr.wMinorVerNum);
     typeLib_.ReleaseTLibAttr(libAttr);
+  }
+
+}
+
+public class Module {
+
+  private TypeLibrary library_;
+  private MemberInfo[] members_;
+  private FieldInfo[] fields_;
+
+  private ITypeInfo typeInfo_;
+
+  public MemberInfo[] getMembers() {
+    if (members_ is null) {
+      TYPEATTR* typeAttr;
+      int hr = typeInfo_.GetTypeAttr(typeAttr);
+      checkHResult(hr);
+
+      VARDESC* varDesc;
+      for (uint i = 0; i < typeAttr.cVars; i++) {
+        hr = typeInfo_.GetVarDesc(i, varDesc);
+        checkHResult(hr);
+
+        if (varDesc.varkind == VARKIND.VAR_CONST) {
+          wchar* bstrName;
+          uint n;
+          hr = typeInfo_.GetNames(varDesc.memid, &bstrName, 1, &n);
+          checkHResult(hr);
+
+          members_ ~= new FieldInfoImpl(new TypeImpl(TypeImpl.getTypeName(&varDesc.elemdescVar.tdesc, typeInfo_), library_), bstrToUtf8(bstrName), *varDesc.lpvarValue, cast(FieldAttributes)varDesc.varkind);
+        }
+      }
+    }
+    else
+      members_ = new MemberInfo[0];
+    return members_;
+  }
+
+  public FieldInfo[] getFields() {
+    if (fields_ is null) {
+      foreach (MemberInfo member; getMembers()) {
+        if ((member.memberType & MemberTypes.Field) != 0)
+          fields_ ~= cast(FieldInfo)member;
+      }
+    }
+    else
+      fields_ ~= new FieldInfo[0];
+    return fields_;
+  }
+
+  package this(ITypeInfo typeInfo, TypeLibrary library) {
+    typeInfo_ = cast(ITypeInfo)releasingRef(typeInfo);
+    typeInfo_.AddRef();
   }
 
 }

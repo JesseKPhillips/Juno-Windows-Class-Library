@@ -7,7 +7,6 @@ bool emitComments = true;
 bool noEnumNames = false;
 bool suppressBanner = false;
 bool silentMode = false;
-//bool targetPhobos = false;
 bool indentWithTabs = false;
 bool verbatimOrder = false;
 char[] moduleName;

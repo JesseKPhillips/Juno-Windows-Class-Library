@@ -222,38 +222,20 @@ public class CodeGenerator {
   }
 
   private void generateGlobals(TypeLibrary lib) {
-    /*Field[] fields;
-    Method[] methods;
+    FieldInfo[] fields;
     Module[] modules = lib.getModules();
 
-    foreach (Module m; modules) {
+    foreach (Module m; modules)
       fields ~= m.getFields();
-      methods ~= m.getMethods();
-    }
 
     if (fields != null) {
       if (emitComments) {
         output.writeLine();
         generateComment("Global Variables");
       }
-      foreach (Field field; fields) {
-        if (blanksBetweenMembers)
-          output.writeLine();
+      foreach (FieldInfo field; fields)
         generateField(field);
-      }
     }
-
-    if (methods != null) {
-      if (emitComments) {
-        output.writeLine();
-        generateComment("Global Functions");
-      }
-      foreach (Method method; methods) {
-        if (blanksBetweenMembers)
-          output.writeLine();
-        generateMethod(method, null);
-      }
-    }*/
   }
 
   private void generateComment(char[] comment) {
@@ -443,7 +425,15 @@ public class CodeGenerator {
   private void generateVariable(VARIANT var) {
     if (var.vt == VT_BSTR || var.vt == VT_LPSTR)
       output.write("\"");
-    output.write(com_cast!(char[])(var));
+    char[] value;
+    if (var.vt == VT_I4) {
+      char[100] buffer;
+      size_t n = sprintf(buffer, "0x%x", com_cast!(int)(var));
+      value = buffer[0 .. n];
+    }
+    else
+      value = com_cast!(char[])(var);
+    output.write(value);
     if (var.vt == VT_BSTR || var.vt == VT_LPSTR)
       output.write("\"");
   }
