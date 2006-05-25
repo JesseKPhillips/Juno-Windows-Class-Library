@@ -123,6 +123,25 @@ struct GUID {
 
 }
 
+struct DECIMAL {
+  ushort wReserved;
+  union {
+    struct {
+      ubyte scale;
+      ubyte sign;
+    }
+    ushort signscale;
+  }
+  uint Hi32;
+  union {
+    struct {
+      uint Lo32;
+      uint Mid32;
+    }
+    ulong Lo64;
+  }
+}
+
 enum : ushort {
   VT_EMPTY              = 0,
   VT_NULL               = 1,
@@ -440,25 +459,6 @@ struct SAFEARRAY {
   SAFEARRAYBOUND[1] rgsabound;
 }
 
-struct DECIMAL {
-  ushort wReserved;
-  union {
-    struct {
-      ubyte scale;
-      ubyte sign;
-    }
-    ushort signscale;
-  }
-  uint Hi32;
-  union {
-    struct {
-      uint Lo32;
-      uint Mid32;
-    }
-    ulong Lo64;
-  }
-}
-
 struct DISPPARAMS {
   VARIANT* rgvarg;
   int* rgdispidNamedArgs;
@@ -696,6 +696,11 @@ interface IUnknown {
   uint Release();
 }
 
+interface IPersist : IUnknown {
+  static GUID IID = { 0x0000010c, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  int GetClassID(out GUID pClassID);
+}
+
 interface IRecordInfo : IUnknown {
   static GUID IID = { 0x0000002F, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
   int RecordInit(void* pvNew);
@@ -872,6 +877,16 @@ interface ITypeInfo2 : ITypeInfo {
   int GetFuncIndexOfMemId(int memid, INVOKEKIND invKind, out uint pFuncIndex);
 }
 
+interface IProvideClassInfo : IUnknown {
+  static GUID IID = { 0xB196B283, 0xBAB4, 0x101A, 0xB6, 0x9C, 0x00, 0xAA, 0x00, 0x34, 0x1D, 0x07 };
+  int GetClassInfo(out ITypeInfo ppTI);
+}
+
+interface IProvideClassInfo2 : IProvideClassInfo {
+  static GUID IID = { 0xA6BC3AC0, 0xDBAA, 0x11CE, 0x9D, 0xE3, 0x00, 0xAA, 0x00, 0x4B, 0xB8, 0x51 };
+  int GetGUID(uint dwGuidKind, out GUID pGUID);
+}
+
 interface IConnectionPointContainer : IUnknown {
   static GUID IID = { 0xB196B284, 0xBAB4, 0x101A, 0xB6, 0x9C, 0x00, 0xAA, 0x00, 0x34, 0x1D, 0x07 };
   int EnumConnectionPoints(out IEnumConnectionPoints ppEnum);
@@ -913,19 +928,24 @@ enum {
   S_FALSE                 = 0x00000001,
   E_NOTIMPL               = 0x80004001,
   E_NOINTERFACE           = 0x80004002,
+  E_ABORT                 = 0x80004004,
   E_FAIL                  = 0x80004005,
   DISP_E_MEMBERNOTFOUND   = 0x80020003,
   DISP_E_UNKNOWNNAME      = 0x80020006,
-  TYPE_E_ELEMENTNOTFOUND  = 0x8002802B
+  TYPE_E_ELEMENTNOTFOUND  = 0x8002802B,
+  E_ACCESSDENIED          = 0x80070005,
 }
 
 enum : uint {
   CLSCTX_INPROC_SERVER          = 0x1,
   CLSCTX_INPROC_HANDLER         = 0x2,
   CLSCTX_LOCAL_SERVER           = 0x4,
-  CLSCTX_INPROC_SERVER16        = 0x8,
+  //CLSCTX_INPROC_SERVER16        = 0x8, // Deprecated
   CLSCTX_REMOTE_SERVER          = 0x10,
-  CLSCTX_INPROC_HANDLER16       = 0x20
+  //CLSCTX_INPROC_HANDLER16       = 0x20, // Deprecated
+  CLSCTX_INPROC                 = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER,
+  CLSCTX_SERVER                 = CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+  CLSCTX_ALL                    = CLSCTX_INPROC | CLSCTX_SERVER
 }
 
 enum : uint {
@@ -1044,15 +1064,22 @@ template deduceVarType(T) {
     const deduceVarType = VT_VOID;
 }
 
+enum ClassContext : uint {
+  InProcessServer = CLSCTX_INPROC_SERVER,
+  InProcessHandler = CLSCTX_INPROC_HANDLER,
+  LocalServer = CLSCTX_LOCAL_SERVER,
+  RemoteServer = CLSCTX_REMOTE_SERVER,
+}
+
 // For coclasses
 template CoClassInterfaces(I1, I2 = void, I3 = void, I4 = void, I5 = void, I6 = void, I7 = void, I8 = void, I9 = void, I10 = void, I11 = void, I12 = void, I13 = void, I14 = void, I15 = void, I16 = void, I17 = void, I18 = void, I19 = void, I20 = void) {
 
   template createInstance(T, bool throws = false) {
 
-    static T createInstance() {
+    static T createInstance(ClassContext context = ClassContext.InProcessServer) {
       void* pv = null;
       int errorCode;
-      if ((errorCode = CoCreateInstance(IID, null, CLSCTX_INPROC_SERVER, T.IID, pv)) == S_OK)
+      if ((errorCode = CoCreateInstance(CLSID, null, context, T.IID, pv)) == S_OK)
         return cast(T)pv;
       if (throws)
         throw new COMException(errorCode);
@@ -1160,6 +1187,13 @@ template QueryInterfaceImpl(I1, I2 = void, I3 = void, I4 = void, I5 = void, I6 =
 
 }
 
+enum COMThreadingModel {
+  Single,
+  Multi
+}
+
+COMThreadingModel THREADING_MODEL = COMThreadingModel.Single;
+
 template ReferenceCountImpl() {
 
   private int refCount_;
@@ -1172,19 +1206,30 @@ template ReferenceCountImpl() {
   }
 
   uint AddRef() {
-    return juno.base.win32.InterlockedIncrement(refCount_);
+    synchronized {
+      if (THREADING_MODEL == COMThreadingModel.Multi)
+        return juno.base.win32.InterlockedIncrement(refCount_);
+      else
+        return refCount_++;
+    }
   }
 
   uint Release() {
-    if (juno.base.win32.InterlockedDecrement(refCount_) == 0) {
-      if (!finalized_) {
-        finalize();
-        finalized_ = true;
+    synchronized {
+      if (THREADING_MODEL == COMThreadingModel.Multi)
+        refCount_ = juno.base.win32.InterlockedDecrement(refCount_);
+      else
+        refCount_--;
+      if (refCount_ == 0) {
+        if (!finalized_) {
+          finalize();
+          finalized_ = true;
+        }
+        GC.removeRange(this);
+        juno.base.memory.free(this);
       }
-      GC.removeRange(this);
-      juno.base.memory.free(this);
+      return refCount_;
     }
-    return refCount_;
   }
 
   ~this() {
@@ -1243,7 +1288,7 @@ abstract class COMDispatchImpl(T = IDispatch) : COMImplements!(IDispatch, T) {
 
 }
 
-private template Assertion(char[] message) {
+package template Assertion(char[] message) {
   pragma(msg, "Error: " ~ message);
   const bool Assertion = false;
 }
@@ -1345,13 +1390,12 @@ char[] bstrToUtf8(wchar* value) {
 }
 
 enum : com_bool {
-  com_true = -1,
-  com_false = 0
+  com_true = VARIANT_TRUE,
+  com_false = VARIANT_FALSE
 }
 
 typedef short com_bool = com_false;
 
-// Is this the best we can do?
 alias VARIANT Variant;
 
 template toVariant(T) {

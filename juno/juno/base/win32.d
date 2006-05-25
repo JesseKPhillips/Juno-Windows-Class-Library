@@ -3,6 +3,7 @@ module juno.base.win32;
 private import juno.base.core;
 
 pragma(lib, "advapi32.lib");
+pragma(lib, "shell32.lib");
 
 extern (Windows) :
 
@@ -80,6 +81,7 @@ enum : uint {
 }
 
 alias uint function(void* lpThreadParameter) PTHREAD_START_ROUTINE;
+alias void function(void* lpFiberParameter) FIBER_START_ROUTINE;
 
 struct FILETIME {
   uint dwLowDateTime;
@@ -95,15 +97,31 @@ struct WIN32_FILE_ATTRIBUTE_DATA {
   uint nFileSizeLow;
 }
 
+uint GetFullPathNameW(wchar* lpFileName, uint nBufferLength, wchar* lpBuffer, wchar** lpFilePart);
+
 Handle CreateThread(void* lpThreadAttributes, size_t dwStackSize, PTHREAD_START_ROUTINE lpStartAddress, void* lpParameter, uint dwCreationFlags, uint* lpThreadId);
 uint ResumeThread(Handle hThread);
 bool SetThreadPriority(Handle hThread, int nPriority);
+bool FlushInstructionCache(Handle hProcess, void* lpBaseAddress, size_t dwSize);
 Handle GetCurrentProcess();
 Handle GetCurrentThread();
 uint GetCurrentThreadId();
 bool DuplicateHandle(Handle hSourceProcessHandle, Handle hSourceHandle, Handle hTargetProcessHandle, out Handle lpTargetHandle, uint dwDesiredAccess, bool bInheritHandle, uint dwOptions);
 bool CloseHandle(Handle hObject);
 uint FormatMessageW(uint dwFlags, void* lpSource, uint dwMessageId, uint dwLanguageId, wchar* lpBuffer, uint nSize, void** Arguments);
+void* HeapAlloc(Handle hHeap, uint dwFlags, size_t dwBytes);
+bool HeapFree(Handle hHeap, uint dwFlags, void* lpMem);
+Handle GetProcessHeap();
+
+void* CreateFiber(size_t dwStackSize, FIBER_START_ROUTINE lpStartAddress, void* lpParameter);
+void SwitchToFiber(void* lpFiber);
+void DeleteFiber(void* lpFiber);
+void* ConvertThreadToFiber(void* lpParameter);
+void* GetCurrentFiber() {
+  asm {
+    mov EAX, FS:[0x10];
+  }
+}
 
 uint TlsAlloc();
 void* TlsGetValue(uint dwTlsIndex);
@@ -121,3 +139,6 @@ int RegQueryValueExW(Handle hKey, wchar* lpValueName, uint* lpReserved, out uint
 int RegQueryInfoKeyW(Handle hKey, wchar* lpClass, uint* lpcchClass, uint* lpReserved, uint* lpcSubKeys, uint* lpcbMaxSubKeyLen, uint* lpcbMaxClassLen, uint* lpcValues, uint* lpcbMaxValueNameLen, uint* lpcbMaxValueLen, uint* lpcbSecurityDescriptor, FILETIME* lpftLastWriteTime);
 int RegCloseKey(Handle hKey);
 int RegEnumKeyExW(Handle hKey, uint dwIndex, wchar* lpName, inout uint lpcchName, uint* lpReserved, wchar* lpClass, uint* lpcchClass, FILETIME* lpftLastWriteTime);
+
+wchar* GetCommandLineW();
+wchar** CommandLineToArgvW(wchar* lpCmdLine, out int pNumArgs);

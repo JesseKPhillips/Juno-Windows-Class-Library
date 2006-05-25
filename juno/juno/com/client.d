@@ -2,25 +2,79 @@ module juno.com.client;
 
 private import juno.base.core,
   juno.base.text,
+  juno.base.meta,
+  juno.base.win32,
   juno.com.core,
-  juno.utils.registry;
+  juno.utils.registry,
+  std.string,
+  std.conv;
 
-class SimpleEventProvider : COMDispatchImpl!() {
+class SafeArray(T, uint R = 1) {
 
-  override int Invoke(int dispidMember, inout GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pdispparams, VARIANT* pvarResult, EXCEPINFO* pexcepinfo, uint* puArgErr) {
-    if (dispidMember == 0 && handler != null) {
-      handler();
-      return S_OK;
-    }
-    return super.Invoke(dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
+  private SAFEARRAY* safeArray_;
+
+  public const uint rank = R;
+
+  public this(uint[] lengths ...) {
+    assert(rank == lengths.length);
+    SAFEARRAYBOUND[rank] bounds;
+    for (uint i = 0; i < rank; i++)
+      bounds[i].cElements = lengths[i];
+    safeArray_ = SafeArrayCreate(deduceVarType!(T), R, bounds);
   }
 
-  extern (D) :
+  ~this() {
+    if (safeArray_ != null) {
+      SafeArrayDestroy(safeArray_);
+      safeArray_ = null;
+    }
+  }
 
-  private void delegate() handler;
+  public T getValue(int[] indices ...) {
+    assert(rank == indices.length);
+    T value;
+    SafeArrayGetElement(safeArray_, indices, &value);
+    return value;
+  }
 
-  this(void delegate() handler) {
-    this.handler = handler;
+  public void setValue(T value, int[] indices ...) {
+    assert(rank == indices.length);
+    SafeArrayPutElement(safeArray_, indices, &value);
+  }
+
+  public T opIndex(int[] indices ...) {
+    return getValue(indices);
+  }
+  public void opIndexAssign(T value, int[] indices ...) {
+    setValue(value, indices);
+  }
+
+  public int getUpperBound(uint dimension) {
+    int bound;
+    SafeArrayGetUBound(safeArray_, dimension, bound);
+    return bound;
+  }
+
+  public int getLowerBound(uint dimension) {
+    int bound;
+    SafeArrayGetLBound(safeArray_, dimension, bound);
+    return bound;
+  }
+
+  public uint getLength(uint dimension) {
+    int upperBound = getUpperBound(dimension);
+    int lowerBound = getLowerBound(dimension);
+    return upperBound + 1 - lowerBound;
+  }
+
+  public uint length() {
+    return getLength(rank - 1);
+  }
+  public void length(uint value) {
+    SAFEARRAYBOUND[rank] bounds;
+    for (uint i = 0; i < rank; i++)
+      bounds[i].cElements = value;
+    SafeArrayRedim(safeArray_, bounds);
   }
 
 }
@@ -28,6 +82,7 @@ class SimpleEventProvider : COMDispatchImpl!() {
 /**
  * The base class for COM events.
  */
+private import std.stdio;
 class EventProviderBase(T, char[] libIID = null, char[] libVersion = null) : COMDispatchImpl!(T) {
 
   extern (D) :
@@ -36,6 +91,7 @@ class EventProviderBase(T, char[] libIID = null, char[] libVersion = null) : COM
   private ITypeInfo typeInfo_;
   private uint cookie_;
   private int[char[]] names_;
+  private IUnknown source_;
   private IConnectionPoint connectionPoint_;
   private IConnectionPointContainer connectionPointContainer_;
 
@@ -71,7 +127,7 @@ class EventProviderBase(T, char[] libIID = null, char[] libVersion = null) : COM
     }
   }
 
-  protected int dispIdFromName(char[] name, out bool success) {
+  protected int nameToDispId(char[] name, out bool success) {
     // Late/name binding for named methods.
     char[] n = name.tolower();
     // First, see if we've cached the name.
@@ -117,6 +173,7 @@ class EventProviderBase(T, char[] libIID = null, char[] libVersion = null) : COM
   private void init() {
     // Late name binding.
     // Only runs if methods were named instead of identified.
+
     GUID libGuid;
     short majorVersion = -1;
     short minorVersion = -1;
@@ -190,263 +247,347 @@ class EventProviderBase(T, char[] libIID = null, char[] libVersion = null) : COM
 
 }
 
-//private struct FunctionInfo {
-//  ushort returnType;
-//  ushort[] paramTypes;
-//}
-
-private struct DelegateProxy {
-  void delegate() method;
-  bool hasReturn;
-  //FunctionInfo* methodInfo;
+// Signatures for delegates.
+private {
+alias int delegate() FN0;
+alias int delegate(uint) FN1;
+alias int delegate(uint, uint) FN2;
+alias int delegate(uint, uint, uint) FN3;
+alias int delegate(uint, uint, uint, uint) FN4;
+alias int delegate(uint, uint, uint, uint, uint) FN5;
+alias int delegate(uint, uint, uint, uint, uint, uint) FN6;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint) FN7;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint) FN8;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint) FN9;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN10;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN11;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN12;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN13;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN14;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN15;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN16;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN17;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN18;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN19;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN20;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN21;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN22;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN23;
+alias int delegate(uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint, uint) FN24;
 }
 
-/*struct StdCallThunk {
-  extern (Windows) alias void function() HFN;
-  extern (Windows) alias void function() TMFP;
-  extern (Windows) alias void delegate() TMFPM;
-  void* vtbl;
-  void* pthis;
-  TMFP pfn;
-  HFN pfnHelper;
-  void init(TMFP pf, void* p) {
-    pfnHelper = &StdCallThunkHelper;
-    vtbl = &pfnHelper;
-    pthis = p;
-    pfn = pf;
+// Marshals a string representation of a native type to its corresponding (or nearest) COM type.
+private ushort getVarType(char[] s) {
+  switch (s) {
+    case "bool":
+      return VT_BOOL;
+    case "ubyte":
+      return VT_UI1;
+    case "byte":
+      return VT_I1;
+    case "ushort":
+      return VT_UI2;
+    case "short":
+      return VT_I2;
+    case "uint":
+      return VT_UI4;
+    case "int":
+      return VT_I4;
+    case "ulong":
+      return VT_UI8;
+    case "long":
+      return VT_I8;
+    case "float":
+      return VT_R4;
+    case "double":
+      return VT_R8;
+    case "wchar*":
+      return VT_BSTR;
+    case "bool*":
+      return VT_BYREF | VT_BOOL;
+    case "ubyte*":
+      return VT_BYREF | VT_UI1;
+    case "byte*":
+      return VT_BYREF | VT_I1;
+    case "ushort*":
+      return VT_BYREF | VT_UI2;
+    case "short*":
+      return VT_BYREF | VT_I2;
+    case "uint*":
+      return VT_BYREF | VT_UI4;
+    case "int*":
+      return VT_BYREF | VT_I4;
+    case "ulong*":
+      return VT_BYREF | VT_UI8;
+    case "long*":
+      return VT_BYREF | VT_I8;
+    case "float*":
+      return VT_BYREF | VT_R4;
+    case "double*":
+      return VT_BYREF | VT_R8;
+    case "wchar**":
+      return VT_BYREF | VT_BSTR;
+    case "juno.com.core.com_bool":
+    case "com_bool":
+      return VT_BOOL;
+    case "juno.com.core.VARIANT":
+    case "VARIANT":
+    case "juno.com.core.Variant":
+    case "Variant":
+      return VT_VARIANT;
+    case "juno.com.core.IUnknown":
+    case "IUnknown":
+      return VT_UNKNOWN;
+    case "juno.com.core.IDispatch":
+    case "IDispatch":
+      return VT_DISPATCH;
+    case "juno.com.core.com_bool*":
+    case "com_bool*":
+      return VT_BYREF | VT_BOOL;
+    case "juno.com.core.VARIANT*":
+    case "VARIANT*":
+    case "juno.com.core.Variant*":
+    case "Variant*":
+      return VT_BYREF | VT_VARIANT;
+    case "juno.com.core.IUnknown*":
+    case "IUnknown*":
+      return VT_BYREF | VT_UNKNOWN;
+    case "juno.com.core.IDispatch*":
+    case "IDispatch*":
+      return VT_BYREF | VT_DISPATCH;
+    default:
+      break;
   }
+  return VT_VOID;
 }
-extern (Windows)
 
-extern (Windows)
-void StdCallThunkHelper() {
-  asm {
-    mov EAX, [ESP + 4];
-    mov EDX, [EAX + 4];
-    mov [ESP + 4], EDX;
-    mov EAX, [EAX + 8];
-    jmp EAX;
-  }
+// Marshals a string representation of a D type to its corresponding (or nearest) COM type.
+private ushort getVarType(TypeInfo typeInfo) {
+  if (typeInfo is typeid(bool))
+    return VT_BOOL;
+  else if (typeInfo is typeid(ubyte))
+    return VT_UI1;
+  else if (typeInfo is typeid(byte))
+    return VT_I1;
+  else if (typeInfo is typeid(ushort))
+    return VT_UI2;
+  else if (typeInfo is typeid(short))
+    return VT_I2;
+  else if (typeInfo is typeid(uint))
+    return VT_UI4;
+  else if (typeInfo is typeid(int))
+    return VT_I4;
+  else if (typeInfo is typeid(ulong))
+    return VT_UI8;
+  else if (typeInfo is typeid(long))
+    return VT_I8;
+  else if (typeInfo is typeid(float))
+    return VT_R4;
+  else if (typeInfo is typeid(double))
+    return VT_R8;
+  else if (typeInfo is typeid(wchar*))
+    return VT_BSTR;
+  else if (typeInfo is typeid(bool*))
+    return VT_BYREF | VT_BOOL;
+  else if (typeInfo is typeid(ubyte*))
+    return VT_BYREF | VT_UI1;
+  else if (typeInfo is typeid(byte*))
+    return VT_BYREF | VT_I1;
+  else if (typeInfo is typeid(ushort*))
+    return VT_BYREF | VT_UI2;
+  else if (typeInfo is typeid(short*))
+    return VT_BYREF | VT_I2;
+  else if (typeInfo is typeid(uint*))
+    return VT_BYREF | VT_UI4;
+  else if (typeInfo is typeid(int*))
+    return VT_BYREF | VT_I4;
+  else if (typeInfo is typeid(ulong*))
+    return VT_BYREF | VT_UI8;
+  else if (typeInfo is typeid(long*))
+    return VT_BYREF | VT_I8;
+  else if (typeInfo is typeid(float*))
+    return VT_BYREF | VT_R4;
+  else if (typeInfo is typeid(double*))
+    return VT_BYREF | VT_R8;
+  else if (typeInfo is typeid(wchar**))
+    return VT_BYREF | VT_BSTR;
+  else if (typeInfo is typeid(VARIANT))
+    return VT_VARIANT;
+  else if (typeInfo is typeid(IUnknown))
+    return VT_UNKNOWN;
+  else if (typeInfo is typeid(IDispatch))
+    return VT_DISPATCH;
+  else if (typeInfo is typeid(VARIANT*))
+    return VT_BYREF | VT_VARIANT;
+  else if (typeInfo is typeid(IUnknown*))
+    return VT_BYREF | VT_UNKNOWN;
+  else if (typeInfo is typeid(IDispatch*))
+    return VT_BYREF | VT_DISPATCH;
+  return VT_VOID;
 }
-  union Union {
-    StdCallThunk.TMFPM delegate_;
-    struct {
-      void* p;
-      StdCallThunk.TMFP function_;
+
+// Marshals a string representation of a type to its corresponding type.
+private TypeInfo getTypeFromName(char[] s) {
+  switch (s) {
+    case "bool":
+      return typeid(bool);
+    case "ubyte":
+      return typeid(ubyte);
+    case "byte":
+      return typeid(byte);
+    case "ushort":
+      return typeid(ushort);
+    case "short":
+      return typeid(short);
+    case "uint":
+      return typeid(uint);
+    case "int":
+      return typeid(int);
+    case "ulong":
+      return typeid(ulong);
+    case "long":
+      return typeid(long);
+    case "float":
+      return typeid(float);
+    case "double":
+      return typeid(double);
+    case "wchar*":
+      return typeid(wchar*);
+    case "bool*":
+      return typeid(bool*);
+    case "ubyte*":
+      return typeid(ubyte*);
+    case "byte*":
+      return typeid(byte*);
+    case "ushort*":
+      return typeid(ushort*);
+    case "short*":
+      return typeid(short*);
+    case "uint*":
+      return typeid(uint*);
+    case "int*":
+      return typeid(int*);
+    case "ulong*":
+      return typeid(ulong*);
+    case "long*":
+      return typeid(long*);
+    case "float*":
+      return typeid(float*);
+    case "double*":
+      return typeid(double*);
+    case "wchar**":
+      return typeid(wchar**);
+    case "juno.com.core.com_bool":
+    case "com_bool":
+      return typeid(short);
+    case "juno.com.core.VARIANT":
+    case "VARIANT":
+    case "juno.com.core.Variant":
+    case "Variant":
+      return typeid(VARIANT);
+    case "juno.com.core.IUnknown":
+    case "IUnknown":
+      return typeid(IUnknown);
+    case "juno.com.core.IDispatch":
+    case "IDispatch":
+      return typeid(IDispatch);
+    case "juno.com.core.com_bool*":
+    case "com_bool*":
+      return typeid(short*);
+    case "juno.com.core.VARIANT*":
+    case "VARIANT*":
+    case "juno.com.core.Variant*":
+    case "Variant*":
+      return typeid(VARIANT*);
+    case "juno.com.core.IUnknown*":
+    case "IUnknown*":
+      return typeid(ubyte);
+    case "juno.com.core.IDispatch*":
+    case "IDispatch*":
+      return typeid(IDispatch*);
+    default:
+      break;
+  }
+  return typeid(void);
+}
+
+// Holds information about a delegate/function and its COM representation.
+private struct FunctionInfo {
+  union {
+    int delegate() del;
+    struct { void* obj; int function() func; }
+  }
+  ushort returnType;
+  ushort[8] paramTypes;
+  uint paramCount;
+}
+
+interface IEventProvider {
+  void bind(char[] name, inout FunctionInfo fi);
+  void bind(int id, inout FunctionInfo fi);
+}
+
+template sink(TDelegate, TMember) {
+
+  void sink(IEventProvider source, TMember nameOrId, TDelegate d) {
+    static if (is(TMember : int) || is(TMember : char[])) {
+      // This is the magic that converts a delegate into a list of COM types, preparing it for IDispatch.Invoke.
+      // At compile-time, we get a delimited string representing the signature of the delegate (its return type 
+      // and parameter types). Then we split the string and extract the COM type (VARIANT descriminator) from the native type.
+      // Finally the COM types are stored in a FuncInfo struct.
+
+      // Get a delimited string of the delegate's signature.
+      // Form is <return-type>|<param1-type>|<param2-type>|...|<paramN-type>.
+      // Note: out/inout <type> becomes <type>*.
+      // For example:
+      //   int delegate(double, inout bool)
+      // becomes
+      //   int|double|bool*
+      // which in turn becomes an array of VT_I4,VT_R8,VT_BYREF|VT_BOOL
+      char[] delegateSignature = juno.base.meta.demangle!(d.mangleof);
+      char[][] typeList = delegateSignature.split("|");
+      if (typeList[$ - 1] == null)
+        typeList.length = typeList.length - 1;
+
+      FunctionInfo fi;
+      fi.del = cast(int delegate())d;
+      // Convert native types to the COM types.
+      fi.returnType = getVarType(typeList[0]);
+      for (uint i = 1; i < typeList.length; i++)
+        fi.paramTypes[i - 1] = getVarType(typeList[i]);
+      fi.paramCount = typeList.length - 1;
+
+      // Bind the information to the event provider.
+      source.bind(nameOrId, fi);
     }
+    else
+      assert(Assertion!("Could not sink to the specified member. Argument must be of a type convertable to 'int' or 'char[]'."));
   }
-          VARIANT result;
-          StdCallThunk thunk;
-          Union u;
-          u.delegate_ = cast(StdCallThunk.TMFPM)&test;
-          u.p = cast(T)this;
-          thunk.init(cast(StdCallThunk.TMFP)u.function_, cast(T)this);
-          ushort[1] vvv;
-          vvv[0] = VT_I4;
-          VARIANT x = VARIANT(100);
-          VARIANT*[1] rgVarArgs;
-          rgVarArgs[0] = &x;
-          int hr = DispCallFunc(&thunk, 0, CALLCONV.CC_STDCALL, VT_EMPTY, 1, vvv, rgVarArgs, &result);
-          writefln("%x", hr);
-          */
 
-/**
- * Handles COM events.
- */
-class EventProvider(T, char[] libIID = null, char[] libVersion = null) : EventProviderBase!(T, libIID, libVersion) {
+}
+
+class EventProvider(T, char[] libIID = null, char[] libVersion = null) : EventProviderBase!(T, libIID, libVersion), IEventProvider {
 
   extern (D) :
 
-  private DelegateProxy[int][int] handlers_;
+  private FunctionInfo[int][int] functionTable;
 
   public this(IUnknown source) {
     super(source);
   }
 
-  // Late name binding methods.
-
-  public void bind(char[] name, void delegate() handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
+  protected void bind(char[] name, inout FunctionInfo fi) {
+    synchronized (this) {
+      bool result;
+      bind(nameToDispId(name, result), fi);
+    }
   }
 
-  public void bind(char[] name, void delegate(VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, void delegate(VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, void delegate(VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, void delegate(VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, VARIANT delegate() handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, VARIANT delegate(VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, VARIANT delegate(VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, VARIANT delegate(VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  public void bind(char[] name, VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    bool result;
-    bind(dispIdFromName(name, result), handler);
-  }
-
-  // ID binding methods.
-
-  public void bind(int id, void delegate() handler) {
-    DelegateProxy proxy;
-    proxy.method = handler;
-    bindInternal(id, 0 << 16, proxy);
-  }
-
-  public void bind(int id, void delegate(VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 1 << 16, proxy);
-  }
-
-  public void bind(int id, void delegate(VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 2 << 16, proxy);
-  }
-
-  public void bind(int id, void delegate(VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 3 << 16, proxy);
-  }
-
-  public void bind(int id, void delegate(VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 4 << 16, proxy);
-  }
-
-  public void bind(int id, void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 5 << 16, proxy);
-  }
-
-  public void bind(int id, void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 6 << 16, proxy);
-  }
-
-  public void bind(int id, void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 7 << 16, proxy);
-  }
-
-  public void bind(int id, VARIANT delegate() handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 0 << 16, proxy);
-  }
-
-  public void bind(int id, VARIANT delegate(VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 1 << 16, proxy);
-  }
-
-  public void bind(int id, VARIANT delegate(VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 2 << 16, proxy);
-  }
-
-  public void bind(int id, VARIANT delegate(VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 3 << 16, proxy);
-  }
-
-  public void bind(int id, VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 4 << 16, proxy);
-  }
-
-  public void bind(int id, VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 5 << 16, proxy);
-  }
-
-  public void bind(int id, VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 6 << 16, proxy);
-  }
-
-  public void bind(int id, VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT) handler) {
-    DelegateProxy proxy;
-    proxy.method = cast(void delegate())handler;
-    bindInternal(id, 7 << 16, proxy);
-  }
-
-  private void bindInternal(int id, int type, DelegateProxy proxy) {
+  protected void bind(int id, inout FunctionInfo fi) {
     synchronized (this) {
       connectEvents();
-      handlers_[id][type] = proxy;
+      functionTable[id][fi.paramCount << 16] = fi;
+      // We should check what we've been given matches what's in the type library.
     }
   }
 
@@ -454,125 +595,216 @@ class EventProvider(T, char[] libIID = null, char[] libVersion = null) : EventPr
 
   override int Invoke(int dispidMember, inout GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pdispparams, VARIANT* pvarResult, EXCEPINFO* pexcepinfo, uint* puArgErr) {
 
-     /*void getFunctionInfo(int id, inout FunctionInfo info) {
-
-      ushort getUserDefinedType(ITypeInfo typeInfo, uint userDefinedType) {
-        ushort result = VT_USERDEFINED;
-        ITypeInfo ti;
-        typeInfo.GetRefTypeInfo(userDefinedType, ti);
-        TYPEATTR* typeAttr;
-        ti.GetTypeAttr(typeAttr);
-        if (typeAttr != null && typeAttr.typekind == TYPEKIND.TKIND_ALIAS) {
-          if (typeAttr.tdescAlias.vt == VT_USERDEFINED)
-            getUserDefinedType(ti, typeAttr.tdescAlias.hreftype);
-          else
-            result = typeAttr.tdescAlias.vt;
-        }
-        if (typeAttr != null)
-          ti.ReleaseTypeAttr(typeAttr);
-        return result;
-      }
-
-      FUNCDESC* funcDesc;
-      using (com_cast!(ITypeInfo2)(typeInfo_), delegate(ITypeInfo2 ti) {
-        if (ti !is null) {
-          uint index;
-          ti.GetFuncIndexOfMemId(id, INVOKEKIND.INVOKE_FUNC, index);
-          typeInfo_.GetFuncDesc(index, funcDesc);
-        }
-        for (short i = 0; i < funcDesc.cParams; i++) {
-          info.paramTypes ~= funcDesc.lprgelemdescParam[i].tdesc.vt;
-          if (info.paramTypes[i] == VT_PTR)
-            info.paramTypes[i] = funcDesc.lprgelemdescParam[i].tdesc.lptdesc.vt | VT_BYREF;
-          if (info.paramTypes[i] == VT_USERDEFINED)
-            info.paramTypes[i] = getUserDefinedType(typeInfo_, funcDesc.lprgelemdescParam[i].tdesc.hreftype);
-        }
-
-        ushort returnType = funcDesc.elemdescFunc.tdesc.vt;
-        if (returnType == VT_INT)
-          returnType = VT_I4;
-        else if (returnType == VT_UINT)
-          returnType = VT_UI4;
-        info.returnType = returnType;
-        typeInfo_.ReleaseFuncDesc(funcDesc);
-      });
-    }*/
-
-    int type = pdispparams.cArgs << 16;// | (wFlags & 15);
-    if (auto entry = dispidMember in handlers_) {
-      if (auto proxy = type in *entry) {
-
-        /*FunctionInfo functionInfo;
-        auto pFunctionInfo = proxy.methodInfo;
-        if (pFunctionInfo == null) {
-          pFunctionInfo = &functionInfo;
-          getFunctionInfo(dispidMember, functionInfo);
-        }
-        bool hasReturn = functionInfo.returnType != VT_VOID;*/
-        bool hasReturn = proxy.hasReturn;
-        VARIANT result;
-
-        try {
-
-          switch (pdispparams.cArgs) {
-            case 0:
-              if (hasReturn)
-                result = (cast(VARIANT delegate())proxy.method)();
-              else
-                proxy.method();
-              break;
-            case 1:
-              if (hasReturn)
-                result = (cast(VARIANT delegate(VARIANT))proxy.method)(pdispparams.rgvarg[0]);
-              else
-                (cast(void delegate(VARIANT))proxy.method)(pdispparams.rgvarg[0]);
-              break;
-            case 2:
-              if (hasReturn)
-                result = (cast(VARIANT delegate(VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              else
-                (cast(void delegate(VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              break;
-            case 3:
-              if (hasReturn)
-                result = (cast(VARIANT delegate(VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              else
-                (cast(void delegate(VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              break;
-            case 4:
-              if (hasReturn)
-                result = (cast(VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[3], pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              else
-                (cast(void delegate(VARIANT, VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[3], pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              break;
-            case 5:
-              if (hasReturn)
-                result = (cast(VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[4], pdispparams.rgvarg[3], pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              else
-                (cast(void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[4], pdispparams.rgvarg[3], pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              break;
-            case 6:
-              if (hasReturn)
-                result = (cast(VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[5], pdispparams.rgvarg[4], pdispparams.rgvarg[3], pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              else
-                (cast(void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[5], pdispparams.rgvarg[4], pdispparams.rgvarg[3], pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              break;
-            case 7:
-              if (hasReturn)
-                result = (cast(VARIANT delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[6], pdispparams.rgvarg[5], pdispparams.rgvarg[4], pdispparams.rgvarg[3], pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              else
-                (cast(void delegate(VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT, VARIANT))proxy.method)(pdispparams.rgvarg[6], pdispparams.rgvarg[5], pdispparams.rgvarg[4], pdispparams.rgvarg[3], pdispparams.rgvarg[2], pdispparams.rgvarg[1], pdispparams.rgvarg[0]);
-              break;
-            default:
-              return super.Invoke(dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
-          }
-          if (pvarResult != null)
-            *pvarResult = result;
-        }
-        catch {
-          return E_FAIL;
+    // Marshals COM types to native types.
+    int dispInvokeFunction(inout FunctionInfo fi, ushort resultType, VARIANT*[] params, VARIANT* result) {
+     
+      int invoke(int delegate() func, uint count, uint* p) {
+        bool hasReturn = (resultType != VT_VOID && resultType != VT_EMPTY);
+        switch (count) {
+          case 0:
+            if (hasReturn)
+              return func();
+            (cast(FN0)func)();
+            break;
+          case 1:
+            if (hasReturn)
+              return (cast(FN1)func)(p[0]);
+            (cast(FN1)func)(p[0]);
+            break;
+          case 2:
+            if (hasReturn)
+              return (cast(FN2)func)(p[0], p[1]);
+            (cast(FN2)func)(p[0], p[1]);
+            break;
+          case 3:
+            if (hasReturn)
+              return (cast(FN3)func)(p[0], p[1], p[2]);
+            (cast(FN3)func)(p[0], p[1], p[2]);
+            break;
+          case 4:
+            if (hasReturn)
+              return (cast(FN4)func)(p[0], p[1], p[2], p[3]);
+            (cast(FN4)func)(p[0], p[1], p[2], p[3]);
+            break;
+          case 5:
+            if (hasReturn)
+              return (cast(FN5)func)(p[0], p[1], p[2], p[3], p[4]);
+            (cast(FN5)func)(p[0], p[1], p[2], p[3], p[4]);
+            break;
+          case 6:
+            if (hasReturn)
+              return (cast(FN6)func)(p[0], p[1], p[2], p[3], p[4], p[5]);
+            (cast(FN6)func)(p[0], p[1], p[2], p[3], p[4], p[5]);
+            break;
+          case 7:
+            if (hasReturn)
+              return (cast(FN7)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
+            (cast(FN7)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6]);
+            break;
+          case 8:
+            if (hasReturn)
+              return (cast(FN8)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[6]);
+            (cast(FN8)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[6]);
+            break;
+          case 9:
+            if (hasReturn)
+              return (cast(FN9)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+            (cast(FN9)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8]);
+            break;
+          case 10:
+            if (hasReturn)
+              return (cast(FN10)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9]);
+            (cast(FN10)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9]);
+            break;
+          case 11:
+            if (hasReturn)
+              return (cast(FN11)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10]);
+            (cast(FN11)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10]);
+            break;
+          case 12:
+            if (hasReturn)
+              return (cast(FN12)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11]);
+            (cast(FN12)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11]);
+            break;
+          case 13:
+            if (hasReturn)
+              return (cast(FN13)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12]);
+            (cast(FN13)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12]);
+            break;
+          case 14:
+            if (hasReturn)
+              return (cast(FN14)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13]);
+            (cast(FN14)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13]);
+            break;
+          case 15:
+            if (hasReturn)
+              return (cast(FN15)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14]);
+            (cast(FN15)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14]);
+            break;
+          case 16:
+            if (hasReturn)
+              return (cast(FN16)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15]);
+            (cast(FN16)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15]);
+            break;
+          case 17:
+            if (hasReturn)
+              return (cast(FN17)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16]);
+            (cast(FN17)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16]);
+            break;
+          case 18:
+            if (hasReturn)
+              return (cast(FN18)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17]);
+            (cast(FN18)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17]);
+            break;
+          case 19:
+            if (hasReturn)
+              return (cast(FN19)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18]);
+            (cast(FN19)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18]);
+            break;
+          case 20:
+            if (hasReturn)
+              return (cast(FN20)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19]);
+            (cast(FN20)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19]);
+            break;
+          case 21:
+            if (hasReturn)
+              return (cast(FN21)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20]);
+            (cast(FN21)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20]);
+            break;
+          case 22:
+            if (hasReturn)
+              return (cast(FN22)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20], p[21]);
+            (cast(FN22)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20], p[21]);
+            break;
+          case 23:
+            if (hasReturn)
+              return (cast(FN23)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20], p[21], p[22]);
+            (cast(FN23)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20], p[21], p[22]);
+            break;
+          case 24:
+            if (hasReturn)
+              return (cast(FN24)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20], p[21], p[22], p[23]);
+            (cast(FN24)func)(p[0], p[1], p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20], p[21], p[22], p[23]);
+            break;
+          default:
+            throw new Exception("Too many arguments.");
         }
         return S_OK;
+      }
+
+      uint getArgSize(ushort vt) {
+        switch (vt) {
+          case VT_I8:
+          case VT_UI8:
+          case VT_CY:
+            return long.sizeof / uint.sizeof;
+          case VT_R8:
+            return double.sizeof / uint.sizeof;
+          case VT_VARIANT:
+            return (VARIANT.sizeof + 3) / uint.sizeof;
+          default:
+            break;
+        }
+        return 1;
+      }
+
+      uint totalArgSize;
+      if (fi.obj != null)
+        totalArgSize++;
+      for (uint i = 0; i < fi.paramCount; i++)
+        totalArgSize += getArgSize(fi.paramTypes[i]);
+
+      uint* argsPtr = cast(uint*)juno.base.memory.malloc(uint.sizeof * totalArgSize);
+
+      uint index;
+      // Hidden 'this' pointer.
+      if (fi.obj != null) {
+        argsPtr[0] = cast(uint)fi.obj;
+        index++;
+      }
+      for (uint i = 0; i < fi.paramCount; i++) {
+        uint argSize = getArgSize(fi.paramTypes[i]);
+        VARIANT* p = params[i];
+        juno.base.memory.memcpy(&argsPtr[index], &p.iVal, argSize * uint.sizeof);
+        index += argSize;
+      }
+
+      int hr = E_FAIL;
+      if (fi.obj != null)
+        hr = invoke(fi.del, totalArgSize, argsPtr);
+
+      if (result != null && (resultType != VT_VOID || resultType != VT_EMPTY)) {
+        result.vt = resultType;
+        result.lVal = hr;
+      }
+
+      juno.base.memory.free(argsPtr);
+      return S_OK;
+    }
+
+    int type = pdispparams.cArgs << 16;
+    if (auto entry = dispidMember in functionTable) {
+      if (auto fi = type in *entry) {
+        VARIANT*[8] args;
+        //VARIANT*[] pargs = (fi.paramCount != 0) ? args : null;
+
+        for (uint i = 0; i < fi.paramCount; i++)
+          args[i] = &pdispparams.rgvarg[fi.paramCount - i - 1];
+
+        VARIANT result;
+        if (pvarResult is null)
+          pvarResult = &result;
+
+        int hr = dispInvokeFunction(*fi, VT_VOID, args, &result);
+
+        // Fix any booleans that returned 1 instead of -1 for true (VARIANT_TRUE).
+        for (uint i = 0; i < fi.paramCount; i++) {
+          if (args[i].vt == VT_BOOL && args[i].boolVal == 1)
+            args[i].boolVal = VARIANT_TRUE;
+          else if (args[i].vt == (VT_BYREF | VT_BOOL) && *args[i].pboolVal == 1)
+            *args[i].pboolVal = VARIANT_TRUE;
+        }
+        return hr;
       }
     }
     return super.Invoke(dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
@@ -580,187 +812,10 @@ class EventProvider(T, char[] libIID = null, char[] libVersion = null) : EventPr
 
 }
 
-private import std.stdio, std.conv, std.string;
+template com_auto(I) {
 
-/* Late Binding */
-
-class Automator {
-
-  private IDispatch obj_;
-  private int[char[]] names_;
-
-  private this(IDispatch obj) {
-    obj_ = obj;
-  }
-
-  ~this() {
-    if (obj_ !is null) {
-      try {
-        obj_.Release();
-      }
-      catch {
-      }
-    }
-  }
-
-  public static Automator createInstance(char[] className) {
-    GUID clsid;
-    CLSIDFromProgID(className.toUtf16z(), clsid);
-
-    void* p;
-    int hr;
-    if ((hr = CoCreateInstance(clsid, null, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER, IDispatch.IID, p)) != S_OK)
-      throw new COMException(hr);
-
-    return new Automator(cast(IDispatch)p);
-  }
-
-  public static Automator getInstance(char[] className) {
-    GUID clsid;
-    CLSIDFromProgID(className.toUtf16z(), clsid);
-
-    void* p;
-    int hr;
-    if ((hr = GetActiveObject(clsid, null, p)) != S_OK)
-      throw new COMException(hr);
-
-    return new Automator(cast(IDispatch)p);
-  }
-
-  public VARIANT invokeMethod(char[] member, ...) {
-    int dispId;
-    if (findMemberId(member, dispId)) {
-      auto it = ArgumentIterator(_arguments, _argptr);
-      VARIANT[] args = variantsFromVarArgs(it);
-      DISPPARAMS params;
-      params.rgvarg = args;
-      params.cArgs = args.length;
-
-      VARIANT result;
-      obj_.Invoke(dispId, INull.IID, 0, DISPATCH_METHOD, &params, &result, null, null);
-
-      foreach (VARIANT arg; args)
-        arg.clear();
-
-      return result;
-    }
-    else
-      throw new Exception("Method '" ~ member ~ "' is not supported.");
-    return VARIANT.init;
-  }
-
-  public VARIANT getProperty(char[] member) {
-    int dispId;
-    if (findMemberId(member, dispId)) {
-      DISPPARAMS params;
-      VARIANT result;
-      obj_.Invoke(dispId, INull.IID, 0, DISPATCH_PROPERTYGET, &params, &result, null, null);
-      return result;
-    }
-    else
-      throw new Exception("Method '" ~ member ~ "' is not supported.");
-  }
-
-  public void setProperty(char[] member, ...) {
-    assert(_arguments.length == 1);
-
-    int dispId;
-    findMemberId(member, dispId);
-    if (findMemberId(member, dispId)) {
-      auto it = ArgumentIterator(_arguments, _argptr);
-      VARIANT[] args = variantsFromVarArgs(it);
-      if (args != null) {
-        VARIANT arg = args[0];
-        int dispIdPut = DISPID_PROPERTYPUT;
-        DISPPARAMS params;
-        params.rgvarg = &arg;
-        params.cArgs = 1;
-        params.cNamedArgs = 1;
-        params.rgdispidNamedArgs = &dispIdPut;
-
-        ushort flags = (arg.vt == VT_UNKNOWN || arg.vt == VT_DISPATCH) ? DISPATCH_PROPERTYPUTREF : DISPATCH_PROPERTYPUT;
-        obj_.Invoke(dispId, INull.IID, 0, flags, &params, null, null, null);
-
-        arg.clear();
-      }
-      else
-        throw new Exception("Argument cannot be null.");
-    }
-    else
-      throw new Exception("Method '" ~ member ~ "' is not supported.");
-  }
-
-  private bool findMemberId(char[] name, out int result) {
-    char[] n = name.tolower();
-    if (auto id = n in names_) {
-      result = *id;
-      return true;
-    }
-
-    wchar* pszName = n.toUtf16z();
-    if (obj_.GetIDsOfNames(INull.IID, &pszName, 1, 0, &result) == S_OK) {
-      names_[n] = result;
-      return true;
-    }
-    return false;
-  } 
-
-  private VARIANT[] variantsFromVarArgs(inout ArgumentIterator it) {
-    VARIANT[] result;
-    foreach (Argument arg; it) {
-      TypeInfo type = arg.getType();
-      if (type !is null) {
-        if (type is typeid(bool))
-          result ~= VARIANT(*cast(bool*)arg.getValue());
-        else if (type is typeid(byte))
-          result ~= VARIANT(*cast(byte*)arg.getValue());
-        else if (type is typeid(ubyte))
-          result ~= VARIANT(*cast(ubyte*)arg.getValue());
-        else if (type is typeid(short))
-          result ~= VARIANT(*cast(short*)arg.getValue());
-        else if (type is typeid(ushort))
-          result ~= VARIANT(*cast(ushort*)arg.getValue());
-        else if (type is typeid(int))
-          result ~= VARIANT(*cast(int*)arg.getValue());
-        else if (type is typeid(uint))
-          result ~= VARIANT(*cast(uint*)arg.getValue());
-        else if (type is typeid(long))
-          result ~= VARIANT(*cast(long*)arg.getValue());
-        else if (type is typeid(ulong))
-          result ~= VARIANT(*cast(ulong*)arg.getValue());
-        else if (type is typeid(float))
-          result ~= VARIANT(*cast(float*)arg.getValue());
-        else if (type is typeid(double))
-          result ~= VARIANT(*cast(double*)arg.getValue());
-        else if (type is typeid(char[]))
-          result ~= VARIANT(*cast(char[]*)arg.getValue());
-        else if (type is typeid(IUnknown))
-          result ~= VARIANT(*cast(IUnknown*)arg.getValue());
-        else if (type is typeid(IDispatch))
-          result ~= VARIANT(*cast(IDispatch*)arg.getValue());
-        else if (type is typeid(Object)) {
-          if (auto disp = *cast(IDispatch*)arg.getValue())
-            result ~= VARIANT(disp);
-        }
-        else if (type is typeid(VARIANT))
-          result ~= *cast(VARIANT*)arg.getValue();
-      }
-    }
-    return result;
-  }
-
-}
-
-interface IReleasable(T) {
-  void release();
-  bool isReleased();
-  T opCast();
-}
-
-template releasingRef(I) {
-
-  IReleasable!(I) releasingRef(I obj) {
-    return new class(obj) IReleasable!(I) {
+  I com_auto(I obj) {
+    return (new class(obj) Object {
       I obj;
       bool released;
       this(I obj) {
@@ -782,121 +837,7 @@ template releasingRef(I) {
           }
         }
       }
-      bool isReleased() {
-        return released;
-      }
-      I opCast() {
-        return obj;
-      }
-    };
-  }
-
-}
-
-VARIANT simpleHandler(void delegate() del) {
-  return (new class(new SimpleEventProvider(del)) Object {
-    VARIANT v;
-    this(SimpleEventProvider func) {
-      v = VARIANT(func);
-    }
-    ~this() {
-      try {
-        v.clear();
-      }
-      catch {
-      }
-    }
-  }).v;
-}
-
-class SafeArray(T, uint R = 1) {
-
-  private SAFEARRAY* safeArray_;
-
-  public const uint rank = R;
-
-  public this(uint[] lengths ...) {
-    assert(rank == lengths.length);
-    SAFEARRAYBOUND[rank] bounds;
-    for (uint i = 0; i < rank; i++)
-      bounds[i].cElements = lengths[i];
-    safeArray_ = SafeArrayCreate(deduceVarType!(T), R, bounds);
-  }
-
-  ~this() {
-    if (safeArray_ != null) {
-      SafeArrayDestroy(safeArray_);
-      safeArray_ = null;
-    }
-  }
-
-  public T getValue(int[] indices ...) {
-    assert(rank == indices.length);
-    T value;
-    SafeArrayGetElement(safeArray_, indices, &value);
-    return value;
-  }
-
-  public void setValue(T value, int[] indices ...) {
-    assert(rank == indices.length);
-    SafeArrayPutElement(safeArray_, indices, &value);
-  }
-
-  public T opIndex(int[] indices ...) {
-    return getValue(indices);
-  }
-  public void opIndexAssign(T value, int[] indices ...) {
-    setValue(value, indices);
-  }
-
-  public int getUpperBound(uint dimension) {
-    int bound;
-    SafeArrayGetUBound(safeArray_, dimension, bound);
-    return bound;
-  }
-
-  public int getLowerBound(uint dimension) {
-    int bound;
-    SafeArrayGetLBound(safeArray_, dimension, bound);
-    return bound;
-  }
-
-  public uint getLength(uint dimension) {
-    int upperBound = getUpperBound(dimension);
-    int lowerBound = getLowerBound(dimension);
-    return upperBound + 1 - lowerBound;
-  }
-
-  public uint length() {
-    return getLength(rank - 1);
-  }
-  public void length(uint value) {
-    SAFEARRAYBOUND[rank] bounds;
-    for (uint i = 0; i < rank; i++)
-      bounds[i].cElements = value;
-    SafeArrayRedim(safeArray_, bounds);
-  }
-
-}
-
-struct safearray(T, int R = 1) {
-
-  SafeArray!(T, R) array_;
-
-  const uint rank = R;
-
-  static safearray opCall(uint[] lengths ...) {
-    safearray a;
-    a.array_ = new SafeArray!(T, R)(lengths);
-    return a;
-  }
-
-  T opIndex(int[] indices ...) {
-    return array_.opIndex(indices);
-  }
-
-  void opIndexAssign(T value, int[] indices ...) {
-    array_.opIndexAssign(value, indices);
+    }).obj;
   }
 
 }

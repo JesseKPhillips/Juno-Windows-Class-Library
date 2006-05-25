@@ -11,174 +11,178 @@ private import juno.com.core;
 
 // Constants that define a node's type
 enum tagDOMNodeType {
-  NODE_INVALID = 0,
-  NODE_ELEMENT = 1,
-  NODE_ATTRIBUTE = 2,
-  NODE_TEXT = 3,
-  NODE_CDATA_SECTION = 4,
-  NODE_ENTITY_REFERENCE = 5,
-  NODE_ENTITY = 6,
-  NODE_PROCESSING_INSTRUCTION = 7,
-  NODE_COMMENT = 8,
-  NODE_DOCUMENT = 9,
-  NODE_DOCUMENT_TYPE = 10,
-  NODE_DOCUMENT_FRAGMENT = 11,
-  NODE_NOTATION = 12,
+  NODE_INVALID = 0x0,
+  NODE_ELEMENT = 0x1,
+  NODE_ATTRIBUTE = 0x2,
+  NODE_TEXT = 0x3,
+  NODE_CDATA_SECTION = 0x4,
+  NODE_ENTITY_REFERENCE = 0x5,
+  NODE_ENTITY = 0x6,
+  NODE_PROCESSING_INSTRUCTION = 0x7,
+  NODE_COMMENT = 0x8,
+  NODE_DOCUMENT = 0x9,
+  NODE_DOCUMENT_TYPE = 0xa,
+  NODE_DOCUMENT_FRAGMENT = 0xb,
+  NODE_NOTATION = 0xc,
 }
 
 // Schema Object Model Item Types
 enum _SOMITEMTYPE {
-  SOMITEM_SCHEMA = 4096,
-  SOMITEM_ATTRIBUTE = 4097,
-  SOMITEM_ATTRIBUTEGROUP = 4098,
-  SOMITEM_NOTATION = 4099,
-  SOMITEM_ANNOTATION = 4100,
-  SOMITEM_IDENTITYCONSTRAINT = 4352,
-  SOMITEM_KEY = 4353,
-  SOMITEM_KEYREF = 4354,
-  SOMITEM_UNIQUE = 4355,
-  SOMITEM_ANYTYPE = 8192,
-  SOMITEM_DATATYPE = 8448,
-  SOMITEM_DATATYPE_ANYTYPE = 8449,
-  SOMITEM_DATATYPE_ANYURI = 8450,
-  SOMITEM_DATATYPE_BASE64BINARY = 8451,
-  SOMITEM_DATATYPE_BOOLEAN = 8452,
-  SOMITEM_DATATYPE_BYTE = 8453,
-  SOMITEM_DATATYPE_DATE = 8454,
-  SOMITEM_DATATYPE_DATETIME = 8455,
-  SOMITEM_DATATYPE_DAY = 8456,
-  SOMITEM_DATATYPE_DECIMAL = 8457,
-  SOMITEM_DATATYPE_DOUBLE = 8458,
-  SOMITEM_DATATYPE_DURATION = 8459,
-  SOMITEM_DATATYPE_ENTITIES = 8460,
-  SOMITEM_DATATYPE_ENTITY = 8461,
-  SOMITEM_DATATYPE_FLOAT = 8462,
-  SOMITEM_DATATYPE_HEXBINARY = 8463,
-  SOMITEM_DATATYPE_ID = 8464,
-  SOMITEM_DATATYPE_IDREF = 8465,
-  SOMITEM_DATATYPE_IDREFS = 8466,
-  SOMITEM_DATATYPE_INT = 8467,
-  SOMITEM_DATATYPE_INTEGER = 8468,
-  SOMITEM_DATATYPE_LANGUAGE = 8469,
-  SOMITEM_DATATYPE_LONG = 8470,
-  SOMITEM_DATATYPE_MONTH = 8471,
-  SOMITEM_DATATYPE_MONTHDAY = 8472,
-  SOMITEM_DATATYPE_NAME = 8473,
-  SOMITEM_DATATYPE_NCNAME = 8474,
-  SOMITEM_DATATYPE_NEGATIVEINTEGER = 8475,
-  SOMITEM_DATATYPE_NMTOKEN = 8476,
-  SOMITEM_DATATYPE_NMTOKENS = 8477,
-  SOMITEM_DATATYPE_NONNEGATIVEINTEGER = 8478,
-  SOMITEM_DATATYPE_NONPOSITIVEINTEGER = 8479,
-  SOMITEM_DATATYPE_NORMALIZEDSTRING = 8480,
-  SOMITEM_DATATYPE_NOTATION = 8481,
-  SOMITEM_DATATYPE_POSITIVEINTEGER = 8482,
-  SOMITEM_DATATYPE_QNAME = 8483,
-  SOMITEM_DATATYPE_SHORT = 8484,
-  SOMITEM_DATATYPE_STRING = 8485,
-  SOMITEM_DATATYPE_TIME = 8486,
-  SOMITEM_DATATYPE_TOKEN = 8487,
-  SOMITEM_DATATYPE_UNSIGNEDBYTE = 8488,
-  SOMITEM_DATATYPE_UNSIGNEDINT = 8489,
-  SOMITEM_DATATYPE_UNSIGNEDLONG = 8490,
-  SOMITEM_DATATYPE_UNSIGNEDSHORT = 8491,
-  SOMITEM_DATATYPE_YEAR = 8492,
-  SOMITEM_DATATYPE_YEARMONTH = 8493,
-  SOMITEM_DATATYPE_ANYSIMPLETYPE = 8703,
-  SOMITEM_SIMPLETYPE = 8704,
-  SOMITEM_COMPLEXTYPE = 9216,
-  SOMITEM_PARTICLE = 16384,
-  SOMITEM_ANY = 16385,
-  SOMITEM_ANYATTRIBUTE = 16386,
-  SOMITEM_ELEMENT = 16387,
-  SOMITEM_GROUP = 16640,
-  SOMITEM_ALL = 16641,
-  SOMITEM_CHOICE = 16642,
-  SOMITEM_SEQUENCE = 16643,
-  SOMITEM_EMPTYPARTICLE = 16644,
-  SOMITEM_NULL = 2048,
-  SOMITEM_NULL_TYPE = 10240,
-  SOMITEM_NULL_ANY = 18433,
-  SOMITEM_NULL_ANYATTRIBUTE = 18434,
-  SOMITEM_NULL_ELEMENT = 18435,
+  SOMITEM_SCHEMA = 0x1000,
+  SOMITEM_ATTRIBUTE = 0x1001,
+  SOMITEM_ATTRIBUTEGROUP = 0x1002,
+  SOMITEM_NOTATION = 0x1003,
+  SOMITEM_ANNOTATION = 0x1004,
+  SOMITEM_IDENTITYCONSTRAINT = 0x1100,
+  SOMITEM_KEY = 0x1101,
+  SOMITEM_KEYREF = 0x1102,
+  SOMITEM_UNIQUE = 0x1103,
+  SOMITEM_ANYTYPE = 0x2000,
+  SOMITEM_DATATYPE = 0x2100,
+  SOMITEM_DATATYPE_ANYTYPE = 0x2101,
+  SOMITEM_DATATYPE_ANYURI = 0x2102,
+  SOMITEM_DATATYPE_BASE64BINARY = 0x2103,
+  SOMITEM_DATATYPE_BOOLEAN = 0x2104,
+  SOMITEM_DATATYPE_BYTE = 0x2105,
+  SOMITEM_DATATYPE_DATE = 0x2106,
+  SOMITEM_DATATYPE_DATETIME = 0x2107,
+  SOMITEM_DATATYPE_DAY = 0x2108,
+  SOMITEM_DATATYPE_DECIMAL = 0x2109,
+  SOMITEM_DATATYPE_DOUBLE = 0x210a,
+  SOMITEM_DATATYPE_DURATION = 0x210b,
+  SOMITEM_DATATYPE_ENTITIES = 0x210c,
+  SOMITEM_DATATYPE_ENTITY = 0x210d,
+  SOMITEM_DATATYPE_FLOAT = 0x210e,
+  SOMITEM_DATATYPE_HEXBINARY = 0x210f,
+  SOMITEM_DATATYPE_ID = 0x2110,
+  SOMITEM_DATATYPE_IDREF = 0x2111,
+  SOMITEM_DATATYPE_IDREFS = 0x2112,
+  SOMITEM_DATATYPE_INT = 0x2113,
+  SOMITEM_DATATYPE_INTEGER = 0x2114,
+  SOMITEM_DATATYPE_LANGUAGE = 0x2115,
+  SOMITEM_DATATYPE_LONG = 0x2116,
+  SOMITEM_DATATYPE_MONTH = 0x2117,
+  SOMITEM_DATATYPE_MONTHDAY = 0x2118,
+  SOMITEM_DATATYPE_NAME = 0x2119,
+  SOMITEM_DATATYPE_NCNAME = 0x211a,
+  SOMITEM_DATATYPE_NEGATIVEINTEGER = 0x211b,
+  SOMITEM_DATATYPE_NMTOKEN = 0x211c,
+  SOMITEM_DATATYPE_NMTOKENS = 0x211d,
+  SOMITEM_DATATYPE_NONNEGATIVEINTEGER = 0x211e,
+  SOMITEM_DATATYPE_NONPOSITIVEINTEGER = 0x211f,
+  SOMITEM_DATATYPE_NORMALIZEDSTRING = 0x2120,
+  SOMITEM_DATATYPE_NOTATION = 0x2121,
+  SOMITEM_DATATYPE_POSITIVEINTEGER = 0x2122,
+  SOMITEM_DATATYPE_QNAME = 0x2123,
+  SOMITEM_DATATYPE_SHORT = 0x2124,
+  SOMITEM_DATATYPE_STRING = 0x2125,
+  SOMITEM_DATATYPE_TIME = 0x2126,
+  SOMITEM_DATATYPE_TOKEN = 0x2127,
+  SOMITEM_DATATYPE_UNSIGNEDBYTE = 0x2128,
+  SOMITEM_DATATYPE_UNSIGNEDINT = 0x2129,
+  SOMITEM_DATATYPE_UNSIGNEDLONG = 0x212a,
+  SOMITEM_DATATYPE_UNSIGNEDSHORT = 0x212b,
+  SOMITEM_DATATYPE_YEAR = 0x212c,
+  SOMITEM_DATATYPE_YEARMONTH = 0x212d,
+  SOMITEM_DATATYPE_ANYSIMPLETYPE = 0x21ff,
+  SOMITEM_SIMPLETYPE = 0x2200,
+  SOMITEM_COMPLEXTYPE = 0x2400,
+  SOMITEM_PARTICLE = 0x4000,
+  SOMITEM_ANY = 0x4001,
+  SOMITEM_ANYATTRIBUTE = 0x4002,
+  SOMITEM_ELEMENT = 0x4003,
+  SOMITEM_GROUP = 0x4100,
+  SOMITEM_ALL = 0x4101,
+  SOMITEM_CHOICE = 0x4102,
+  SOMITEM_SEQUENCE = 0x4103,
+  SOMITEM_EMPTYPARTICLE = 0x4104,
+  SOMITEM_NULL = 0x800,
+  SOMITEM_NULL_TYPE = 0x2800,
+  SOMITEM_NULL_ANY = 0x4801,
+  SOMITEM_NULL_ANYATTRIBUTE = 0x4802,
+  SOMITEM_NULL_ELEMENT = 0x4803,
 }
 
 // Schema Object Model Filters
 enum _SCHEMADERIVATIONMETHOD {
-  SCHEMADERIVATIONMETHOD_EMPTY = 0,
-  SCHEMADERIVATIONMETHOD_SUBSTITUTION = 1,
-  SCHEMADERIVATIONMETHOD_EXTENSION = 2,
-  SCHEMADERIVATIONMETHOD_RESTRICTION = 4,
-  SCHEMADERIVATIONMETHOD_LIST = 8,
-  SCHEMADERIVATIONMETHOD_UNION = 16,
-  SCHEMADERIVATIONMETHOD_ALL = 255,
-  SCHEMADERIVATIONMETHOD_NONE = 256,
+  SCHEMADERIVATIONMETHOD_EMPTY = 0x0,
+  SCHEMADERIVATIONMETHOD_SUBSTITUTION = 0x1,
+  SCHEMADERIVATIONMETHOD_EXTENSION = 0x2,
+  SCHEMADERIVATIONMETHOD_RESTRICTION = 0x4,
+  SCHEMADERIVATIONMETHOD_LIST = 0x8,
+  SCHEMADERIVATIONMETHOD_UNION = 0x10,
+  SCHEMADERIVATIONMETHOD_ALL = 0xff,
+  SCHEMADERIVATIONMETHOD_NONE = 0x100,
 }
 
 // Schema Object Model Type variety values
 enum _SCHEMATYPEVARIETY {
-  SCHEMATYPEVARIETY_NONE = -1,
-  SCHEMATYPEVARIETY_ATOMIC = 0,
-  SCHEMATYPEVARIETY_LIST = 1,
-  SCHEMATYPEVARIETY_UNION = 2,
+  SCHEMATYPEVARIETY_NONE = 0xffffffff,
+  SCHEMATYPEVARIETY_ATOMIC = 0x0,
+  SCHEMATYPEVARIETY_LIST = 0x1,
+  SCHEMATYPEVARIETY_UNION = 0x2,
 }
 
 // Schema Object Model Whitespace facet values
 enum _SCHEMAWHITESPACE {
-  SCHEMAWHITESPACE_NONE = -1,
-  SCHEMAWHITESPACE_PRESERVE = 0,
-  SCHEMAWHITESPACE_REPLACE = 1,
-  SCHEMAWHITESPACE_COLLAPSE = 2,
+  SCHEMAWHITESPACE_NONE = 0xffffffff,
+  SCHEMAWHITESPACE_PRESERVE = 0x0,
+  SCHEMAWHITESPACE_REPLACE = 0x1,
+  SCHEMAWHITESPACE_COLLAPSE = 0x2,
 }
 
 // Schema Object Model Process Contents
 enum _SCHEMAPROCESSCONTENTS {
-  SCHEMAPROCESSCONTENTS_NONE = 0,
-  SCHEMAPROCESSCONTENTS_SKIP = 1,
-  SCHEMAPROCESSCONTENTS_LAX = 2,
-  SCHEMAPROCESSCONTENTS_STRICT = 3,
+  SCHEMAPROCESSCONTENTS_NONE = 0x0,
+  SCHEMAPROCESSCONTENTS_SKIP = 0x1,
+  SCHEMAPROCESSCONTENTS_LAX = 0x2,
+  SCHEMAPROCESSCONTENTS_STRICT = 0x3,
 }
 
 // Schema Object Model Content Types
 enum _SCHEMACONTENTTYPE {
-  SCHEMACONTENTTYPE_EMPTY = 0,
-  SCHEMACONTENTTYPE_TEXTONLY = 1,
-  SCHEMACONTENTTYPE_ELEMENTONLY = 2,
-  SCHEMACONTENTTYPE_MIXED = 3,
+  SCHEMACONTENTTYPE_EMPTY = 0x0,
+  SCHEMACONTENTTYPE_TEXTONLY = 0x1,
+  SCHEMACONTENTTYPE_ELEMENTONLY = 0x2,
+  SCHEMACONTENTTYPE_MIXED = 0x3,
 }
 
 // Schema Object Model Attribute Uses
 enum _SCHEMAUSE {
-  SCHEMAUSE_OPTIONAL = 0,
-  SCHEMAUSE_PROHIBITED = 1,
-  SCHEMAUSE_REQUIRED = 2,
+  SCHEMAUSE_OPTIONAL = 0x0,
+  SCHEMAUSE_PROHIBITED = 0x1,
+  SCHEMAUSE_REQUIRED = 0x2,
 }
 
 // Options for ServerXMLHTTPRequest Option property
 enum _SERVERXMLHTTP_OPTION {
-  SXH_OPTION_URL = -1,
-  SXH_OPTION_URL_CODEPAGE = 0,
-  SXH_OPTION_ESCAPE_PERCENT_IN_URL = 1,
-  SXH_OPTION_IGNORE_SERVER_SSL_CERT_ERROR_FLAGS = 2,
-  SXH_OPTION_SELECT_CLIENT_SSL_CERT = 3,
+  SXH_OPTION_URL = 0xffffffff,
+  SXH_OPTION_URL_CODEPAGE = 0x0,
+  SXH_OPTION_ESCAPE_PERCENT_IN_URL = 0x1,
+  SXH_OPTION_IGNORE_SERVER_SSL_CERT_ERROR_FLAGS = 0x2,
+  SXH_OPTION_SELECT_CLIENT_SSL_CERT = 0x3,
 }
 
 // Flags for SXH_OPTION_IGNORE_SERVER_SSL_CERT_ERROR_FLAGS option
 enum _SXH_SERVER_CERT_OPTION {
-  SXH_SERVER_CERT_IGNORE_UNKNOWN_CA = 256,
-  SXH_SERVER_CERT_IGNORE_WRONG_USAGE = 512,
-  SXH_SERVER_CERT_IGNORE_CERT_CN_INVALID = 4096,
-  SXH_SERVER_CERT_IGNORE_CERT_DATE_INVALID = 8192,
-  SXH_SERVER_CERT_IGNORE_ALL_SERVER_ERRORS = 13056,
+  SXH_SERVER_CERT_IGNORE_UNKNOWN_CA = 0x100,
+  SXH_SERVER_CERT_IGNORE_WRONG_USAGE = 0x200,
+  SXH_SERVER_CERT_IGNORE_CERT_CN_INVALID = 0x1000,
+  SXH_SERVER_CERT_IGNORE_CERT_DATE_INVALID = 0x2000,
+  SXH_SERVER_CERT_IGNORE_ALL_SERVER_ERRORS = 0x3300,
 }
 
 // Settings for setProxy
 enum _SXH_PROXY_SETTING {
-  SXH_PROXY_SET_DEFAULT = 0,
-  SXH_PROXY_SET_PRECONFIG = 0,
-  SXH_PROXY_SET_DIRECT = 1,
-  SXH_PROXY_SET_PROXY = 2,
+  SXH_PROXY_SET_DEFAULT = 0x0,
+  SXH_PROXY_SET_PRECONFIG = 0x0,
+  SXH_PROXY_SET_DIRECT = 0x1,
+  SXH_PROXY_SET_PROXY = 0x2,
 }
+
+// Unions
+
+// Structs
 
 // Aliases
 
@@ -214,10 +218,6 @@ alias _SXH_SERVER_CERT_OPTION SXH_SERVER_CERT_OPTION;
 
 // Settings for setProxy
 alias _SXH_PROXY_SETTING SXH_PROXY_SETTING;
-
-// Structs
-
-// Unions
 
 // Interfaces
 
@@ -687,125 +687,125 @@ interface IXSLProcessor : IDispatch {
 interface ISAXXMLReader : IUnknown {
   /*[uuid("a4f96ed0-f829-476e-81c0-cdc7bd2a080")]*/
   static GUID IID = { 0xa4f96ed0, 0xf829, 0x476e, 0x81, 0xc0, 0xcd, 0xc7, 0xbd, 0x2a, 0x08, 0x02 };
-  /+/*[id(0x60010000)]*/ int getFeature(ushort pwchName, out short pvfValue);+/
-  /+/*[id(0x60010001)]*/ int putFeature(ushort pwchName, short vfValue);+/
-  /+/*[id(0x60010002)]*/ int getProperty(ushort pwchName, out VARIANT pvarValue);+/
-  /+/*[id(0x60010003)]*/ int putProperty(ushort pwchName, VARIANT varValue);+/
-  /+/*[id(0x60010004)]*/ int getEntityResolver(out ISAXEntityResolver ppResolver);+/
-  /+/*[id(0x60010005)]*/ int putEntityResolver(ISAXEntityResolver pResolver);+/
-  /+/*[id(0x60010006)]*/ int getContentHandler(out ISAXContentHandler ppHandler);+/
-  /+/*[id(0x60010007)]*/ int putContentHandler(ISAXContentHandler pHandler);+/
-  /+/*[id(0x60010008)]*/ int getDTDHandler(out ISAXDTDHandler ppHandler);+/
-  /+/*[id(0x60010009)]*/ int putDTDHandler(ISAXDTDHandler pHandler);+/
-  /+/*[id(0x6001000a)]*/ int getErrorHandler(out ISAXErrorHandler ppHandler);+/
-  /+/*[id(0x6001000b)]*/ int putErrorHandler(ISAXErrorHandler pHandler);+/
-  /+/*[id(0x6001000c)]*/ int getBaseURL(out ushort ppwchBaseUrl);+/
-  /+/*[id(0x6001000d)]*/ int putBaseURL(ushort pwchBaseUrl);+/
-  /+/*[id(0x6001000e)]*/ int getSecureBaseURL(out ushort ppwchSecureBaseUrl);+/
-  /+/*[id(0x6001000f)]*/ int putSecureBaseURL(ushort pwchSecureBaseUrl);+/
-  /+/*[id(0x60010010)]*/ int parse(VARIANT varInput);+/
-  /+/*[id(0x60010011)]*/ int parseURL(ushort pwchUrl);+/
+  /*[id(0x60010000)]*/ int getFeature(ushort pwchName, out short pvfValue);
+  /*[id(0x60010001)]*/ int putFeature(ushort pwchName, short vfValue);
+  /*[id(0x60010002)]*/ int getProperty(ushort pwchName, out VARIANT pvarValue);
+  /*[id(0x60010003)]*/ int putProperty(ushort pwchName, VARIANT varValue);
+  /*[id(0x60010004)]*/ int getEntityResolver(out ISAXEntityResolver ppResolver);
+  /*[id(0x60010005)]*/ int putEntityResolver(ISAXEntityResolver pResolver);
+  /*[id(0x60010006)]*/ int getContentHandler(out ISAXContentHandler ppHandler);
+  /*[id(0x60010007)]*/ int putContentHandler(ISAXContentHandler pHandler);
+  /*[id(0x60010008)]*/ int getDTDHandler(out ISAXDTDHandler ppHandler);
+  /*[id(0x60010009)]*/ int putDTDHandler(ISAXDTDHandler pHandler);
+  /*[id(0x6001000a)]*/ int getErrorHandler(out ISAXErrorHandler ppHandler);
+  /*[id(0x6001000b)]*/ int putErrorHandler(ISAXErrorHandler pHandler);
+  /*[id(0x6001000c)]*/ int getBaseURL(out ushort ppwchBaseUrl);
+  /*[id(0x6001000d)]*/ int putBaseURL(ushort pwchBaseUrl);
+  /*[id(0x6001000e)]*/ int getSecureBaseURL(out ushort ppwchSecureBaseUrl);
+  /*[id(0x6001000f)]*/ int putSecureBaseURL(ushort pwchSecureBaseUrl);
+  /*[id(0x60010010)]*/ int parse(VARIANT varInput);
+  /*[id(0x60010011)]*/ int parseURL(ushort pwchUrl);
 }
 
 // ISAXEntityResolver interface
 interface ISAXEntityResolver : IUnknown {
   /*[uuid("99bca7bd-e8c4-4d5f-a0cf-6d907901ff0")]*/
   static GUID IID = { 0x99bca7bd, 0xe8c4, 0x4d5f, 0xa0, 0xcf, 0x6d, 0x90, 0x79, 0x01, 0xff, 0x07 };
-  /+/*[id(0x60010000)]*/ int resolveEntity(ushort pwchPublicId, ushort pwchSystemId, out VARIANT pvarInput);+/
+  /*[id(0x60010000)]*/ int resolveEntity(ushort pwchPublicId, ushort pwchSystemId, out VARIANT pvarInput);
 }
 
 // ISAXContentHandler interface
 interface ISAXContentHandler : IUnknown {
   /*[uuid("1545cdfa-9e4e-4497-a8a4-2bf7d0112c4")]*/
   static GUID IID = { 0x1545cdfa, 0x9e4e, 0x4497, 0xa8, 0xa4, 0x2b, 0xf7, 0xd0, 0x11, 0x2c, 0x44 };
-  /+/*[id(0x60010000)]*/ int putDocumentLocator(ISAXLocator pLocator);+/
-  /+/*[id(0x60010001)]*/ int startDocument();+/
-  /+/*[id(0x60010002)]*/ int endDocument();+/
-  /+/*[id(0x60010003)]*/ int startPrefixMapping(ushort pwchPrefix, int cchPrefix, ushort pwchUri, int cchUri);+/
-  /+/*[id(0x60010004)]*/ int endPrefixMapping(ushort pwchPrefix, int cchPrefix);+/
-  /+/*[id(0x60010005)]*/ int startElement(ushort pwchNamespaceUri, int cchNamespaceUri, ushort pwchLocalName, int cchLocalName, ushort pwchQName, int cchQName, ISAXAttributes pAttributes);+/
-  /+/*[id(0x60010006)]*/ int endElement(ushort pwchNamespaceUri, int cchNamespaceUri, ushort pwchLocalName, int cchLocalName, ushort pwchQName, int cchQName);+/
-  /+/*[id(0x60010007)]*/ int characters(ushort pwchChars, int cchChars);+/
-  /+/*[id(0x60010008)]*/ int ignorableWhitespace(ushort pwchChars, int cchChars);+/
-  /+/*[id(0x60010009)]*/ int processingInstruction(ushort pwchTarget, int cchTarget, ushort pwchData, int cchData);+/
-  /+/*[id(0x6001000a)]*/ int skippedEntity(ushort pwchName, int cchName);+/
+  /*[id(0x60010000)]*/ int putDocumentLocator(ISAXLocator pLocator);
+  /*[id(0x60010001)]*/ int startDocument();
+  /*[id(0x60010002)]*/ int endDocument();
+  /*[id(0x60010003)]*/ int startPrefixMapping(ushort pwchPrefix, int cchPrefix, ushort pwchUri, int cchUri);
+  /*[id(0x60010004)]*/ int endPrefixMapping(ushort pwchPrefix, int cchPrefix);
+  /*[id(0x60010005)]*/ int startElement(ushort pwchNamespaceUri, int cchNamespaceUri, ushort pwchLocalName, int cchLocalName, ushort pwchQName, int cchQName, ISAXAttributes pAttributes);
+  /*[id(0x60010006)]*/ int endElement(ushort pwchNamespaceUri, int cchNamespaceUri, ushort pwchLocalName, int cchLocalName, ushort pwchQName, int cchQName);
+  /*[id(0x60010007)]*/ int characters(ushort pwchChars, int cchChars);
+  /*[id(0x60010008)]*/ int ignorableWhitespace(ushort pwchChars, int cchChars);
+  /*[id(0x60010009)]*/ int processingInstruction(ushort pwchTarget, int cchTarget, ushort pwchData, int cchData);
+  /*[id(0x6001000a)]*/ int skippedEntity(ushort pwchName, int cchName);
 }
 
 // ISAXLocator interface
 interface ISAXLocator : IUnknown {
   /*[uuid("9b7e472a-0de4-4640-bff3-84d38a051c3")]*/
   static GUID IID = { 0x9b7e472a, 0x0de4, 0x4640, 0xbf, 0xf3, 0x84, 0xd3, 0x8a, 0x05, 0x1c, 0x31 };
-  /+/*[id(0x60010000)]*/ int getColumnNumber(out int pnColumn);+/
-  /+/*[id(0x60010001)]*/ int getLineNumber(out int pnLine);+/
-  /+/*[id(0x60010002)]*/ int getPublicId(out ushort ppwchPublicId);+/
-  /+/*[id(0x60010003)]*/ int getSystemId(out ushort ppwchSystemId);+/
+  /*[id(0x60010000)]*/ int getColumnNumber(out int pnColumn);
+  /*[id(0x60010001)]*/ int getLineNumber(out int pnLine);
+  /*[id(0x60010002)]*/ int getPublicId(out ushort ppwchPublicId);
+  /*[id(0x60010003)]*/ int getSystemId(out ushort ppwchSystemId);
 }
 
 // ISAXAttributes interface
 interface ISAXAttributes : IUnknown {
   /*[uuid("f078abe1-45d2-4832-91ea-4466ce2f25c")]*/
   static GUID IID = { 0xf078abe1, 0x45d2, 0x4832, 0x91, 0xea, 0x44, 0x66, 0xce, 0x2f, 0x25, 0xc9 };
-  /+/*[id(0x60010000)]*/ int getLength(out int pnLength);+/
-  /+/*[id(0x60010001)]*/ int getURI(int nIndex, out ushort ppwchUri, out int pcchUri);+/
-  /+/*[id(0x60010002)]*/ int getLocalName(int nIndex, out ushort ppwchLocalName, out int pcchLocalName);+/
-  /+/*[id(0x60010003)]*/ int getQName(int nIndex, out ushort ppwchQName, out int pcchQName);+/
-  /+/*[id(0x60010004)]*/ int getName(int nIndex, out ushort ppwchUri, out int pcchUri, out ushort ppwchLocalName, out int pcchLocalName, out ushort ppwchQName, out int pcchQName);+/
-  /+/*[id(0x60010005)]*/ int getIndexFromName(ushort pwchUri, int cchUri, ushort pwchLocalName, int cchLocalName, out int pnIndex);+/
-  /+/*[id(0x60010006)]*/ int getIndexFromQName(ushort pwchQName, int cchQName, out int pnIndex);+/
-  /+/*[id(0x60010007)]*/ int getType(int nIndex, out ushort ppwchType, out int pcchType);+/
-  /+/*[id(0x60010008)]*/ int getTypeFromName(ushort pwchUri, int cchUri, ushort pwchLocalName, int cchLocalName, out ushort ppwchType, out int pcchType);+/
-  /+/*[id(0x60010009)]*/ int getTypeFromQName(ushort pwchQName, int cchQName, out ushort ppwchType, out int pcchType);+/
-  /+/*[id(0x6001000a)]*/ int getValue(int nIndex, out ushort ppwchValue, out int pcchValue);+/
-  /+/*[id(0x6001000b)]*/ int getValueFromName(ushort pwchUri, int cchUri, ushort pwchLocalName, int cchLocalName, out ushort ppwchValue, out int pcchValue);+/
-  /+/*[id(0x6001000c)]*/ int getValueFromQName(ushort pwchQName, int cchQName, out ushort ppwchValue, out int pcchValue);+/
+  /*[id(0x60010000)]*/ int getLength(out int pnLength);
+  /*[id(0x60010001)]*/ int getURI(int nIndex, out ushort ppwchUri, out int pcchUri);
+  /*[id(0x60010002)]*/ int getLocalName(int nIndex, out ushort ppwchLocalName, out int pcchLocalName);
+  /*[id(0x60010003)]*/ int getQName(int nIndex, out ushort ppwchQName, out int pcchQName);
+  /*[id(0x60010004)]*/ int getName(int nIndex, out ushort ppwchUri, out int pcchUri, out ushort ppwchLocalName, out int pcchLocalName, out ushort ppwchQName, out int pcchQName);
+  /*[id(0x60010005)]*/ int getIndexFromName(ushort pwchUri, int cchUri, ushort pwchLocalName, int cchLocalName, out int pnIndex);
+  /*[id(0x60010006)]*/ int getIndexFromQName(ushort pwchQName, int cchQName, out int pnIndex);
+  /*[id(0x60010007)]*/ int getType(int nIndex, out ushort ppwchType, out int pcchType);
+  /*[id(0x60010008)]*/ int getTypeFromName(ushort pwchUri, int cchUri, ushort pwchLocalName, int cchLocalName, out ushort ppwchType, out int pcchType);
+  /*[id(0x60010009)]*/ int getTypeFromQName(ushort pwchQName, int cchQName, out ushort ppwchType, out int pcchType);
+  /*[id(0x6001000a)]*/ int getValue(int nIndex, out ushort ppwchValue, out int pcchValue);
+  /*[id(0x6001000b)]*/ int getValueFromName(ushort pwchUri, int cchUri, ushort pwchLocalName, int cchLocalName, out ushort ppwchValue, out int pcchValue);
+  /*[id(0x6001000c)]*/ int getValueFromQName(ushort pwchQName, int cchQName, out ushort ppwchValue, out int pcchValue);
 }
 
 // ISAXDTDHandler interface
 interface ISAXDTDHandler : IUnknown {
   /*[uuid("e15c1baf-afb3-4d60-8c36-19a8c45defe")]*/
   static GUID IID = { 0xe15c1baf, 0xafb3, 0x4d60, 0x8c, 0x36, 0x19, 0xa8, 0xc4, 0x5d, 0xef, 0xed };
-  /+/*[id(0x60010000)]*/ int notationDecl(ushort pwchName, int cchName, ushort pwchPublicId, int cchPublicId, ushort pwchSystemId, int cchSystemId);+/
-  /+/*[id(0x60010001)]*/ int unparsedEntityDecl(ushort pwchName, int cchName, ushort pwchPublicId, int cchPublicId, ushort pwchSystemId, int cchSystemId, ushort pwchNotationName, int cchNotationName);+/
+  /*[id(0x60010000)]*/ int notationDecl(ushort pwchName, int cchName, ushort pwchPublicId, int cchPublicId, ushort pwchSystemId, int cchSystemId);
+  /*[id(0x60010001)]*/ int unparsedEntityDecl(ushort pwchName, int cchName, ushort pwchPublicId, int cchPublicId, ushort pwchSystemId, int cchSystemId, ushort pwchNotationName, int cchNotationName);
 }
 
 // ISAXErrorHandler interface
 interface ISAXErrorHandler : IUnknown {
   /*[uuid("a60511c4-ccf5-479e-98a3-dc8dc545b7d")]*/
   static GUID IID = { 0xa60511c4, 0xccf5, 0x479e, 0x98, 0xa3, 0xdc, 0x8d, 0xc5, 0x45, 0xb7, 0xd0 };
-  /+/*[id(0x60010000)]*/ int error(ISAXLocator pLocator, ushort pwchErrorMessage, int hrErrorCode);+/
-  /+/*[id(0x60010001)]*/ int fatalError(ISAXLocator pLocator, ushort pwchErrorMessage, int hrErrorCode);+/
-  /+/*[id(0x60010002)]*/ int ignorableWarning(ISAXLocator pLocator, ushort pwchErrorMessage, int hrErrorCode);+/
+  /*[id(0x60010000)]*/ int error(ISAXLocator pLocator, ushort pwchErrorMessage, int hrErrorCode);
+  /*[id(0x60010001)]*/ int fatalError(ISAXLocator pLocator, ushort pwchErrorMessage, int hrErrorCode);
+  /*[id(0x60010002)]*/ int ignorableWarning(ISAXLocator pLocator, ushort pwchErrorMessage, int hrErrorCode);
 }
 
 // ISAXXMLFilter interface
 interface ISAXXMLFilter : ISAXXMLReader {
   /*[uuid("70409222-ca09-4475-acb8-40312fe8d14")]*/
   static GUID IID = { 0x70409222, 0xca09, 0x4475, 0xac, 0xb8, 0x40, 0x31, 0x2f, 0xe8, 0xd1, 0x45 };
-  /+/*[id(0x60020000)]*/ int getParent(out ISAXXMLReader ppReader);+/
-  /+/*[id(0x60020001)]*/ int putParent(ISAXXMLReader pReader);+/
+  /*[id(0x60020000)]*/ int getParent(out ISAXXMLReader ppReader);
+  /*[id(0x60020001)]*/ int putParent(ISAXXMLReader pReader);
 }
 
 // ISAXLexicalHandler interface
 interface ISAXLexicalHandler : IUnknown {
   /*[uuid("7f85d5f5-47a8-4497-bda5-84ba04819ea")]*/
   static GUID IID = { 0x7f85d5f5, 0x47a8, 0x4497, 0xbd, 0xa5, 0x84, 0xba, 0x04, 0x81, 0x9e, 0xa6 };
-  /+/*[id(0x60010000)]*/ int startDTD(ushort pwchName, int cchName, ushort pwchPublicId, int cchPublicId, ushort pwchSystemId, int cchSystemId);+/
-  /+/*[id(0x60010001)]*/ int endDTD();+/
-  /+/*[id(0x60010002)]*/ int startEntity(ushort pwchName, int cchName);+/
-  /+/*[id(0x60010003)]*/ int endEntity(ushort pwchName, int cchName);+/
-  /+/*[id(0x60010004)]*/ int startCDATA();+/
-  /+/*[id(0x60010005)]*/ int endCDATA();+/
-  /+/*[id(0x60010006)]*/ int comment(ushort pwchChars, int cchChars);+/
+  /*[id(0x60010000)]*/ int startDTD(ushort pwchName, int cchName, ushort pwchPublicId, int cchPublicId, ushort pwchSystemId, int cchSystemId);
+  /*[id(0x60010001)]*/ int endDTD();
+  /*[id(0x60010002)]*/ int startEntity(ushort pwchName, int cchName);
+  /*[id(0x60010003)]*/ int endEntity(ushort pwchName, int cchName);
+  /*[id(0x60010004)]*/ int startCDATA();
+  /*[id(0x60010005)]*/ int endCDATA();
+  /*[id(0x60010006)]*/ int comment(ushort pwchChars, int cchChars);
 }
 
 // ISAXDeclHandler interface
 interface ISAXDeclHandler : IUnknown {
   /*[uuid("862629ac-771a-47b2-8337-4e6843c1be9")]*/
   static GUID IID = { 0x862629ac, 0x771a, 0x47b2, 0x83, 0x37, 0x4e, 0x68, 0x43, 0xc1, 0xbe, 0x90 };
-  /+/*[id(0x60010000)]*/ int elementDecl(ushort pwchName, int cchName, ushort pwchModel, int cchModel);+/
-  /+/*[id(0x60010001)]*/ int attributeDecl(ushort pwchElementName, int cchElementName, ushort pwchAttributeName, int cchAttributeName, ushort pwchType, int cchType, ushort pwchValueDefault, int cchValueDefault, ushort pwchValue, int cchValue);+/
-  /+/*[id(0x60010002)]*/ int internalEntityDecl(ushort pwchName, int cchName, ushort pwchValue, int cchValue);+/
-  /+/*[id(0x60010003)]*/ int externalEntityDecl(ushort pwchName, int cchName, ushort pwchPublicId, int cchPublicId, ushort pwchSystemId, int cchSystemId);+/
+  /*[id(0x60010000)]*/ int elementDecl(ushort pwchName, int cchName, ushort pwchModel, int cchModel);
+  /*[id(0x60010001)]*/ int attributeDecl(ushort pwchElementName, int cchElementName, ushort pwchAttributeName, int cchAttributeName, ushort pwchType, int cchType, ushort pwchValueDefault, int cchValueDefault, ushort pwchValue, int cchValue);
+  /*[id(0x60010002)]*/ int internalEntityDecl(ushort pwchName, int cchName, ushort pwchValue, int cchValue);
+  /*[id(0x60010003)]*/ int externalEntityDecl(ushort pwchName, int cchName, ushort pwchPublicId, int cchPublicId, ushort pwchSystemId, int cchSystemId);
 }
 
 // IVBSAXXMLReader interface
@@ -863,7 +863,7 @@ interface IVBSAXContentHandler : IDispatch {
   /*[uuid("2ed7290a-4dd5-4b46-bb26-4e4155e77fa")]*/
   static GUID IID = { 0x2ed7290a, 0x4dd5, 0x4b46, 0xbb, 0x26, 0x4e, 0x41, 0x55, 0xe7, 0x7f, 0xaa };
   // Receive an object for locating the origin of SAX document events.
-  /*[id(0x0000052a)]*/ int setref_documentLocator(IVBSAXLocator );
+  /*[id(0x0000052a)]*/ int setref_documentLocator(IVBSAXLocator value);
   // Receive notification of the beginning of a document.
   /*[id(0x0000052b)]*/ int startDocument();
   // Receive notification of the end of a document.
@@ -1395,16 +1395,16 @@ interface IVBMXNamespaceManager : IDispatch {
 interface IMXNamespaceManager : IUnknown {
   /*[uuid("c90352f6-643c-4fbc-bb23-e996eb2d51f")]*/
   static GUID IID = { 0xc90352f6, 0x643c, 0x4fbc, 0xbb, 0x23, 0xe9, 0x96, 0xeb, 0x2d, 0x51, 0xfd };
-  /+/*[id(0x60010000)]*/ int putAllowOverride(short fOverride);+/
-  /+/*[id(0x60010001)]*/ int getAllowOverride(out short fOverride);+/
-  /+/*[id(0x60010002)]*/ int reset();+/
-  /+/*[id(0x60010003)]*/ int pushContext();+/
-  /+/*[id(0x60010004)]*/ int pushNodeContext(IXMLDOMNode contextNode, short fDeep);+/
-  /+/*[id(0x60010005)]*/ int popContext();+/
-  /+/*[id(0x60010006)]*/ int declarePrefix(ushort prefix, ushort namespaceURI);+/
-  /+/*[id(0x60010007)]*/ int getDeclaredPrefix(int nIndex, inout ushort pwchPrefix, inout int pcchPrefix);+/
-  /+/*[id(0x60010008)]*/ int getPrefix(ushort pwszNamespaceURI, int nIndex, inout ushort pwchPrefix, inout int pcchPrefix);+/
-  /+/*[id(0x60010009)]*/ int getURI(ushort pwchPrefix, IXMLDOMNode pContextNode, inout ushort pwchUri, inout int pcchUri);+/
+  /*[id(0x60010000)]*/ int putAllowOverride(short fOverride);
+  /*[id(0x60010001)]*/ int getAllowOverride(out short fOverride);
+  /*[id(0x60010002)]*/ int reset();
+  /*[id(0x60010003)]*/ int pushContext();
+  /*[id(0x60010004)]*/ int pushNodeContext(IXMLDOMNode contextNode, short fDeep);
+  /*[id(0x60010005)]*/ int popContext();
+  /*[id(0x60010006)]*/ int declarePrefix(ushort prefix, ushort namespaceURI);
+  /*[id(0x60010007)]*/ int getDeclaredPrefix(int nIndex, inout ushort pwchPrefix, inout int pcchPrefix);
+  /*[id(0x60010008)]*/ int getPrefix(ushort pwszNamespaceURI, int nIndex, inout ushort pwchPrefix, inout int pcchPrefix);
+  /*[id(0x60010009)]*/ int getURI(ushort pwchPrefix, IXMLDOMNode pContextNode, inout ushort pwchUri, inout int pcchUri);
 }
 
 // CoClasses
@@ -1412,335 +1412,335 @@ interface IMXNamespaceManager : IUnknown {
 // W3C-DOM XML Document (Apartment)
 abstract class DOMDocument {
   /*[uuid("f6d90f11-9c73-11d3-b32e-00c04f990bb")]*/
-  static GUID IID = { 0xf6d90f11, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
+  static GUID CLSID = { 0xf6d90f11, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
 abstract class DOMDocument26 {
   /*[uuid("f5078f1b-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f1b, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f1b, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
 abstract class DOMDocument30 {
   /*[uuid("f5078f32-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f32, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f32, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
 abstract class DOMDocument40 {
   /*[uuid("88d969c0-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969c0, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969c0, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document 6.0 (Apartment)
 abstract class DOMDocument60 {
   /*[uuid("88d96a05-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a05, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a05, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument3);
 }
 
 // W3C-DOM XML Document (Free threaded)
 abstract class FreeThreadedDOMDocument {
   /*[uuid("f6d90f12-9c73-11d3-b32e-00c04f990bb")]*/
-  static GUID IID = { 0xf6d90f12, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
+  static GUID CLSID = { 0xf6d90f12, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
 abstract class FreeThreadedDOMDocument26 {
   /*[uuid("f5078f1c-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f1c, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f1c, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
 abstract class FreeThreadedDOMDocument30 {
   /*[uuid("f5078f33-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f33, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f33, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
 abstract class FreeThreadedDOMDocument40 {
   /*[uuid("88d969c1-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969c1, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969c1, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document 6.0 (Free threaded)
 abstract class FreeThreadedDOMDocument60 {
   /*[uuid("88d96a06-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a06, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a06, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMDocument3);
 }
 
 // XML Schema Cache
 abstract class XMLSchemaCache {
   /*[uuid("373984c9-b845-449b-91e7-45ac83036ad")]*/
-  static GUID IID = { 0x373984c9, 0xb845, 0x449b, 0x91, 0xe7, 0x45, 0xac, 0x83, 0x03, 0x6a, 0xde };
+  static GUID CLSID = { 0x373984c9, 0xb845, 0x449b, 0x91, 0xe7, 0x45, 0xac, 0x83, 0x03, 0x6a, 0xde };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 2.6
 abstract class XMLSchemaCache26 {
   /*[uuid("f5078f1d-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f1d, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f1d, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 3.0
 abstract class XMLSchemaCache30 {
   /*[uuid("f5078f34-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f34, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f34, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 4.0
 abstract class XMLSchemaCache40 {
   /*[uuid("88d969c2-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969c2, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969c2, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMSchemaCollection2);
 }
 
 // XML Schema Cache 6.0
 abstract class XMLSchemaCache60 {
   /*[uuid("88d96a07-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a07, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a07, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLDOMSchemaCollection2);
 }
 
 // Compiled XSL Stylesheet Cache
 abstract class XSLTemplate {
   /*[uuid("2933bf94-7b36-11d2-b20e-00c04f983e6")]*/
-  static GUID IID = { 0x2933bf94, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  static GUID CLSID = { 0x2933bf94, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
   mixin CoClassInterfaces!(/*[default]*/ IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 2.6
 abstract class XSLTemplate26 {
   /*[uuid("f5078f21-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f21, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f21, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 3.0
 abstract class XSLTemplate30 {
   /*[uuid("f5078f36-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f36, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f36, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 4.0
 abstract class XSLTemplate40 {
   /*[uuid("88d969c3-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969c3, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969c3, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXSLTemplate);
 }
 
 // XSL Stylesheet Cache 6.0
 abstract class XSLTemplate60 {
   /*[uuid("88d96a08-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a08, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a08, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXSLTemplate);
 }
 
 // XML HTTP Request class.
 abstract class XMLHTTP {
   /*[uuid("f6d90f16-9c73-11d3-b32e-00c04f990bb")]*/
-  static GUID IID = { 0xf6d90f16, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
+  static GUID CLSID = { 0xf6d90f16, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
 abstract class XMLHTTP26 {
   /*[uuid("f5078f1e-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f1e, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f1e, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
 abstract class XMLHTTP30 {
   /*[uuid("f5078f35-c551-11d3-89b9-0000f81fe22")]*/
-  static GUID IID = { 0xf5078f35, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
+  static GUID CLSID = { 0xf5078f35, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
 abstract class XMLHTTP40 {
   /*[uuid("88d969c5-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969c5, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969c5, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLHTTPRequest);
 }
 
 // XML HTTP Request class 6.0
 abstract class XMLHTTP60 {
   /*[uuid("88d96a0a-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a0a, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a0a, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
 abstract class ServerXMLHTTP {
   /*[uuid("afba6b42-5692-48ea-8141-dc517dcf0ef")]*/
-  static GUID IID = { 0xafba6b42, 0x5692, 0x48ea, 0x81, 0x41, 0xdc, 0x51, 0x7d, 0xcf, 0x0e, 0xf1 };
+  static GUID CLSID = { 0xafba6b42, 0x5692, 0x48ea, 0x81, 0x41, 0xdc, 0x51, 0x7d, 0xcf, 0x0e, 0xf1 };
   mixin CoClassInterfaces!(/*[default]*/ IServerXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
 abstract class ServerXMLHTTP30 {
   /*[uuid("afb40ffd-b609-40a3-9828-f88bbe11e4e")]*/
-  static GUID IID = { 0xafb40ffd, 0xb609, 0x40a3, 0x98, 0x28, 0xf8, 0x8b, 0xbe, 0x11, 0xe4, 0xe3 };
+  static GUID CLSID = { 0xafb40ffd, 0xb609, 0x40a3, 0x98, 0x28, 0xf8, 0x8b, 0xbe, 0x11, 0xe4, 0xe3 };
   mixin CoClassInterfaces!(/*[default]*/ IServerXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
 abstract class ServerXMLHTTP40 {
   /*[uuid("88d969c6-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969c6, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969c6, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IServerXMLHTTPRequest2);
 }
 
 // Server XML HTTP Request 6.0 
 abstract class ServerXMLHTTP60 {
   /*[uuid("88d96a0b-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a0b, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a0b, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IServerXMLHTTPRequest2);
 }
 
 // SAX XML Reader (version independent) coclass
 abstract class SAXXMLReader {
   /*[uuid("079aa557-4a18-424a-8eee-e39f0a8d41b")]*/
-  static GUID IID = { 0x079aa557, 0x4a18, 0x424a, 0x8e, 0xee, 0xe3, 0x9f, 0x0a, 0x8d, 0x41, 0xb9 };
+  static GUID CLSID = { 0x079aa557, 0x4a18, 0x424a, 0x8e, 0xee, 0xe3, 0x9f, 0x0a, 0x8d, 0x41, 0xb9 };
   mixin CoClassInterfaces!(/*[default]*/ IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
 }
 
 // SAX XML Reader 3.0 coclass
 abstract class SAXXMLReader30 {
   /*[uuid("3124c396-fb13-4836-a6ad-1317f171368")]*/
-  static GUID IID = { 0x3124c396, 0xfb13, 0x4836, 0xa6, 0xad, 0x13, 0x17, 0xf1, 0x71, 0x36, 0x88 };
+  static GUID CLSID = { 0x3124c396, 0xfb13, 0x4836, 0xa6, 0xad, 0x13, 0x17, 0xf1, 0x71, 0x36, 0x88 };
   mixin CoClassInterfaces!(/*[default]*/ IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
 }
 
 // SAX XML Reader 4.0 coclass
 abstract class SAXXMLReader40 {
   /*[uuid("7c6e29bc-8b8b-4c3d-859e-af6cd158be0")]*/
-  static GUID IID = { 0x7c6e29bc, 0x8b8b, 0x4c3d, 0x85, 0x9e, 0xaf, 0x6c, 0xd1, 0x58, 0xbe, 0x0f };
+  static GUID CLSID = { 0x7c6e29bc, 0x8b8b, 0x4c3d, 0x85, 0x9e, 0xaf, 0x6c, 0xd1, 0x58, 0xbe, 0x0f };
   mixin CoClassInterfaces!(/*[default]*/ IVBSAXXMLReader, ISAXXMLReader);
 }
 
 // SAX XML Reader 6.0
 abstract class SAXXMLReader60 {
   /*[uuid("88d96a0c-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a0c, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a0c, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IVBSAXXMLReader, ISAXXMLReader);
 }
 
 // Microsoft XML Writer (version independent) coclass
 abstract class MXXMLWriter {
   /*[uuid("fc220ad8-a72a-4ee8-926e-0b7ad152a02")]*/
-  static GUID IID = { 0xfc220ad8, 0xa72a, 0x4ee8, 0x92, 0x6e, 0x0b, 0x7a, 0xd1, 0x52, 0xa0, 0x20 };
+  static GUID CLSID = { 0xfc220ad8, 0xa72a, 0x4ee8, 0x92, 0x6e, 0x0b, 0x7a, 0xd1, 0x52, 0xa0, 0x20 };
   mixin CoClassInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 3.0 coclass
 abstract class MXXMLWriter30 {
   /*[uuid("3d813dfe-6c91-4a4e-8f41-04346a841d9")]*/
-  static GUID IID = { 0x3d813dfe, 0x6c91, 0x4a4e, 0x8f, 0x41, 0x04, 0x34, 0x6a, 0x84, 0x1d, 0x9c };
+  static GUID CLSID = { 0x3d813dfe, 0x6c91, 0x4a4e, 0x8f, 0x41, 0x04, 0x34, 0x6a, 0x84, 0x1d, 0x9c };
   mixin CoClassInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 4.0 coclass
 abstract class MXXMLWriter40 {
   /*[uuid("88d969c8-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969c8, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969c8, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 6.0
 abstract class MXXMLWriter60 {
   /*[uuid("88d96a0f-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a0f, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a0f, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer (version independent) coclass
 abstract class MXHTMLWriter {
   /*[uuid("a4c23ec3-6b70-4466-9127-55007723997")]*/
-  static GUID IID = { 0xa4c23ec3, 0x6b70, 0x4466, 0x91, 0x27, 0x55, 0x00, 0x77, 0x23, 0x99, 0x78 };
+  static GUID CLSID = { 0xa4c23ec3, 0x6b70, 0x4466, 0x91, 0x27, 0x55, 0x00, 0x77, 0x23, 0x99, 0x78 };
   mixin CoClassInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 3.0 coclass
 abstract class MXHTMLWriter30 {
   /*[uuid("853d1540-c1a7-4aa9-a226-4d3bd301146")]*/
-  static GUID IID = { 0x853d1540, 0xc1a7, 0x4aa9, 0xa2, 0x26, 0x4d, 0x3b, 0xd3, 0x01, 0x14, 0x6d };
+  static GUID CLSID = { 0x853d1540, 0xc1a7, 0x4aa9, 0xa2, 0x26, 0x4d, 0x3b, 0xd3, 0x01, 0x14, 0x6d };
   mixin CoClassInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 4.0 coclass
 abstract class MXHTMLWriter40 {
   /*[uuid("88d969c9-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969c9, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969c9, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 6.0
 abstract class MXHTMLWriter60 {
   /*[uuid("88d96a10-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a10, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a10, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // SAX Attributes (version independent) coclass
 abstract class SAXAttributes {
   /*[uuid("4dd441ad-526d-4a77-9f1b-9841ed802fb")]*/
-  static GUID IID = { 0x4dd441ad, 0x526d, 0x4a77, 0x9f, 0x1b, 0x98, 0x41, 0xed, 0x80, 0x2f, 0xb0 };
+  static GUID CLSID = { 0x4dd441ad, 0x526d, 0x4a77, 0x9f, 0x1b, 0x98, 0x41, 0xed, 0x80, 0x2f, 0xb0 };
   mixin CoClassInterfaces!(/*[default]*/ IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 3.0 coclass
 abstract class SAXAttributes30 {
   /*[uuid("3e784a01-f3ae-4dc0-9354-9526b9370eb")]*/
-  static GUID IID = { 0x3e784a01, 0xf3ae, 0x4dc0, 0x93, 0x54, 0x95, 0x26, 0xb9, 0x37, 0x0e, 0xba };
+  static GUID CLSID = { 0x3e784a01, 0xf3ae, 0x4dc0, 0x93, 0x54, 0x95, 0x26, 0xb9, 0x37, 0x0e, 0xba };
   mixin CoClassInterfaces!(/*[default]*/ IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 4.0 coclass
 abstract class SAXAttributes40 {
   /*[uuid("88d969ca-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969ca, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969ca, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 6.0
 abstract class SAXAttributes60 {
   /*[uuid("88d96a0e-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a0e, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a0e, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // MX Namespace Manager coclass
 abstract class MXNamespaceManager {
   /*[uuid("88d969d5-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969d5, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969d5, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IVBMXNamespaceManager, IMXNamespaceManager);
 }
 
 // MX Namespace Manager 4.0 coclass
 abstract class MXNamespaceManager40 {
   /*[uuid("88d969d6-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d969d6, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d969d6, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IVBMXNamespaceManager, IMXNamespaceManager);
 }
 
 // MX Namespace Manager 6.0
 abstract class MXNamespaceManager60 {
   /*[uuid("88d96a11-f192-11d4-a65f-0040963251e")]*/
-  static GUID IID = { 0x88d96a11, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
+  static GUID CLSID = { 0x88d96a11, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
   mixin CoClassInterfaces!(/*[default]*/ IVBMXNamespaceManager, IMXNamespaceManager);
 }

@@ -8,6 +8,9 @@ public void* malloc(size_t);
 extern (C)
 public void free(void*);
 
+extern (C)
+public void* memcpy(void*, void*, size_t);
+
 public abstract final class GC {
 
   public static void collect() {

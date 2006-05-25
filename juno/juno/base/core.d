@@ -2,6 +2,115 @@ module juno.base.core;
 
 typedef int Handle = 0;
 
+private const char[] E_ARGUMENTEXCEPTION = "Value did not fall within the expected range.";
+private const char[] E_ARGUMENTOUTOFRANGEEXCEPTION = "Specified argument was out of range of valid values.";
+private const char[] E_OUTOFMEMORYEXCEPTION = "Insufficent memory to continue.";
+
+public class ExceptionBase : Exception {
+
+  private Exception innerException_;
+
+  public this(char[] message = null) {
+    super(message);
+  }
+
+  public this(char[] message, Exception innerException) {
+    super(message);
+    innerException_ = innerException;
+  }
+
+  public final Exception innerException() {
+    return innerException_;
+  }
+
+  public char[] message() {
+    return msg;
+  }
+
+  public override char[] toString() {
+    char[] s = this.classinfo.name;
+    if (message != null)
+      s ~= ": " ~ message;
+    if (innerException_ !is null)
+      s ~= " ---> " ~ innerException_.toString();
+    return s;
+  }
+
+}
+
+public class ArgumentException : ExceptionBase {
+
+  private char[] paramName_;
+
+  public this() {
+    super(E_ARGUMENTEXCEPTION);
+  }
+
+  public this(char[] message) {
+    super(message);
+  }
+
+  public this(char[] message, char[] paramName) {
+    super(message);
+    paramName_ = paramName;
+  }
+
+  public override char[] message() {
+    char[] s = super.message;
+    if (paramName_ != null)
+      s ~= "\nParameter name: " ~ paramName;
+    return s;
+  }
+
+  public char[] paramName() {
+    return paramName_;
+  }
+
+}
+
+public class ArgumentOutOfRangeException : ArgumentException {
+
+  public this() {
+    super(E_ARGUMENTOUTOFRANGEEXCEPTION);
+  }
+
+  public this(char[] paramName) {
+    super(E_ARGUMENTOUTOFRANGEEXCEPTION, paramName);
+  }
+
+  public this(char[] paramName, char[] message) {
+    super(message, paramName);
+  }
+
+}
+
+public class OutOfMemoryException : ExceptionBase {
+
+  public this(char[] message = E_OUTOFMEMORYEXCEPTION) {
+    super(message);
+  }
+
+}
+
+public class ExternalException : ExceptionBase {
+
+  private int errorCode_ = 0x80004005; // E_FAIL
+
+  public this(char[] message = null) {
+    super(message);
+  }
+
+  public this(char[] message, int errorCode) {
+    super(message);
+    errorCode_ = errorCode;
+  }
+
+  public int errorCode() {
+    return errorCode_;
+  }
+
+}
+
 public struct Version {
 
   public int major;

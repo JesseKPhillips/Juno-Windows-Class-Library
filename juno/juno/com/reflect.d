@@ -129,10 +129,9 @@ public class TypeLibrary {
 
   public Module[] getModules() {
     if (modules_ is null) {
-      int hr;
       for (uint i = 0; i < typeLib_.GetTypeInfoCount(); i++) {
         TYPEKIND typeKind;
-        hr = typeLib_.GetTypeInfoType(i, typeKind);
+        int hr = typeLib_.GetTypeInfoType(i, typeKind);
         checkHResult(hr);
         if (typeKind == TYPEKIND.TKIND_MODULE) {
           ITypeInfo typeInfo;
@@ -151,7 +150,8 @@ public class TypeLibrary {
   public static TypeLibrary load(char[] fileNameOrGuid) {
     ITypeLib typeLib;
     // Try to load from a file.
-    if (LoadTypeLib(fileNameOrGuid.toUtf16z(), typeLib) != S_OK) {
+    int hr;
+    if ((hr = LoadTypeLib(fileNameOrGuid.toUtf16z(), typeLib)) != S_OK) {
       // If that failed, try to load from the registry.
       // We're not using LoadRegTypeLib because we'll enumerate the versions ourself.
 
@@ -176,7 +176,8 @@ public class TypeLibrary {
         }
       }
       // If we get here, we couldn't find it either way.
-      throw new Exception("Could not load the specified type library.");
+      throw new COMException(hr);
+      //throw new Exception("Could not load the specified type library.");
     }
 
     TypeLibrary typeLibrary = new TypeLibrary(typeLib);
@@ -202,7 +203,7 @@ public class TypeLibrary {
   }
 
   private this(ITypeLib typeLib) {
-    typeLib_ = cast(ITypeLib)releasingRef(typeLib);
+    typeLib_ = com_auto(typeLib);
     typeLib_.AddRef();
 
     // Get the library name and help string.
@@ -271,7 +272,7 @@ public class Module {
   }
 
   package this(ITypeInfo typeInfo, TypeLibrary library) {
-    typeInfo_ = cast(ITypeInfo)releasingRef(typeInfo);
+    typeInfo_ = com_auto(typeInfo);
     typeInfo_.AddRef();
   }
 
@@ -307,6 +308,18 @@ public enum TypeAttributes {
 }
 
 public abstract class Type : MemberInfo {
+
+  static Type fromCLSID(GUID clsid) {
+    TypeImpl type = new TypeImpl;
+    type.guid_ = clsid;
+    return type;
+  }
+
+  static Type fromProgId(char[] progId) {
+    GUID clsid;
+    CLSIDFromProgID(utf8ToBstr(progId), clsid);
+    return fromCLSID(clsid);
+  }
 
   public MemberInfo[] findMembers(MemberFilter filter) {
     MemberInfo[] filteredMembers;
@@ -395,6 +408,8 @@ package class TypeImpl : Type {
   private ITypeInfo dispTypeInfo_;
 
   public override char[] name() {
+    if (name_ == null)
+      return typeid(Type).toString();
     return name_;
   }
 
@@ -538,6 +553,7 @@ package class TypeImpl : Type {
 
   public override Type baseType() {
     if (baseType_ is null) {
+      // This isn't straightforward because COM treats dispinterfaces differently to normal ones.
       ITypeInfo typeInfo = (dispTypeInfo_ !is null) ? dispTypeInfo_ : typeInfo_;
       TYPEATTR* typeAttr;
       int hr = typeInfo.GetTypeAttr(typeAttr);
@@ -597,6 +613,7 @@ package class TypeImpl : Type {
   }
 
   public override Type underlyingType() {
+    // Only used by aliases so far.
     if (underlyingType_ is null) {
       TYPEATTR* typeAttr;
       int hr = typeInfo_.GetTypeAttr(typeAttr);
@@ -617,7 +634,7 @@ package class TypeImpl : Type {
 
   private void initFromTypeInfo(ITypeInfo typeInfo, TypeLibrary library) {
     typeInfo.AddRef();
-    typeInfo_ = cast(ITypeInfo)releasingRef(typeInfo);
+    typeInfo_ = com_auto(typeInfo); // Look ma, no Release
     library_ = library;
 
     ITypeLib typeLib;
@@ -638,6 +655,9 @@ package class TypeImpl : Type {
     typeInfo.ReleaseTypeAttr(typeAttr);
 
     typeLib.Release();
+  }
+
+  package this() {
   }
 
   package this(ITypeInfo typeInfo, TypeAttributes attributes, TypeLibrary library) {
@@ -680,12 +700,14 @@ package class TypeImpl : Type {
     }
 
     if (desc.vt == VT_CARRAY) {
+      // Format arrays.
       if (desc.lpadesc.cDims == 1 && desc.lpadesc.rgbounds[desc.lpadesc.cDims - 1].cElements > 0)
         return std.string.format("%s[%s]", getTypeName(&desc.lpadesc.tdescElem, typeInfo, flags), desc.lpadesc.rgbounds[desc.lpadesc.cDims - 1].cElements);
       else
         return getTypeName(&desc.lpadesc.tdescElem, typeInfo, flags) ~ "*";
     }
 
+    // Now we can get the basic type.
     switch (desc.vt) {
       case VT_BYREF:
         return "void*";
@@ -741,6 +763,7 @@ package class TypeImpl : Type {
         break;
     }
 
+    // It's a custom type, then.
     ITypeInfo customTypeInfo;
     int hr = typeInfo.GetRefTypeInfo(desc.hreftype, customTypeInfo);
     checkHResult(hr);
@@ -889,7 +912,7 @@ package class MethodInfoImpl : MethodInfo {
   }
 
   package this(ITypeInfo typeInfo, char[] name, char[] helpString, int id, MethodAttributes attributes, Type returnType, TypeLibrary library) {
-    typeInfo_ = cast(ITypeInfo)releasingRef(typeInfo);
+    typeInfo_ = com_auto(typeInfo);
     name_ = name;
     helpString_ = helpString;
     id_ = id;
@@ -993,7 +1016,7 @@ public class ParameterInfo {
         // The element at 0 is the name of the function. We already have this so free it.
         SysFreeString(bstrNames[0]);
 
-        if ((funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUT) != 0)
+        if ((funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUT) != 0 || (funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUTREF) != 0)
           bstrNames[1] = utf8ToBstr("value");
 
         for (uint position = 0; position < funcDesc.cParams; position++) {
