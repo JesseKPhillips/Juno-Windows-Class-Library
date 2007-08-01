@@ -1,0 +1,36 @@
+DDOC = <html>
+<head>
+<title>Module $(TITLE)</title>
+<style>
+body { font-family: Verdana, Arial; font-size: 11pt; line-height: 16pt }
+table { font-family: Verdana, Arial; font-size: 11pt }
+h1 { font-size: 17pt; font-weight: normal }
+h2 { font-family: Arial; font-size: 15pt; font-weight: normal }
+h3 { font-family: Arial; font-size: 14pt; font-weight: normal; border-bottom: 1px solid #CCCCCC; line-height: 18pt }
+.paramdesc { padding-left: 40px }
+.psymbol { color: #1F4687 }
+.d_code { font-family: Consolas, Lucida Console, Courier New; font-size: 10pt; background-color: #EEEEEE; border: 1px dashed #CCCCCC }
+</style>
+</head>
+<body>
+<h3 style="text-transform: uppercase">$(TITLE)</h3>
+$(BODY)
+</body>
+</html>
+
+DDOC_DECL			= $(DT <h3>$0</h3>)
+DDOC_DESCRIPTION	= $(B Remarks)$(BR)$0$(BR)$(BR)
+DDOC_SUMMARY		= $0$(BR)$(BR)
+DDOC_SECTION		= $0$(BR)$(BR)
+DDOC_RETURNS		= $(B Returns)$(BR)$0$(BR)$(BR)
+DDOC_EXAMPLES		= $(B Examples)$(BR)$0
+DDOC_THROWS			= $(B Exceptions)$(BR)$0$(BR)$(BR)
+DDOC_SEE_ALSO		= $(B See Also)$(BR)$0$(BR)$(BR)
+DDOC_LICENSE		= $(B Licence)$(BR)$0$(BR)$(BR)
+DDOC_PARAMS			= $(B Params)$(BR)$0$(BR)
+DDOC_PARAM_ROW		= $0
+DDOC_PARAM_ID		= $0$(BR)
+DDOC_PARAM_DESC		= <div class="paramdesc">$0</div>
+DDOC_PSYMBOL		= <span class="psymbol">$0</span>
+
+D_PSYMBOL			= $0
