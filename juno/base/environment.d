@@ -1,3 +1,8 @@
+/**
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.base.environment;
 
 private import juno.base.core,
@@ -6,48 +11,62 @@ private import juno.base.core,
 
 private static import std.gc;
 
-public string commandLine() {
-  wchar* cmdLine = GetCommandLine();
-  return .toUtf8(cmdLine);
+string commandLine() {
+  return .toUtf8(GetCommandLine());
 }
 
-public string[] commandLineArgs() {
-  int argc = 0;
+string[] commandLineArgs() {
+  int argc;
   wchar** argv = CommandLineToArgv(GetCommandLine(), argc);
   if (argc == 0) return null;
+
   string* a = cast(string*)std.gc.malloc(argc * string.sizeof);
   for (int i = 0; i < argc; i++) {
     a[i] = .toUtf8(argv[i]);
   }
+
   LocalFree(cast(Handle)argv);
   return a[0 .. argc];
 }
 
-public static void machineName(string value) {
+void machineName(string value) {
   SetComputerName(value.toUtf16z());
 }
 
-public string machineName() {
+string machineName() {
   wchar[256] buffer;
   uint size = buffer.length;
+
   if (!GetComputerName(buffer.ptr, size))
     throw new InvalidOperationException;
+
   return .toUtf8(buffer.ptr, 0, size);
 }
 
-public string userName() {
+string userName() {
   wchar[256] buffer;
   uint size = buffer.length;
+
   GetUserName(buffer.ptr, size);
-  return .toUtf8(buffer.ptr, 0, size - 1);
+
+  return .toUtf8(buffer.ptr, 0, size);
 }
 
-public int tickCount() {
+int tickCount() {
   return GetTickCount();
 }
 
-public string expandEnvironmentVariables(string name) {
-  string[] parts = name.split(['%']);
+/**
+ * Replaces the name of each environment variable embedded in the specified string with the string equivalent of the value of the variable.
+ * Params: name = A string containing the names of zero or more environment variables. Environment variables are quoted with the percent sign.
+ * Returns: A string with each environment variable replaced by its value.
+ * Examples:
+ * ---
+ * writefln(expandEnvironmentVariables("My system drive is %SystemDrive% and my system root is %SystemRoot%"));
+ * ---
+ */
+string expandEnvironmentVariables(string name) {
+  string[] parts = name.split([ '%' ]);
 
   int c = 100;
   wchar[] buffer = new wchar[c];
@@ -62,7 +81,8 @@ public string expandEnvironmentVariables(string name) {
       }
     }
   }
-  int n = ExpandEnvironmentStrings(name.toUtf16z(), buffer.ptr, c);
+
+  uint n = ExpandEnvironmentStrings(name.toUtf16z(), buffer.ptr, c);
   while (n > c) {
     c = n;
     buffer.length = c;

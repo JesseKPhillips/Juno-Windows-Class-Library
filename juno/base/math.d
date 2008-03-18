@@ -1,62 +1,14 @@
+/**
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.base.math;
 
-private import juno.base.native : GetTickCount;
+private import std.math : isnan, abs;
+private import std.c.windows.windows : GetTickCount;
 
-extern(C):
-
-private float fabsf(float d);
-private double fabs(double d);
-
-extern(D):
-
-public bool isNaN(float f) {
-  return f != f;
-}
-
-public bool isNaN(double d) {
-  return d != d;
-}
-
-public bool isPositiveInfinity(float f) {
-  return *(cast(int*)&f) == 0x7F800000;
-}
-
-public bool isPositiveInfinity(double d) {
-  return d == double.infinity;
-}
-
-public bool isNegativeInfinity(float f) {
-  return *(cast(int*)&f) == 0xFF800000;
-}
-
-public bool isNegativeInfinity(double d) {
-  return d == -double.infinity;
-}
-
-public bool isInfinity(float f) {
-  return (*(cast(int*)&f) & 0x7FFFFFFF) == 0x7F800000;
-}
-
-public bool isInfinity(double d) {
-  return (*(cast(long*)&d) & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
-}
-
-public T abs(T)(T value) {
-  static if (is(T == byte) ||
-    is(T == short) ||
-    is(T == int) ||
-    is(T == long)) {
-    return (value < 0) ? -value : value;
-  }
-  else static if (is(T == float)) {
-    return fabsf(value);
-  }
-  else static if (is(T == double)) {
-    return fabs(value);
-  }
-}
-
-public T min(T)(T val1, T val2) {
+T min(T)(T val1, T val2) {
   static if (is(T == ubyte) ||
     is(T == byte) ||
     is(T == ushort) ||
@@ -69,11 +21,11 @@ public T min(T)(T val1, T val2) {
   }
   else static if (is(T == float) ||
     is(T == double)) {
-    return (val1 < val2) ? val1 : isNaN(val1) ? val1 : val2;
+    return (val1 < val2) ? val1 : isnan(val1) ? val1 : val2;
   }
 }
 
-public T max(T)(T val1, T val2) {
+T max(T)(T val1, T val2) {
   static if (is(T == ubyte) ||
     is(T == byte) ||
     is(T == ushort) ||
@@ -86,11 +38,11 @@ public T max(T)(T val1, T val2) {
   }
   else static if (is(T == float) ||
     is(T == double)) {
-    return (val1 > val2) ? val1 : isNaN(val1) ? val1 : val2;
+    return (val1 > val2) ? val1 : isnan(val1) ? val1 : val2;
   }
 }
 
-public double random() {
+double random() {
   synchronized {
     static Random rand;
     if (rand is null)
@@ -100,7 +52,7 @@ public double random() {
 }
 
 // Based on ran3 algorithm.
-public class Random {
+class Random {
 
   private const int SEED = 161803398;
   private const int BITS = 1000000000;
@@ -108,11 +60,11 @@ public class Random {
   private int[56] seedList_;
   private int next_, nextp_;
 
-  public this() {
+  this() {
     this(GetTickCount());
   }
 
-  public this(int seed) {
+  this(int seed) {
     int j = SEED - abs(seed);
     seedList_[55] = j;
     int k = 1;
@@ -136,7 +88,7 @@ public class Random {
     nextp_ = 21;
   }
 
-  public int next() {
+  int next() {
     if (++next_ >= 56)
       next_ = 1;
     if (++nextp_ >= 56)
@@ -148,11 +100,11 @@ public class Random {
     return result;
   }
 
-  public int next(int max) {
+  int next(int max) {
     return cast(int)(sample() * max);
   }
 
-  public int next(int min, int max) {
+  int next(int min, int max) {
     int range = max - min;
     if (range < 0) {
       long lrange = cast(long)(max - min);
@@ -161,7 +113,7 @@ public class Random {
     return cast(int)(sample() * range) + min;
   }
 
-  public double nextDouble() {
+  double nextDouble() {
     return sample();
   }
 

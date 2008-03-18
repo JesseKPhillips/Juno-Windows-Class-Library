@@ -1,3 +1,8 @@
+/**
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.com.server;
 
 private import juno.base.core,
@@ -11,22 +16,21 @@ private import juno.base.core,
  * --- hello.d ---
  * module hello;
  *
- * // This is the public interface.
+ * // This is the interface.
  *
  * private import juno.com.all;
  *
  * interface ISaysHello : IUnknown {
- *   // {AE0DD4B7-E817-44ff-9E11-D1CFFAE11F16}
- *   static GUID IID = { 0xae0dd4b7, 0xe817, 0x44ff, 0x9e, 0x11, 0xd1, 0xcf, 0xfa, 0xe1, 0x1f, 0x16 };
+ *   mixin(uuid("ae0dd4b7-e817-44ff-9e11-d1cffae11f16"));
  *
  *   int sayHello();
  * }
  *
  * // coclass
  * abstract class SaysHello {
- *   // {35115E92-33F5-4e14-9D0A-BD43C80A75AF}
- *   static GUID CLSID = { 0x35115e92, 0x33f5, 0x4e14, 0x9d, 0xa, 0xbd, 0x43, 0xc8, 0xa, 0x75, 0xaf };
- *   mixin CoInterfaces!(ISaysHello);
+ *   mixin(uuid("35115e92-33f5-4e14-9d0a-bd43c80a75af"));
+ *
+ *   mixin Interfaces!(ISaysHello);
  * }
  *
  * --- server.d ---
@@ -34,17 +38,17 @@ private import juno.base.core,
  *
  * // This is the DLL's private implementation.
  *
- * import juno.com.all, hello;
+ * import juno.com.all, juno.utils.registry, hello;
  *
  * mixin COMExport!(SaysHelloClass);
  *
  * // Implements ISaysHello
  * class SaysHelloClass : Implements!(ISaysHello) {
  *   // Note: must have the same CLSID as the SaysHello coclass above.
- *   static GUID CLSID = { 0x35115e92, 0x33f5, 0x4e14, 0x9d, 0xa, 0xbd, 0x43, 0xc8, 0xa, 0x75, 0xaf };
+ *   mixin(uuid("35115e92-33f5-4e14-9d0a-bd43c80a75af"));
  *
  *   int sayHello() {
- *     Console.writeln("Hello there!");
+ *     writefln("Hello there!");
  *     return S_OK;
  *   }
  *
@@ -90,15 +94,15 @@ private Handle moduleHandle_;
 private int lockCount_;
 private string location_;
 
-public Handle getHInstance() {
+Handle getHInstance() {
   return moduleHandle_;
 }
 
-public void setHInstance(Handle value) {
+void setHInstance(Handle value) {
   moduleHandle_ = value;
 }
 
-public string getLocation() {
+string getLocation() {
   if (location_ == null) {
     wchar[MAX_PATH] buffer;
     uint len = GetModuleFileName(moduleHandle_, buffer.ptr, buffer.length);
@@ -107,22 +111,22 @@ public string getLocation() {
   return location_;
 }
 
-public int getLockCount() {
+int getLockCount() {
   return lockCount_;
 }
 
-public void lock() {
-  InterlockedIncrement(lockCount_);
+void lock() {
+  InterlockedIncrement(&lockCount_);
 }
 
-public void unlock() {
-  InterlockedDecrement(lockCount_);
+void unlock() {
+  InterlockedDecrement(&lockCount_);
 }
 
-public class ClassFactory(T) : Implements!(IClassFactory) {
+class ClassFactory(T) : Implements!(IClassFactory) {
 
   int CreateInstance(IUnknown pUnkOuter, ref GUID riid, void** ppvObject) {
-    if (pUnkOuter !is null && riid != IUnknown.IID)
+    if (pUnkOuter !is null && riid != uuidof!(IUnknown))
       return CLASS_E_NOAGGREGATION;
 
     ppvObject = null;
@@ -146,7 +150,7 @@ public class ClassFactory(T) : Implements!(IClassFactory) {
 
 }
 
-template COMExport(T ...) {
+template COMExport(T...) {
 
   extern(Windows) int DllMain(Handle hInstance, uint dwReason, void* pvReserved) {
     if (dwReason == 1 /*DLL_PROCESS_ATTACH*/) {
@@ -165,26 +169,27 @@ template COMExport(T ...) {
     return 0;
   }
 
-  extern(Windows) int DllGetClassObject(ref GUID rclsid, ref GUID riid, void** ppv) {
+  extern(Windows)
+  int DllGetClassObject(ref GUID rclsid, ref GUID riid, void** ppv) {
     int hr = CLASS_E_CLASSNOTAVAILABLE;
     *ppv = null;
 
     foreach (coclass; T) {
-      if (rclsid == coclass.CLSID) {
+      if (rclsid == uuidof!(coclass)) {
         IClassFactory factory = new ClassFactory!(coclass);
         if (factory is null)
           return E_OUTOFMEMORY;
+        scope(exit) tryRelease(factory);
 
-        releaseAfter (factory, {
-          hr = factory.QueryInterface(riid, ppv);
-        });
+        hr = factory.QueryInterface(riid, ppv);
       }
     }
 
     return hr;
   }
 
-  extern(Windows) int DllCanUnloadNow() {
+  extern(Windows)
+  int DllCanUnloadNow() {
     return (getLockCount() == 0) ? S_OK : S_FALSE;
   }
 
@@ -192,7 +197,7 @@ template COMExport(T ...) {
     bool success;
 
     try {
-      scope clsidKey = RegistryKey.classesRoot.createSubKey("CLSID\\" ~ CoClass.CLSID.toString());
+      scope clsidKey = RegistryKey.classesRoot.createSubKey("CLSID\\" ~ uuidof!(CoClass).toString("P"));
       if (clsidKey !is null) {
         clsidKey.setValue!(string)(null, CoClass.classinfo.name ~ " Class");
 
@@ -211,7 +216,7 @@ template COMExport(T ...) {
 
               scope clsidSubKey = progIDKey.createSubKey("CLSID");
               if (clsidSubKey !is null)
-                clsidSubKey.setValue!(string)(null, CoClass.CLSID.toString());
+                clsidSubKey.setValue!(string)(null, uuidof!(CoClass).toString("P"));
             }
           }
         }
@@ -232,7 +237,7 @@ template COMExport(T ...) {
     try {
       scope clsidKey = RegistryKey.classesRoot.openSubKey("CLSID");
       if (clsidKey !is null)
-        clsidKey.deleteSubKeyTree(CoClass.CLSID.toString());
+        clsidKey.deleteSubKeyTree(uuidof!(CoClass).toString("P"));
 
       RegistryKey.classesRoot.deleteSubKeyTree(CoClass.classinfo.name);
 

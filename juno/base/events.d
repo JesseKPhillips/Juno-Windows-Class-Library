@@ -1,217 +1,204 @@
-/*
- * Copyright (c) 2007 John Chapman
+/**
+ * Copyright: (c) 2008 John Chapman
  *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
-
 module juno.base.events;
 
-// Extends delegates so they can invoke more than one method.
+extern(C) private Object _d_toObject(void*);
 
-extern (C)
-private Object _d_toObject(void*);
-
-// Wraps a delegate or function pointer.
-private struct EventInfo(R, T ...) {
+private struct EventInfo(R, T...) {
 
   alias R delegate(T) TDelegate;
   alias R function(T) TFunction;
 
-  TDelegate d;
-  TFunction f;
+  enum Type {
+    Delegate,
+    Function
+  }
 
-  static EventInfo opCall(TDelegate d) {
+  union {
+    TDelegate dg;
+    TFunction fn;
+  }
+  Type type;
+
+  static EventInfo opCall(TDelegate dg) {
     EventInfo e;
-    e.d = d;
+    e.type = Type.Delegate;
+    e.dg = dg;
     return e;
   }
 
-  static EventInfo opCall(TFunction f) {
+  static EventInfo opCall(TFunction fn) {
     EventInfo e;
-    e.f = f;
+    e.type = Type.Function;
+    e.fn = fn;
     return e;
   }
 
   R opCall(T args) {
-    if (f !is null) return f(args);
-    else if (d !is null) return d(args);
-    else static if (!is(R == void)) return R.init;
+    if (type == Type.Function && fn !is null)
+      return fn(args);
+    else if (type == Type.Delegate && dg !is null)
+      return dg(args);
+    static if (!is(R == void))
+      return R.init;
   }
 
 }
 
-public struct Event(R, T ...) {
+struct Event(R, T...) {
 
-  alias EventInfo!(R, T)      TEventInfo;
-  alias TEventInfo.TDelegate  TDelegate;
-  alias TEventInfo.TFunction  TFunction;
+  alias EventInfo!(R, T) TEventInfo;
+  alias TEventInfo.TDelegate TDelegate;
+  alias TEventInfo.TFunction TFunction;
 
   private TEventInfo[] list_;
-  private int count_;
+  private uint size_;
 
-  public static Event opCall(TDelegate d) {
-    Event ev;
-    ev.add(d);
-    return ev;
-  }
+  void delegate() adding;
+  void delegate() removing;
 
-  public static Event opCall(TFunction f) {
-    Event ev;
-    ev.add(f);
-    return ev;
-  }
+  alias opAddAssign add;
 
-  public void add(TDelegate d) {
-    add(cast(TEventInfo)d);
+  void opAddAssign(TDelegate d) {
+    if (adding !is null)
+      adding();
 
+    addEventInfo(cast(TEventInfo)d);
+
+    // Delegate literals don't have an object, and _d_toObject will cause a crash.
+    scope(failure) return;
     if (auto obj = _d_toObject(d.ptr))
-      obj.notifyRegister(&cleanup);
+      obj.notifyRegister(&release);
   }
 
-  public void add(TFunction f) {
-    add(cast(TEventInfo)f);
+  void opAddAssign(TFunction f) {
+    if (adding !is null)
+      adding();
+
+    addEventInfo(cast(TEventInfo)f);
   }
 
-  public Event opAddAssign(TDelegate d) {
-    add(d);
-    return *this;
-  }
+  alias opSubAssign remove;
 
-  public Event opAddAssign(TFunction f) {
-    add(f);
-    return *this;
-  }
+  void opSubAssign(TDelegate dg) {
+    if (removing !is null)
+      removing();
 
-  public void remove(TDelegate d) {
-    for (int i = 0; i < count_;) {
-      if (list_[i].d is d) {
+    for (uint i = 0; i < size_;) {
+      if (list_[i].dg is dg) {
         removeFromList(i);
 
-        if (auto obj = _d_toObject(d.ptr))
-          obj.notifyUnRegister(&cleanup);
+        scope(failure) break;
+        if (auto obj = _d_toObject(dg.ptr))
+          obj.notifyUnRegister(&release);
       }
-      else i++;
+      else
+        i++;
     }
   }
 
-  public void remove(TFunction f) {
-    for (int i = 0; i < count_;) {
-      if (list_[i].f is f)
+  void opSubAssign(TFunction fn) {
+    if (removing !is null)
+      removing();
+
+    for (uint i = 0; i < size_;) {
+      if (list_[i].fn is fn)
         removeFromList(i);
-      else i++;
+      else
+        i++;
     }
   }
 
-  public Event opSubAssign(TDelegate d) {
-    remove(d);
-    return *this;
-  }
+  alias opCall invoke;
 
-  public Event opSubAssign(TFunction f) {
-    remove(f);
-    return *this;
-  }
-
-  public R invoke(T args) {
-    if (count_ == 0) {
+  R opCall(T args) {
+    if (size_ == 0) {
       static if (!is(R == void))
         return R.init;
     }
     else {
       static if (!is(R == void)) {
-        for (int i = 0; i < count_ - 1; i++)
+        for (uint i = 0; i < size_ - 1; i++)
           list_[i](args);
-        return list_[count_ - 1].invoke(args);
+        return list_[size_ - 1](args);
       }
       else {
-        for (int i = 0; i < count_; i++)
+        for (uint i = 0; i < size_; i++)
           list_[i](args);
       }
     }
   }
 
-  public R opCall(T args) {
-    return invoke(args);
+  bool isEmpty() {
+    return size_ == 0;
   }
 
-  public bool isEmpty() {
-    return count_ == 0;
+  bool opEquals(void*) {
+    return isEmpty;
   }
 
-  private void add(TEventInfo e) {
-    int n = list_.length;
+  private void addEventInfo(TEventInfo e) {
+    uint n = list_.length;
 
     if (n == 0)
       list_.length = 4;
-    else if (n == count_)
+    else if (n == size_)
       list_.length = list_.length * 2;
 
     list_[n .. $] = TEventInfo.init;
-    list_[count_++] = e;
+    list_[size_++] = e;
   }
 
-  private void removeFromList(int index) {
-    count_--;
-    if (index < count_) {
-      TEventInfo[] temp = list_.dup;
-      list_[index .. count_] = temp[index + 1 .. count_ + 1];
+  private void removeFromList(uint index) {
+    size_--;
+    if (index < size_) {
+      auto temp = list_.dup;
+      list_[index .. size_] = temp[index + 1 .. size_ + 1];
     }
-    list_[count_] = TEventInfo.init;
+    list_[size_] = TEventInfo.init;
   }
 
-  private void cleanup(Object obj) {
+  private void release(Object obj) {
+    scope(failure) return;
     foreach (i, ref e; list_) {
-      if (i < count_ && _d_toObject(e.d.ptr) is obj) {
-        obj.notifyUnRegister(&cleanup);
-        e.d = null;
+      if (i < size_ && _d_toObject(e.dg.ptr) is obj) {
+        obj.notifyUnRegister(&release);
+        e.dg = null;
       }
     }
   }
 
 }
 
-public class EventArgs {
+class EventArgs {
 
-  public static const EventArgs empty;
+  private static EventArgs empty;
 
   static this() {
     empty = new EventArgs;
   }
 
+  this() {
+  }
+
 }
 
-public class CancelEventArgs : EventArgs {
+class CancelEventArgs : EventArgs {
 
-  public bool cancel;
+  bool cancel;
 
-  public this(bool cancel = false) {
+  this(bool cancel = false) {
     this.cancel = cancel;
   }
 
 }
 
-template TEventHandler(TEventArgs : EventArgs) {
+template TEventHandler(TEventArgs = EventArgs) {
   alias Event!(void, Object, TEventArgs) TEventHandler;
 }
 
-alias TEventHandler!(EventArgs) EventHandler;
+alias TEventHandler!() EventHandler;
 alias TEventHandler!(CancelEventArgs) CancelEventHandler;

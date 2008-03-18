@@ -1,50 +1,30 @@
-/*
- * Copyright (c) 2007 John Chapman
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
-
 /**
-* Provides support for COM (Component Object Model).
-*/
+ * Provides support for COM (Component Object Model).
+ *
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.com.core;
 
-pragma (lib, "ole32.lib");
-pragma (lib, "oleaut32.lib");
-
 private import juno.base.core,
-  juno.base.string,
-  juno.base.threading,
-  juno.base.native;
+  juno.base.native,
+  std.stdarg,
+  std.string,
+  std.utf,
+  std.outofmemory,
+  std.stream;
 
-private import juno.locale.core : DateTime;
+private import bstr = juno.com.bstr;
 
-private import std.string : find, stdformat = format;
-private import std.stream : Stream, SeekPos;
-private import std.c.string : memcpy;
-private import std.c.stdlib;
-private import std.typetuple : IndexOf, MostDerived;
-private import std.traits : ParameterTypeTuple;
-private static import std.gc;
+private import std.traits;
+private import std.typetuple : IndexOf, NoDuplicates, TypeTuple, MostDerived;
+private static import std.gc, std.c.stdlib;
+
+debug private import std.stdio;
+
+pragma(lib, "ole32.lib");
+pragma(lib, "oleaut32.lib");
 
 static this() {
   startupCOM();
@@ -54,7 +34,11 @@ static ~this() {
   shutdownCOM();
 }
 
-enum {
+/*//////////////////////////////////////////////////////////////////////////////////////////
+// Structs, Enums                                                                         //
+//////////////////////////////////////////////////////////////////////////////////////////*/
+
+enum /* HRESULT */ {
   S_OK            = 0x0,
   S_FALSE         = 0x1,
 
@@ -69,79 +53,18 @@ enum {
   E_INVALIDARG    = 0x80070057,
 }
 
-enum {
-  TYPE_E_ELEMENTNOTFOUND      = 0x8002802B
-}
-
-enum {
-  SELFREG_E_FIRST = MAKE_SCODE_T!(SEVERITY_ERROR, FACILITY_ITF, 0x0200),
-  SELFREG_E_LAST = MAKE_SCODE_T!(SEVERITY_ERROR, FACILITY_ITF, 0x020F),
-  SELFREG_S_FIRST = MAKE_SCODE_T!(SEVERITY_SUCCESS, FACILITY_ITF, 0x0200),
-  SELFREG_S_LAST = MAKE_SCODE_T!(SEVERITY_SUCCESS, FACILITY_ITF, 0x020F),
-  SELFREG_E_TYPELIB = SELFREG_E_FIRST,
-  SELFREG_E_CLASS = SELFREG_E_FIRST + 1
-}
-
-enum {
-  DISP_E_MEMBERNOTFOUND       = 0x80020003,
-  DISP_E_PARAMNOTFOUND        = 0x80020004,
-  DISP_E_TYPEMISMATCH         = 0x80020005,
-  DISP_E_UNKNOWNNAME          = 0x80020006,
-  DISP_E_NONAMEDARGS          = 0x80020007,
-  DISP_E_BADVARTYPE           = 0x80020008,
-  DISP_E_EXCEPTION            = 0x80020009,
-  DISP_E_BADPARAMCOUNT        = 0x8002000E
-}
-
-enum {
-  CLASS_E_NOAGGREGATION       = 0x80040110,
-  CLASS_E_CLASSNOTAVAILABLE   = 0x80040111
-}
-
-enum DVASPECT : uint {
-  DVASPECT_CONTENT = 1,
-  DVASPECT_THUMBNAIL = 2,
-  DVASPECT_ICON = 4,
-  DVASPECT_DOCPRINT = 8
-}
-
-enum OLEMISC : uint {
-  OLEMISC_RECOMPOSEONRESIZE = 0x1,
-  OLEMISC_ONLYICONIC = 0x2,
-  OLEMISC_INSERTNOTREPLACE = 0x4,
-  OLEMISC_STATIC = 0x8,
-  OLEMISC_CANTLINKINSIDE = 0x10,
-  OLEMISC_CANLINKBYOLE1 = 0x20,
-  OLEMISC_ISLINKOBJECT = 0x40,
-  OLEMISC_INSIDEOUT = 0x80,
-  OLEMISC_ACTIVATEWHENVISIBLE = 0x100,
-  OLEMISC_RENDERINGISDEVICEINDEPENDENT = 0x200,
-  OLEMISC_INVISIBLEATRUNTIME = 0x400,
-  OLEMISC_ALWAYSRUN = 0x800,
-  OLEMISC_ACTSLIKEBUTTON = 0x1000,
-  OLEMISC_ACTSLIKELABEL = 0x2000,
-  OLEMISC_NOUIACTIVATE = 0x4000,
-  OLEMISC_ALIGNABLE = 0x8000,
-  OLEMISC_SIMPLEFRAME = 0x10000,
-  OLEMISC_SETCLIENTSITEFIRST = 0x20000,
-  OLEMISC_IMEMODE = 0x40000,
-  OLEMISC_IGNOREACTIVATEWHENVISIBLE = 0x80000,
-  OLEMISC_WANTSTOMENUMERGE = 0x100000,
-  OLEMISC_SUPPORTSMULTILEVELUNDO = 0x200000
-}
-
 /**
  * Determines whether the operation was successful.
  */
-public bool SUCCEEDED(int hr) {
-  return hr >= S_OK;
+bool SUCCEEDED(int hr) {
+  return hr >= 0;
 }
 
 /**
  * Determines whether the operation was unsuccessful.
  */
-public bool FAILED(int hr) {
-  return hr < S_OK;
+bool FAILED(int hr) {
+  return hr < 0;
 }
 
 /**
@@ -149,6 +72,8 @@ public bool FAILED(int hr) {
  */
 struct GUID {
 
+  // Slightly different layout from the Windows SDK, but means we can use fewer brackets
+  // when defining GUIDs.
   uint a;
   ushort b, c;
   ubyte d, e, f, g, h, i, j, k;
@@ -159,7 +84,7 @@ struct GUID {
   static GUID empty = { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
 
   /**
-   * Initializeds a new instance using the specified integers and bytes.
+   * Initializes _a new instance using the specified integers and bytes.
    * Params:
    *   a = The first 4 bytes.
    *   b = The next 2 bytes.
@@ -174,29 +99,29 @@ struct GUID {
    *   k = The next byte.
    * Returns: The resulting GUID.
    */
-  public static GUID opCall(uint a, ushort b, ushort c, ubyte d, ubyte e, ubyte f, ubyte g, ubyte h, ubyte i, ubyte j, ubyte k) {
-    GUID result;
-    result.a = a, result.b = b, result.c = c, result.d = d, result.e = e, result.f = f, result.g = g, result.h = h, result.i = i, result.j = j, result.k = k;
-    return result;
+  static GUID opCall(uint a, ushort b, ushort c, ubyte d, ubyte e, ubyte f, ubyte g, ubyte h, ubyte i, ubyte j, ubyte k) {
+    GUID self;
+    self.a = a, self.b = b, self.c = c, self.d = d, self.e = e, self.f = f, self.g = g, self.h = h, self.i = i, self.j = j, self.k = k;
+    return self;
   }
 
   /**
-   * Initializes a new instance using the specified integets and byte array.
+   * Initializes _a new instance using the specified integers and byte array.
    * Params:
    *   a = The first 4 bytes.
    *   b = The next 2 bytes.
    *   c = The next 2 bytes.
    *   d = The remaining 8 bytes.
    * Returns: The resulting GUID.
-   * Throws: ArgumentException if d is not 8 bytes long.
+   * Throws: IllegalArgumentException if d is not 8 bytes long.
    */
-  public static GUID opCall(uint a, ushort b, ushort c, ubyte[] d) {
+  static GUID opCall(uint a, ushort b, ushort c, ubyte[] d) {
     if (d.length != 8)
       throw new ArgumentException("Byte array for GUID must be 8 bytes long.");
 
-    GUID result;
-    result.a = a, result.b = b, result.c = c, result.d = d[0], result.e = d[1], result.f = d[2], result.g = d[3], result.h = d[4], result.i = d[5], result.j = d[6], result.k = d[7];
-    return result;
+    GUID self;
+    self.a = a, self.b = b, self.c = c, self.d = d[0], self.e = d[1], self.f = d[2], self.g = d[3], self.h = d[4], self.i = d[5], self.j = d[6], self.k = d[7];
+    return self;
   }
 
   /**
@@ -204,7 +129,7 @@ struct GUID {
    * Params: s = A string containing a GUID in groups of 8, 4, 4, 4 and 12 digits with hyphens between the groups. The GUID can optionally be enclosed in braces.
    * Returns: The resulting GUID.
    */
-  public static GUID opCall(string s) {
+  static GUID opCall(string s) {
 
     ulong parse(string s) {
 
@@ -213,7 +138,7 @@ struct GUID {
         else if (c >= 'A' && c <= 'F') result = c - 'A' + 10;
         else if (c >= 'a' && c <= 'f') result = c - 'a' + 10;
         else result = -1;
-        return (result >= 0);
+        return (cast(int)result >= 0);
       }
 
       ulong result;
@@ -224,6 +149,8 @@ struct GUID {
       }
       return result;
     }
+
+    s = s.strip();
 
     if (s[0] == '{') {
       s = s[1 .. $];
@@ -240,36 +167,44 @@ struct GUID {
     if (s.find('-') == -1)
       throw new FormatException("Unrecognised GUID format.");
 
-    GUID g;
-    g.a = cast(uint)parse(s[0 .. 8]);
-    g.b = cast(ushort)parse(s[9 .. 13]);
-    g.c = cast(ushort)parse(s[14 .. 18]);
+    GUID self;
+    self.a = cast(uint)parse(s[0 .. 8]);
+    self.b = cast(ushort)parse(s[9 .. 13]);
+    self.c = cast(ushort)parse(s[14 .. 18]);
     uint m = cast(uint)parse(s[19 .. 23]);
-    g.d = cast(ubyte)(m >> 8);
-    g.e = cast(ubyte)m;
+    self.d = cast(ubyte)(m >> 8);
+    self.e = cast(ubyte)m;
     ulong n = parse(s[24 .. $]);
     m = cast(uint)(n >> 32);
-    g.f = cast(ubyte)(m >> 8);
-    g.g = cast(ubyte)m;
+    self.f = cast(ubyte)(m >> 8);
+    self.g = cast(ubyte)m;
     m = cast(uint)n;
-    g.h = cast(ubyte)(m >> 24);
-    g.i = cast(ubyte)(m >> 16);
-    g.j = cast(ubyte)(m >> 8);
-    g.k = cast(ubyte)m;
-    return g;
+    self.h = cast(ubyte)(m >> 24);
+    self.i = cast(ubyte)(m >> 16);
+    self.j = cast(ubyte)(m >> 8);
+    self.k = cast(ubyte)m;
+    return self;
   }
 
-  public static GUID newGuid() {
-    GUID g;
+  /**
+   * Initializes a new instance of the GUID struct.
+   */
+  static GUID create() {
+    GUID self;
 
-    int hr;
-    if ((hr = CoCreateGuid(g)) != S_OK)
-      throw new COMException(hr);
+    int hr = CoCreateGuid(self);
+    if (FAILED(hr))
+      throw exceptionForHR(hr);
 
-    return g;
+    return self;
   }
 
-  public bool opEquals(GUID other) {
+  /**
+   * Returns a value indicating whether two instances represent the same value.
+   * Params: other = A GUID to compare to this instance.
+   * Returns: true if other is equal to this instance; otherwise, false.
+   */
+  bool opEquals(GUID other) {
     return a == other.a
       && b == other.b
       && c == other.c
@@ -284,20 +219,43 @@ struct GUID {
   }
 
   /**
-   * Retrieves the hash code for this instance.
-   * Returns: The hash code for this instance.
+   * Compares this instance to a specified GUID and returns an indication of their relative values.
+   * Params: other = A GUID to compare to this instance.
+   * Returns: A number indicating the relative values of this instance and other.
    */
-  public hash_t toHash() {
-    return a ^ ((b << 16) | c) ^ ((f << 24) | k);
+  int opCmp(GUID other) {
+    if (a != other.a)
+      return (a < other.a) ? -1 : 1;
+    if (b != other.b)
+      return (b < other.b) ? -1 : 1;
+    if (c != other.c)
+      return (c < other.c) ? -1 : 1;
+    if (d != other.d)
+      return (d < other.d) ? -1 : 1;
+    if (e != other.e)
+      return (e < other.e) ? -1 : 1;
+    if (f != other.f)
+      return (f < other.f) ? -1 : 1;
+    if (g != other.g)
+      return (g < other.g) ? -1 : 1;
+    if (h != other.h)
+      return (h < other.h) ? -1 : 1;
+    if (i != other.i)
+      return (i < other.i) ? -1 : 1;
+    if (j != other.j)
+      return (j < other.j) ? -1 : 1;
+    if (k != other.k)
+      return (k < other.k) ? -1 : 1;
+    return 0;
   }
 
   /**
    * Returns a string representation of the value of this instance in registry format.
-   * Returns: A string formatted in this pattern: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx where the GUID is represented as a series of lowercase hexadecimal digits in groups of 8, 4, 4, 4 and 12 and separated by hyphens.
+   * Returns: A string formatted in this pattern: {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} where the GUID is represented as a series of lowercase hexadecimal digits in groups of 8, 4, 4, 4 and 12 and separated by hyphens.
    */
-  public string toString() {
+  string toString(string format = "D") {
 
-    void hexToString(ref char[] s, ref uint index, uint a, int b) {
+    void hexToString(ref char[] s, ref uint index, uint a, uint b) {
 
       char hexToChar(uint a) {
         a = a & 0x0F;
@@ -310,10 +268,16 @@ struct GUID {
       s[index++] = hexToChar(b);
     }
 
-    char[] s = new char[38];
-    uint index = 1;
+    char[] s;
+    uint index = 0;
+    if (format == "D" || format == "d")
+      s = new char[36];
+    else if (format == "P" || format == "p") {
+      s = new char[38];
+      s[index++] = '{';
+      s[$ - 1] = '}';
+    }
 
-    s[0] = '{';
     hexToString(s, index, a >> 24, a >> 16);
     hexToString(s, index, a >> 8, a);
     s[index++] = '-';
@@ -326,16 +290,102 @@ struct GUID {
     hexToString(s, index, f, g);
     hexToString(s, index, h, i);
     hexToString(s, index, j, k);
-    s[$ - 1] = '}';
 
-    return s;
+    return cast(string)s;
+  }
+
+  /**
+   * Retrieves the hash code for this instance.
+   * Returns: The hash code for this instance.
+   */
+  hash_t toHash() {
+    return a ^ ((b >> 16) | c) ^ ((f << 24) | k);
   }
 
 }
 
-struct SAFEARRAYBOUND {
-  uint cElements;
-  int lLbound;
+/**
+ * Associates a GUID with an interface.
+ * Params: g = A string representing the GUID in normal registry format with or without the { } delimiters.
+ * Examples:
+ * ---
+ * interface IXMLDOMDocument2 : IDispatch {
+ *   mixin(uuid("2933bf95-7b36-11d2-b20e-00c04f983e60"));
+ * }
+ *
+ * // Expands to the following code:
+ * //
+ * // interface IXMLDOMDocument2 : IDispatch {
+ * //   static GUID IID = { 0x2933bf95, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+ * // }
+ * ---
+ */
+string uuid(string g) {
+  if (g.length == 38) {
+    assert(g[0] == '{' && g[$-1] == '}', "Incorrect format for GUID.");
+    return uuid(g[1..$-1]);
+  }
+  else if (g.length == 36) {
+    assert(g[8] == '-' && g[13] == '-' && g[18] == '-' && g[23] == '-', "Incorrect format for GUID.");
+    return "static const GUID IID = { 0x" ~ g[0..8] ~ ",0x" ~ g[9..13] ~ ",0x" ~ g[14..18] ~ ",0x" ~ g[19..21] ~ ",0x" ~ g[21..23] ~ ",0x" ~ g[24..26] ~ ",0x" ~ g[26..28] ~ ",0x" ~ g[28..30] ~ ",0x" ~ g[30..32] ~ ",0x" ~ g[32..34] ~ ",0x" ~ g[34..36] ~ " };";
+  }
+  else assert(false, "Incorrect format for GUID.");
+}
+
+string uuid(string type, string g) {
+  // Alternative form for module-level (global) declarations, eg: 
+  //   mixin(uuid("IUnknown", "00000000-0000-0000-c000-000000000046"));
+  // produces:
+  //   GUID IID_IUnknown = { ... };
+  //   template uuidof(T : IUnknown) { const GUID uuidof = IID_IUnknown; }
+
+  if (g.length == 38) {
+    assert(g[0] == '{' && g[$-1] == '}', "Incorrect format for GUID.");
+    return uuid(type, g[1..$-1]);
+  }
+  else if (g.length == 36) {
+    assert(g[8] == '-' && g[13] == '-' && g[18] == '-' && g[23] == '-', "Incorrect format for GUID.");
+    return "const GUID IID_" ~ type ~ " = { 0x" ~ g[0..8] ~ ",0x" ~ g[9..13] ~ ",0x" ~ g[14..18] ~ ",0x" ~ g[19..21] ~ ",0x" ~ g[21..23] ~ ",0x" ~ g[24..26] ~ ",0x" ~ g[26..28] ~ ",0x" ~ g[28..30] ~ ",0x" ~ g[30..32] ~ ",0x" ~ g[32..34] ~ ",0x" ~ g[34..36] ~ " };"\n ~
+      "template uuidof(T : " ~ type ~ ") { const GUID uuidof = IID_" ~ type ~ "; }";
+  }
+  else assert(false, "Incorrect format for GUID.");
+}
+
+/**
+ * Retrieves the GUID associated with the specified variable or type.
+ * Examples:
+ * ---
+ * import juno.com.core, 
+ *   std.stdio;
+ *
+ * void main() {
+ *   writefln("The GUID of IXMLDOMDocument2 is %s", uuidof!(IXMLDOMDocument2));
+ * }
+ *
+ * // Produces:
+ * // The GUID of IXMLDOMDocument2 is {2933bf95-7b36-11d2-b20e-00c04f983e60}
+ * ---
+ */
+template uuidof(alias T) {
+  const GUID uuidof = uuidofT!(typeof(T));
+}
+
+/**
+ * ditto
+ */
+template uuidof(T) {
+  const GUID uuidof = uuidofT!(T);
+}
+
+template uuidofT(T : T) {
+  static if (is(typeof(mixin("IID_" ~ T.stringof))))
+    const GUID uuidofT = mixin("IID_" ~ T.stringof); // e.g., IID_IShellFolder
+  else static if (is(typeof(mixin("CLSID_" ~ T.stringof))))
+    const GUID uuidofT = mixin("CLSID_" ~ T.stringof); // e.g., CLSID_Shell
+  else static if (is(typeof(T.IID)))
+    const GUID uuidofT = T.IID;
+  else
+    static assert(false, "No GUID has been associated with '" ~ T.stringof ~ "'.");
 }
 
 enum : ushort {
@@ -353,95 +403,470 @@ enum : ushort {
   FADF_RESERVED = 0xF008
 }
 
+struct SAFEARRAYBOUND {
+  uint cElements;
+  int lLbound;
+}
+
 struct SAFEARRAY {
+
   ushort cDims;
   ushort fFeatures;
   uint cbElements;
   uint cLocks;
   void* pvData;
   SAFEARRAYBOUND[1] rgsabound;
+
+  static SAFEARRAY* opCall(T...)(T values) {
+    static if (T.length == 1 && isArray!(T)) {
+      return fromArray(values, false);
+    }
+    else {
+      auto bound = SAFEARRAYBOUND(values.length);
+      auto sa = SafeArrayCreate(VT_VARIANT, 1, &bound);
+
+      VARIANT* data;
+      SafeArrayAccessData(sa, outval(data));
+      foreach (i, value; values)
+        data[i] = VARIANT(value);
+      SafeArrayUnaccessData(sa);
+
+      return sa;
+    }
+  }
+
+  static SAFEARRAY* fromArray(T)(T[] array, bool wrap = false) {
+    VARTYPE vt;
+    if (wrap) vt = VT_VARIANT;
+    else      vt = VariantType!(T);
+
+    auto bound = SAFEARRAYBOUND(array.length);
+    auto sa = SafeArrayCreate(vt, 1, &bound);
+
+    if (wrap) {
+      VARIANT* data;
+      SafeArrayAccessData(sa, outval(data));
+      for (int i = 0; i < array.length; i++) {
+        data[i] = VARIANT(array[i]);
+      }
+      SafeArrayUnaccessData(sa);
+    }
+    else {
+      // Strings are stored as BSTRs
+      static if (is(T : string))  alias wchar* Type;
+      else                        alias T Type;
+
+      Type* data;
+      SafeArrayAccessData(sa, outval(data));
+      for (int i = 0; i < array.length; i++) {
+        static if (is(T : string))  data[i] = bstr.fromString(array[i]);
+        else                        data[i] = array[i];
+      }
+      SafeArrayUnaccessData(sa);
+    }
+
+    return sa;
+  }
+
+  void destroy() {
+    SafeArrayDestroy(this);
+  }
+
+  void resize(int newSize) {
+    auto bound = SAFEARRAYBOUND(newSize);
+    SafeArrayRedim(this, &bound);
+  }
+
+  T[] toArray(T)() {
+    int upperBound, lowerBound;
+    SafeArrayGetUBound(this, 1, upperBound);
+    SafeArrayGetLBound(this, 1, lowerBound);
+    int count = upperBound - lowerBound + 1;
+
+    if (count == 0) return null;
+
+    T[] result = new T[count];
+
+    if ((fFeatures & FADF_VARIANT) != 0) {
+      VARIANT* data;
+      SafeArrayAccessData(this, outval(data));
+      for (int i = lowerBound; i <= upperBound; i++) {
+        static if (is(T == VARIANT)) result[i] = data[i];
+        else {
+          auto val = data[i];
+          if (val.vt != VariantType!(T))
+            val = val.changeTo(VariantType!(T));
+          result[i] = val.value!(T);
+        }
+      }
+      SafeArrayUnaccessData(this);
+    }
+    else {
+      static if (is(T : string))  alias wchar* Type;
+      else                        alias T Type;
+
+      Type* data;
+      SafeArrayAccessData(this, outval(data));
+      for (int i = lowerBound; i <= upperBound; i++) {
+        static if (is(T : string))
+          result[i] = bstr.toString(data[i]);
+        else
+          result[i] = data[i];
+      }
+      SafeArrayUnaccessData(this);
+    }
+
+    return result;
+  }
+
+  void lock() {
+    SafeArrayLock(this);
+  }
+
+  void unlock() {
+    SafeArrayUnlock(this);
+  }
+
+  int length() {
+    int upperBound, lowerBound;
+    SafeArrayGetUBound(this, 1, upperBound);
+    SafeArrayGetLBound(this, 1, lowerBound);
+    return upperBound - lowerBound + 1;
+  }
+
 }
 
+deprecated SAFEARRAY* toSafeArray(T)(T[] array) {
+  return SAFEARRAY.fromArray(array, true);
+}
+
+deprecated T[] toArray(T)(SAFEARRAY* safeArray) {
+  return safeArray.toArray!(T)();
+}
+
+const ubyte DECIMAL_NEG = 0x80;
+
 struct DECIMAL {
+
   ushort wReserved;
   ubyte scale;
   ubyte sign;
   uint Hi32;
   uint Lo32;
   uint Mid32;
+
+  static DECIMAL min = { 0, 0, DECIMAL_NEG, uint.max, uint.max, uint.max };
+  static DECIMAL max = { 0, 0, 0, uint.max, uint.max, uint.max };
+  static DECIMAL minusOne = { 0, 0, DECIMAL_NEG, 0, 1, 0 };
+  static DECIMAL zero = { 0, 0, 0, 0, 0, 0 };
+  static DECIMAL one = { 0, 0, 0, 0, 1, 0 };
+
+  static DECIMAL opCall(T)(T value) {
+    DECIMAL self;
+
+    static if (is(T == uint)) VarDecFromUI4(value, self);
+    else static if (is(T == int)) VarDecFromI4(value, self);
+    else static if (is(T == ulong)) VarDecFromUI8(value, self);
+    else static if (is(T == long)) VarDecFromI8(value, self);
+    else static if (is(T == float)) VarDecFromR4(value, self);
+    else static if (is(T == double)) VarDecFromR8(value, self);
+    else static assert(false);
+
+    return self;
+  }
+
+  static DECIMAL opCall(T = void)(uint lo, uint mid, uint hi, bool isNegative, ubyte scale) {
+    DECIMAL self;
+    self.Hi32 = hi, self.Mid32 = mid, self.Lo32 = lo, self.scale = scale, self.sign = isNegative ? DECIMAL_NEG : 0;
+    return self;
+  }
+
+  int opCmp(DECIMAL d) {
+    return VarDecCmp(this, &d) - 1;
+  }
+
+  bool opEquals(DECIMAL d) {
+    return opCmp(d) == 0;
+  }
+
+  DECIMAL opAdd(DECIMAL d) {
+    DECIMAL ret;
+    VarDecAdd(this, &d, &ret);
+    return ret;
+  }
+
+  void opAddAssign(DECIMAL d) {
+    *this = *this + d;
+  }
+
+  DECIMAL opSub(DECIMAL d) {
+    DECIMAL ret;
+    VarDecSub(this, &d, &ret);
+    return ret;
+  }
+
+  void opSubAssign(DECIMAL d) {
+    *this = *this - d;
+  }
+
+  DECIMAL opMul(DECIMAL d) {
+    DECIMAL ret;
+    VarDecMul(this, &d, &ret);
+    return ret;
+  }
+
+  void opMulAssign(DECIMAL d) {
+    *this = *this * d;
+  }
+
+  DECIMAL opDiv(DECIMAL d) {
+    DECIMAL ret;
+    VarDecDiv(this, &d, &ret);
+    return ret;
+  }
+
+  void opDivAssign(DECIMAL d) {
+    *this = *this / d;
+  }
+
+  DECIMAL opMod(DECIMAL d) {
+    return remainder(*this, d);
+  }
+
+  void opModAssign(DECIMAL d) {
+    *this = *this % d;
+  }
+
+  DECIMAL opNeg() {
+    DECIMAL ret;
+    VarDecNeg(this, &ret);
+    return ret;
+  }
+
+  DECIMAL opPos() {
+    return *this;
+  }
+
+  DECIMAL opPostInc() {
+    return *this = *this + cast(DECIMAL)1;
+  }
+
+  DECIMAL opPostDec() {
+    return *this = *this - cast(DECIMAL)1;
+  }
+
+  static DECIMAL abs(DECIMAL d) {
+    DECIMAL ret;
+    VarDecAbs(&d, &ret);
+    return ret;
+  }
+
+  static DECIMAL round(DECIMAL d, int decimals = 0) {
+    DECIMAL ret;
+    VarDecRound(&d, decimals, &ret);
+    return ret;
+  }
+
+  static DECIMAL floor(DECIMAL d) {
+    DECIMAL ret;
+    VarDecInt(&d, &ret);
+    return ret;
+  }
+
+  static DECIMAL truncate(DECIMAL d) {
+    DECIMAL ret;
+    VarDecFix(&d, &ret);
+    return ret;
+  }
+
+  static DECIMAL remainder(DECIMAL d1, DECIMAL d2) {
+    if (abs(d1) < abs(d2))
+      return d1;
+
+    d1 -= d2;
+
+    DECIMAL dr = truncate(d1 / d2);
+    DECIMAL mr = dr * d2;
+    DECIMAL r = d1 - mr;
+
+    if (d1.sign != r.sign && r != cast(DECIMAL)0)
+      r += d2;
+
+    return r;
+  }
+
+  static DECIMAL parse(string s) {
+    DECIMAL d;
+    VarDecFromStr(s.toUTF16z(), 0, 0, d);
+    return d;
+  }
+
+  hash_t toHash() {
+    double d;
+    VarR8FromDec(this, d);
+    if (d == 0)
+      return 0;
+    return (cast(int*)&d)[0] ^ (cast(int*)&d)[1];
+  }
+
+  string toString() {
+    wchar* str;
+    if (VarBstrFromDec(this, 0, 0, str) != S_OK)
+      return null;
+    return bstr.toString(str);
+  }
+
 }
 
-/**
- * Identifies the type of a VARIANT.
- */
-enum VARTYPE : ushort {
-  VT_EMPTY = 0,
-  VT_NULL = 1,
-  VT_I2 = 2,
-  VT_I4 = 3,
-  VT_R4 = 4,
-  VT_R8 = 5,
-  VT_CY = 6,
-  VT_DATE = 7,
-  VT_BSTR = 8,
-  VT_DISPATCH = 9,
-  VT_ERROR = 10,
-  VT_BOOL = 11,
-  VT_VARIANT = 12,
-  VT_UNKNOWN = 13,
-  VT_DECIMAL = 14,
-  VT_I1 = 16,
-  VT_UI1 = 17,
-  VT_UI2 = 18,
-  VT_UI4 = 19,
-  VT_I8 = 20,
-  VT_UI8 = 21,
-  VT_INT = 22,
-  VT_UINT = 23,
-  VT_VOID = 24,
-  VT_HRESULT = 25,
-  VT_PTR = 26,
-  VT_SAFEARRAY = 27,
-  VT_CARRAY = 28,
-  VT_USERDEFINED = 29,
-  VT_LPSTR = 30,
-  VT_LPWSTR = 31,
-  VT_RECORD = 36,
-  VT_INT_PTR = 37,
-  VT_UINT_PTR = 38,
-  VT_FILETIME = 64,
-  VT_BLOB = 65,
-  VT_STREAM = 66,
-  VT_STORAGE = 67,
-  VT_STREAMED_OBJECT = 68,
-  VT_STORED_OBJECT = 69,
-  VT_BLOB_OBJECT = 70,
-  VT_CF = 71,
-  VT_CLSID = 72,
+enum : short {
+  VARIANT_TRUE = -1,
+  VARIANT_FALSE = 0
+} alias short VARIANT_BOOL;
+
+enum : VARIANT_BOOL {
+  com_true = VARIANT_TRUE,
+  com_false = VARIANT_FALSE
+} alias VARIANT_BOOL com_bool;
+
+enum /* VARENUM */ : ushort {
+  VT_EMPTY            = 0,
+  VT_NULL             = 1,
+  VT_I2               = 2,
+  VT_I4               = 3,
+  VT_R4               = 4,
+  VT_R8               = 5,
+  VT_CY               = 6,
+  VT_DATE             = 7,
+  VT_BSTR             = 8,
+  VT_DISPATCH         = 9,
+  VT_ERROR            = 10,
+  VT_BOOL             = 11,
+  VT_VARIANT          = 12,
+  VT_UNKNOWN          = 13,
+  VT_DECIMAL          = 14,
+  VT_I1               = 16,
+  VT_UI1              = 17,
+  VT_UI2              = 18,
+  VT_UI4              = 19,
+  VT_I8               = 20,
+  VT_UI8              = 21,
+  VT_INT              = 22,
+  VT_UINT             = 23,
+  VT_VOID             = 24,
+  VT_HRESULT          = 25,
+  VT_PTR              = 26,
+  VT_SAFEARRAY        = 27,
+  VT_CARRAY           = 28,
+  VT_USERDEFINED      = 29,
+  VT_LPSTR            = 30,
+  VT_LPWSTR           = 31,
+  VT_RECORD           = 36,
+  VT_INT_PTR          = 37,
+  VT_UINT_PTR         = 38,
+  VT_FILETIME         = 64,
+  VT_BLOB             = 65,
+  VT_STREAM           = 66,
+  VT_STORAGE          = 67,
+  VT_STREAMED_OBJECT  = 68,
+  VT_STORED_OBJECT    = 69,
+  VT_BLOB_OBJECT      = 70,
+  VT_CF               = 71,
+  VT_CLSID            = 72,
   VT_VERSIONED_STREAM = 73,
   VT_BSTR_BLOB        = 0x0fff,
   VT_VECTOR           = 0x1000,
   VT_ARRAY            = 0x2000,
   VT_BYREF            = 0x4000,
   VT_RESERVED         = 0x8000
+} alias ushort VARTYPE;
+
+// From D 2.0
+template isStaticArray(T : U[N], U, size_t N) {
+  const isStaticArray = true;
 }
 
-alias short VARIANT_BOOL;
-
-enum : VARIANT_BOOL {
-  VARIANT_TRUE = -1,
-  VARIANT_FALSE = 0
+template isStaticArray(T) {
+  const isStaticArray = false;
 }
 
-alias VARIANT_BOOL com_bool;
+template isDynamicArray(T, U = void) {
+  const isDynamicArray = false;
+}
 
-enum : com_bool {
-  com_true = VARIANT_TRUE,
-  com_false = VARIANT_FALSE
+template isDynamicArray(T : U[], U) {
+  const isDynamicArray = !isStaticArray!(T);
+}
+
+template isArray(T) {
+  const isArray = isStaticArray!(T) || isDynamicArray!(T);
+}
+
+template isPointer(T) {
+  const isPointer = is(T : void*);
 }
 
 /**
- * A container for many different data types.
+ * Determines the equivalent COM type of a built-in type at compile-time.
+ * Examples:
+ * ---
+ * VARTYPE a = VariantType!(string);          // VT_BSTR
+ * VARTYPE b = VariantType!(bool);            // VT_BOOL
+ * VARTYPE c = VariantType!(typeof([1,2,3])); // VT_ARRAY | VT_I4
+ * ---
+ */
+template VariantType(T) {
+  static if (is(T == VARIANT_BOOL))
+    const VariantType = VT_BOOL;
+  else static if (is(T == bool))
+    const VariantType = VT_BOOL;
+  else static if (is(T == char))
+    const VariantType = VT_UI1;
+  else static if (is(T == ubyte))
+    const VariantType = VT_UI1;
+  else static if (is(T == byte))
+    const VariantType = VT_I1;
+  else static if (is(T == ushort))
+    const VariantType = VT_UI2;
+  else static if (is(T == short))
+    const VariantType = VT_I2;
+  else static if (is(T == uint))
+    const VariantType = VT_UI4;
+  else static if (is(T == int))
+    const VariantType = VT_I4;
+  else static if (is(T == ulong))
+    const VariantType = VT_UI8;
+  else static if (is(T == long))
+    const VariantType = VT_I8;
+  else static if (is(T == float))
+    const VariantType = VT_R4;
+  else static if (is(T == double))
+    const VariantType = VT_R8;
+  else static if (is(T == DECIMAL))
+    const VariantType = VT_DECIMAL;
+  else static if (is(T E == enum))
+    const VariantType = VariantType!(E);
+  else static if (is(T : string))
+    const VariantType = VT_BSTR;
+  else static if (is(T == wchar*))
+    const VariantType = VT_BSTR;
+  else static if (is(T == SAFEARRAY*))
+    const VariantType = VT_ARRAY;
+  else static if (is(T == VARIANT))
+    const VariantType = VT_VARIANT;
+  else static if (is(T : IDispatch))
+    const VariantType = VT_DISPATCH;
+  else static if (is(T : IUnknown))
+    const VariantType = VT_UNKNOWN;
+  else static if (isArray!(T))
+    const VariantType = VariantType!(typeof(*T)) | VT_ARRAY;
+  else static if (isPointer!(T))
+    const VariantType = VariantType!(typeof(*T)) | VT_BYREF;
+  else
+    const VariantType = VT_VOID;
+}
+
+/**
+ * A container for many different types.
  */
 struct VARIANT {
 
@@ -449,9 +874,11 @@ struct VARIANT {
     struct {
       /// Describes the type of the instance.
       VARTYPE vt;
-      ushort wReserved1;
-      ushort wReserved2;
-      ushort wReserved3;
+      private {
+        ushort wReserved1;
+        ushort wReserved2;
+        ushort wReserved3;
+      }
       union {
         long llVal;
         int lVal;
@@ -480,7 +907,7 @@ struct VARIANT {
         wchar** pbstrVal;
         IUnknown* ppunkVal;
         IDispatch* ppdispVal;
-        SAFEARRAY* pparray;
+        SAFEARRAY** pparray;
         VARIANT* pvarVal;
         void* byref;
         byte cVal;
@@ -512,428 +939,653 @@ struct VARIANT {
    *   type = The VARTYPE identifying the _type of value.
    * Returns: The resulting VARIANT.
    */
-  public static VARIANT opCall(T)(T value, VARTYPE type = VariantType!(T)) {
-    VARIANT v;
-    v.vt = type;
+  static VARIANT opCall(T)(T value, VARTYPE type = VariantType!(T)) {
+    static if (is(T E == enum)) {
+      return opCall(cast(E)value, type);
+    }
+    else {
+      VARIANT self;
+      self = value;
+      if (type != self.vt)
+        VariantChangeType(&self, &self, VARIANT_ALPHABOOL, type);
 
-    static if (is(T == ubyte))
-      v.bVal = value;
-    else static if (is(T == byte))
-      v.cVal = value;
-    else static if (is(T == ushort))
-      v.uiVal = value;
-    else static if (is(T == short))
-      v.iVal = value;
-    else static if (is(T == uint))
-      v.ulVal = value;
-    else static if (is(T == int))
-      v.lVal = value;
-    else static if (is(T == ulong))
-      v.ullVal = value;
-    else static if (is(T == long))
-      v.llVal = value;
-    else static if (is(T == float))
-      v.fltVal = value;
-    else static if (is(T == double))
-      v.dblVal = value;
-    else static if(is(T == DECIMAL))
-      v.decVal = value;
-    else static if (is(T : IDispatch))
-      v.pdispVal = value, value.AddRef();
-    else static if (is(T : IUnknown))
-      v.punkVal = value, value.AddRef();
-    else static if (is(T : Object))
-      v.byref = cast(void*)value;
-    else static if(is(T E == enum))
-      v = VARIANT(cast(E)value);
-    else static if(is(T == bool))
-      v.boolVal = (value == true) ? VARIANT_TRUE : VARIANT_FALSE;
-    else static if (is(T : string))
-      v.bstrVal = value.toBStr();
-    else static if (is(T == wchar*))
-      v.bstrVal = SysAllocString(value);
-    else static if (is(T == DateTime))
-      v.date = value.toOleDate();
-    else static assert(false, "The type '" ~ typeof(T).stringof ~ "' must be one of the allowed types.");
+      return self;
+    }
+  }
 
-    return v;
+  void opAssign(T)(T value) {
+    if (vt != VT_EMPTY)
+      clear();
+
+    static if (is(T == VARIANT_BOOL)) boolVal = value;
+    else static if (is(T == bool)) boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
+    else static if (is(T == ubyte)) bVal = value;
+    else static if (is(T == byte)) cVal = value;
+    else static if (is(T == ushort)) uiVal = value;
+    else static if (is(T == short)) iVal = value;
+    else static if (is(T == uint)) ulVal = value;
+    else static if (is(T == int)) lVal = value;
+    else static if (is(T == ulong)) ullVal = value;
+    else static if (is(T == long)) llVal = value;
+    else static if (is(T == float)) fltVal = value;
+    else static if (is(T == double)) dblVal = value;
+    else static if (is(T == DECIMAL)) decVal = value;
+    else static if (is(T : string)) bstrVal = bstr.fromString(value);
+    else static if (is(T : IDispatch)) pdispVal = value, value.AddRef();
+    else static if (is(T : IUnknown)) punkVal = value, value.AddRef();
+    else static if (is(T : Object)) byref = cast(void*)value;
+    else static if (is(T == VARIANT*)) pvarVal = value;
+    else static if (is(T == SAFEARRAY*)) parray = value;
+    else static if (isArray!(T)) parray = SAFEARRAY.from(value);
+    else static assert(false, "'" ~ T.stringof ~ "' is not one of the allowed types.");
+
+    vt = VariantType!(T);
+
+    static if (is(T == SAFEARRAY*)) {
+      VARTYPE type;
+      SafeArrayGetVartype(value, type);
+      vt |= type;
+    }
   }
 
   /**
    * Clears the value of this instance and releases any associated memory.
    * See_Also: $(LINK2 http://msdn2.microsoft.com/en-us/library/ms221165.aspx, VariantClear).
    */
-  public void clear() {
-    if (isCOMInitialized) {
+  void clear() {
+    if (isCOMAlive && !(vt == VT_NULL || vt == VT_EMPTY))
       VariantClear(this);
-    }
   }
 
-  /**
-   * Copies this instance to the destination.
-   * Params: dest = The destination VARIANT.
-   * See_Also: $(LINK2 http://msdn2.microsoft.com/en-us/library/ms221697.aspx, VariantCopy).
-   */
-  public void copyTo(out VARIANT dest) {
+  void copyTo(out VARIANT dest) {
     VariantCopy(&dest, this);
   }
 
-  public T get(T)() {
-    static if (is(T == bool)) {
-      if (vt == VARTYPE.VT_BOOL)
-        return (boolVal == VARIANT_TRUE) ? true : false;
-    }
-    else static if (is(T == ubyte)) {
-      if (vt == VARTYPE.VT_UI1)
-        return bVal;
-    }
-    static if (is(T == byte)) {
-      if (vt == VARTYPE.VT_I1)
-        return cVal;
-    }
-    else static if (is(T == ushort)) {
-      if (vt == VARTYPE.VT_UI2)
-        return uiVal;
-    }
-    else static if (is(T == short)) {
-      if (vt == VARTYPE.VT_I2)
-        return iVal;
-    }
-    else static if (is(T == uint)) {
-      if (vt == VARTYPE.VT_UI4)
-        return ulVal;
-      else if (vt == VARTYPE.VT_UINT)
-        return uintVal;
-    }
-    else static if (is(T == int)) {
-      if (vt == VARTYPE.VT_I4)
-        return lVal;
-      else if (vt == VARTYPE.VT_INT)
-        return intVal;
-    }
-    else static if (is(T == ulong)) {
-      if (vt == VARTYPE.VT_UI8)
-        return ullVal;
-      else if (vt == VARTYPE.VT_I8)
-        return llVal;
-    }
-    else static if (is(T == float)) {
-      if (vt == VARTYPE.VT_R4)
-        return fltVal;
-    }
-    else static if (is(T == double)) {
-      if (vt == VARTYPE.VT_R8)
-        return dblVal;
-    }
-    else static if (is(T == string)) {
-      if (vt == VARTYPE.VT_BSTR)
-        return fromBStr(bstrVal);
-    }
-    else static if (is(T == DECIMAL)) {
-      if (vt == VARTYPE.VT_DECIMAL)
-        return decVal;
-    }
-    else static if (is(T : IDispatch)) {
-      if (vt == VARTYPE.VT_DISPATCH)
-        return pdispVal;
-    }
-    else static if (is(T : IUnknown)) {
-      if (vt == VARTYPE.VT_UNKNOWN)
-        return punkVal;
-    }
-    else static if (is(T == DateTime)) {
-      if (vt == VARTYPE.VT_DATE)
-        return DateTime.fromOleDate(date);
-    }
-    else static if (is(T : Object)) {
-      if (vt == VARTYPE.VT_BYREF)
-        return cast(T)byref;
-    }
-    return T.init;
+  VARIANT changeTo(VARTYPE newType) {
+    VARIANT ret;
+    if (FAILED(VariantChangeType(&ret, this, VARIANT_ALPHABOOL, newType)))
+      throw new InvalidCastException("Invalid cast.");
+    return ret;
   }
 
   /**
    * Converts the value contained in this instance to a string.
    * Returns: A string representation of the value contained in this instance.
    */
-  public string toString() {
-    if (vt == VARTYPE.VT_EMPTY || vt == VARTYPE.VT_NULL)
+  string toString() {
+    if (vt == VT_NULL || vt == VT_EMPTY)
       return null;
 
-    if (vt == VARTYPE.VT_BSTR)
-      return fromBStr(bstrVal);
+    if (vt == VT_BSTR)
+      return bstr.toString(bstrVal);
 
     VARIANT temp;
-    if (VariantChangeTypeEx(&temp, this, LOCALE_USER_DEFAULT, 0, VARTYPE.VT_BSTR) == S_OK)
-      return fromBStr(temp.bstrVal);
+    if (SUCCEEDED(VariantChangeType(&temp, this, VARIANT_ALPHABOOL | VARIANT_LOCALBOOL, VT_BSTR)))
+      return bstr.toString(temp.bstrVal);
 
     return null;
   }
+  
+  /**
+   * Returns the _value contained in this instance.
+   */
+  V value(V)() {
+    //if (vt != VariantType!(V)) assert(false);
+
+    static if (is(V == bool)) return (boolVal == VARIANT_TRUE) ? true : false;
+    else static if (is(V == VARIANT_BOOL)) return boolVal;
+    else static if (is(V == ubyte)) return bVal;
+    else static if (is(V == byte)) return cVal;
+    else static if (is(V == ushort)) return uiVal;
+    else static if (is(V == short)) return iVal;
+    else static if (is(V == uint)) return ulVal;
+    else static if (is(V == int)) return lVal;
+    else static if (is(V == ulong)) return ullVal;
+    else static if (is(V == long)) return llVal;
+    else static if (is(V == float)) return fltVal;
+    else static if (is(V == double)) return dblVal;
+    else static if (is(V == DECIMAL)) return decVal;
+    else static if (is(V : string)) return bstr.toString(bstrVal);
+    else static if (is(V : IDispatch)) return cast(V)pdispVal;
+    else static if (is(V : IUnknown)) return cast(V)punkVal;
+    else static if (is(V : Object)) return cast(V)byref;
+    else static if (is(V == VARIANT*)) return pvarVal;
+    else static if (is(V == SAFEARRAY*)) return parray;
+    else static if (isArray!(V)) return parray.toArray!(typeof(*V))();
+    else static assert(false, "'" ~ V.stringof ~ "' is not one of the allowed types.");
+  }
 
 }
 
-public VARIANT toVariant(T)(T value, bool heapAlloc = false) {
-  if (!heapAlloc)
+VARIANT toVariant(T)(T value, bool heapAlloc = false) {
+  if (heapAlloc)
     return VARIANT(value);
   else return (new class(value) {
     VARIANT var;
-    this(T value) {
-      var = VARIANT(value);
-    }
-    ~this() {
-      var.clear();
-    }
+    this(T value) { var = VARIANT(value); }
+    ~this() { var.clear(); }
   }).var;
 }
 
-struct BSTRBLOB {
-  uint cbSize = BSTRBLOB.sizeof;
-  ubyte* pBlobData;
+/*//////////////////////////////////////////////////////////////////////////////////////////
+// Interfaces                                                                             //
+//////////////////////////////////////////////////////////////////////////////////////////*/
+
+extern(Windows):
+
+interface IUnknown {
+  mixin(uuid("00000000-0000-0000-c000-000000000046"));
+  int QueryInterface(ref GUID riid, void** ppvObject);
+  uint AddRef();
+  uint Release();
 }
 
-struct BLOB {
-  uint cbSize = BLOB.sizeof;
-  ubyte* pBlobData;
+enum {
+  CLASS_E_NOAGGREGATION       = 0x80040110,
+  CLASS_E_CLASSNOTAVAILABLE   = 0x80040111
 }
 
-struct VERSIONEDSTREAM {
-  GUID guidVersion;
-  IStream pStream;
+enum {
+  SELFREG_E_FIRST     = tMAKE_SCODE!(SEVERITY_ERROR, FACILITY_ITF, 0x0200),
+  SELFREG_E_LAST      = tMAKE_SCODE!(SEVERITY_ERROR, FACILITY_ITF, 0x020F),
+  SELFREG_S_FIRST     = tMAKE_SCODE!(SEVERITY_SUCCESS, FACILITY_ITF, 0x0200),
+  SELFREG_S_LAST      = tMAKE_SCODE!(SEVERITY_SUCCESS, FACILITY_ITF, 0x020F),
+  SELFREG_E_TYPELIB   = SELFREG_E_FIRST,
+  SELFREG_E_CLASS     = SELFREG_E_FIRST + 1
 }
 
-struct CAC {
-  uint cElems;
-  byte* pElems;
+interface IClassFactory : IUnknown {
+  mixin(uuid("00000001-0000-0000-c000-000000000046"));
+  int CreateInstance(IUnknown pUnkOuter, ref GUID riid, void** ppvObject);
+  int LockServer(int fLock);
 }
 
-struct CAUB {
-  uint cElems;
-  ubyte* pElems;
+interface IMalloc : IUnknown {
+  mixin(uuid("00000002-0000-0000-c000-000000000046"));
+  void* Alloc(size_t cb);
+  void* Realloc(void* pv, size_t cb);
+  void Free(void* pv);
+  size_t GetSize(void* pv);
+  int DidAlloc(void* pv);
+  void HeapMinimize();
 }
 
-struct CAI {
-  uint cElems;
-  short* pElems;
+struct COSERVERINFO {
+  uint dwReserved1;
+  wchar* pwszName;
+  COAUTHINFO* pAutInfo;
+  uint dwReserved2;
 }
 
-struct CAUI {
-  uint cElems;
-  ushort* pElems;
+interface IMarshal : IUnknown {
+  mixin(uuid("00000003-0000-0000-c000-000000000046"));
+  int GetUnmarshalClass(ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags, out GUID pCid);
+  int GetMarshalSizeMax(ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags, out uint pSize);
+  int MarshalInterface(IStream pStm, ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags);
+  int UnmarshalInterface(IStream pStm, ref GUID riid, void** ppv);
+  int ReleaseMarshalData(IStream pStm);
+  int DisconnectObject(uint dwReserved);
 }
 
-struct CAL {
-  uint cElems;
-  int* pElems;
+interface ISequentialStream : IUnknown {
+  mixin(uuid("0c733a30-2a1c-11ce-ade5-00aa0044773d"));
+  int Read(void* pv, uint cb, ref uint pcbRead);
+  int Write(void* pv, uint cb, ref uint pcbWritten);
 }
 
-struct CAUL {
-  uint cElems;
-  uint* pElems;
+enum : uint {
+  STGTY_STORAGE = 1,
+  STGTY_STREAM = 2,
+  STGTY_LOCKBYTES = 3,
+  STGTY_PROPERTY = 4
 }
 
-struct CAFLT {
-  uint cElems;
-  float* pElems;
+enum : uint {
+  STREAM_SEEK_SET,
+  STREAM_SEEK_CUR,
+  STREAM_SEEK_END
 }
 
-struct CADBL {
-  uint cElems;
-  double* pElems;
+enum : uint {
+  STATFLAG_DEFAULT,
+  STATFLAG_NONAME,
+  STATFLAG_NOOPEN
 }
 
-struct CACY {
-  uint cElems;
-  long* pElems;
+struct STATSTG {
+  wchar* pwcsName;
+  uint type;
+  ulong cbSize;
+  FILETIME mtime;
+  FILETIME ctime;
+  FILETIME atime;
+  uint grfMode;
+  uint grfLocksSupported;
+  GUID clsid;
+  uint grfStateBits;
+  uint reserved;
 }
 
-struct CADATE {
-  uint cElems;
-  double* pElems;
+interface IStorage : IUnknown {
+  mixin(uuid("0000000b-0000-0000-c000-000000000046"));
+  int CreateStream(wchar* pwcsName, uint grfMode, uint reserved1, uint reserved2, out IStream ppstm);
+  int OpenStream(wchar* pwcsName, void* reserved1, uint grfMode, uint reserved2, out IStream ppstm);
+  int CreateStorage(wchar* pwcsName, uint grfMode, uint reserved1, uint reserved2, out IStorage ppstg);
+  int OpenStorage(wchar* pwcsName, IStorage psrgPriority, uint grfMode, wchar** snbExclude, uint reserved, out IStorage ppstg);
+  int CopyTo(uint ciidExclude, GUID* rgiidExclude, wchar** snbExclude, IStorage pstgDest);
+  int MoveElementTo(wchar* pwcsName, IStorage pstgDest, wchar* pwcsNewName, uint grfFlags);
+  int Commit(uint grfCommitFlags);
+  int Revert();
+  int EnumElements(uint reserved1, void* reserved2, uint reserved3, out IEnumSTATSTG ppenum);
+  int DestroyElement(wchar* pwcsName);
+  int RenameElement(wchar* pwcsOldName, wchar* pwcsNewName);
+  int SetElementTimes(wchar* pwcsName, ref FILETIME pctime, ref FILETIME patime, ref FILETIME pmtime);
+  int SetClass(ref GUID clsid);
+  int SetStateBits(uint grfStateBits, uint grfMask);
+  int Stat(out STATSTG pstatstg, uint grfStatFlag);
 }
 
-struct CABSTR {
-  uint cElems;
-  wchar** pElems;
+struct STGOPTIONS {
+  ushort usVersion;
+  ushort reserved;
+  uint ulSectorSize;
+  wchar* pwcsTemplateFile;
 }
 
-struct CABSTRBLOB {
-  uint cElems;
-  BSTRBLOB* pElems;
+enum : uint {
+  STGFMT_STORAGE = 0,
+  STGFMT_FILE = 3,
+  STGFMT_ANY = 4,
+  STGFMT_DOCFILE = 5
 }
 
-struct CABOOL {
-  uint cElems;
-  VARIANT_BOOL* pElems;
+int StgOpenStorage(in wchar* pwcsName, IStorage pstgPriority, uint grfMode, wchar** snbExclude, uint reserved, out IStorage ppstgOpen);
+int StgOpenStorageEx(in wchar* pwcsName, uint grfMode, uint stgfmt, uint grfAttrs, STGOPTIONS* pStgOptions, SECURITY_DESCRIPTOR* pSecurityDescriptor, ref GUID riid, void** ppObjectOpen);
+
+interface IStream : ISequentialStream {
+  mixin(uuid("0000000c-0000-0000-c000-000000000046"));
+  int Seek(long dlibMove, uint dwOrigin, ref ulong plibNewPosition);
+  int SetSize(ulong libNewSize);
+  int CopyTo(IStream stm, ulong cb, ref ulong pcbRead, ref ulong pcbWritten);
+  int Commit(uint hrfCommitFlags);
+  int Revert();
+  int LockRegion(ulong libOffset, ulong cb, uint dwLockType);
+  int UnlockRegion(ulong libOffset, ulong cb, uint dwLockType);
+  int Stat(out STATSTG pstatstg, uint grfStatFlag);
+  int Clone(out IStream ppstm);
 }
 
-struct CASCODE {
-  uint cElems;
-  int* pElems;
+interface IEnumSTATSTG : IUnknown {
+  mixin(uuid("0000000d-0000-0000-c000-000000000046"));
+  int Next(uint celt, STATSTG* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumSTATSTG ppenum);
 }
 
-struct CAPROPVARIANT {
-  uint cElems;
-  PROPVARIANT* pElems;
+enum : uint {
+  STGM_DIRECT           = 0x00000000,
+  STGM_TRANSACTED       = 0x00010000,
+  STGM_SIMPLE           = 0x08000000,
+  STGM_READ             = 0x00000000,
+  STGM_WRITE            = 0x00000001,
+  STGM_READWRITE        = 0x00000002,
+  STGM_SHARE_DENY_NONE  = 0x00000040,
+  STGM_SHARE_DENY_READ  = 0x00000030,
+  STGM_SHARE_DENY_WRITE = 0x00000020,
+  STGM_SHARE_EXCLUSIVE  = 0x00000010,
+  STGM_CREATE           = 0x00001000
 }
 
-struct CAH {
-  uint cElems;
-  long* pElems;
+enum : uint {
+  BIND_MAYBOTHERUSER = 1,
+  BIND_JUSTTESTEXISTENCE = 2
 }
 
-struct CAUH {
-  uint cElems;
-  ulong* pElems;
+struct BIND_OPTS {
+  uint cbStruct = BIND_OPTS.sizeof;
+  uint grfFlags;
+  uint grfMode;
+  uint dwTickCountDeadline;
 }
 
-struct CACLSID {
-  uint cElems;
-  GUID* pElems;
+struct BIND_OPTS2 {
+  uint cbStruct = BIND_OPTS2.sizeof;
+  uint grfFlags;
+  uint grfMode;
+  uint dwTickCountDeadline;
+  uint dwTrackFlags;
+  uint dwClassContext;
+  uint locale;
+  COSERVERINFO* pServerInfo;
 }
 
-struct CAFILETIME {
-  uint cElems;
-  FILETIME* pElems;
+interface IBindCtx : IUnknown {
+  mixin(uuid("0000000e-0000-0000-c000-000000000046"));
+  int RegisterObjectBound(IUnknown punk);
+  int RevokeObjectBound(IUnknown punk);
+  int ReleaseBoundObjects();
+  int SetBindOptions(ref BIND_OPTS pbindopts);
+  int GetBindOptions(ref BIND_OPTS pbindopts);
+  int GetRunningObjectTable(out IRunningObjectTable pprot);
+  int RegisterObjectParam(wchar* pszKey, IUnknown punk);
+  int GetObjectParam(wchar* pszKey, out IUnknown ppunk);
+  int EnumObjectParam(out IEnumString ppenum);
+  int RemoveObjectParam(wchar* pszKey);
 }
 
-struct PROPVARIANT {
+int CreateBindCtx(uint reserved, out IBindCtx ppbc);
 
+interface IMoniker : IPersistStream {
+  mixin(uuid("0000000f-0000-0000-c000-000000000046"));
+  int BindToObject(IBindCtx pbc, IMoniker pmkToLeft, ref GUID riidResult, void** ppvResult);
+  int BindToStorage(IBindCtx pbc, IMoniker pmkToLeft, ref GUID riid, void** ppv);
+  int Reduce(IBindCtx pbc, uint dwReduceHowFar, ref IMoniker ppmkToLeft, out IMoniker ppmkReduced);
+  int ComposeWith(IMoniker pmkRight, bool fOnlyIfNotGeneric, out IMoniker ppmkComposite);
+  int Enum(bool fForward, out IEnumMoniker ppenumMoniker);
+  int IsEqual(IMoniker pmkOtherMoniker);
+  int Hash(out uint pdwHash);
+  int IsRunning(IBindCtx pbc, IMoniker pmkToLeft, IMoniker pmkNewlyRunning);
+  int GetTimeOfLastChange(IBindCtx pbc, IMoniker pmkToLeft, out FILETIME pFileTime);
+  int Inverse(out IMoniker ppmk);
+  int CommonPrefixWith(IMoniker pmkOther, out IMoniker ppmkPrefix);
+  int RelativePathTo(IMoniker pmkOther, out IMoniker ppmkRelPath);
+  int GetDisplayName(IBindCtx pbc, IMoniker pmkToLeft, out wchar* ppszDisplayName);
+  int ParseDisplayName(IBindCtx pbc, IMoniker pmkToLeft, wchar* pszDisplayName, out uint pchEaten, out IMoniker ppmkOut);
+  int IsSystemMoniker(out uint pswMkSys);
+}
+
+int CreateFileMoniker(in wchar* lpszPathName, out IMoniker ppmk);
+
+interface IRunningObjectTable : IUnknown {
+  mixin(uuid("00000010-0000-0000-c000-000000000046"));
+  int Register(uint grfFlags, IUnknown punkObject, IMoniker pmkObjectName, out uint pdwRegister);
+  int Revoke(uint dwRegister);
+  int IsRunning(IMoniker pmkObjectName);
+  int GetObject(IMoniker pmkObjectName, out IUnknown ppunkObject);
+  int NoteChangeTime(uint dwRegister, ref FILETIME pfiletime);
+  int GetTimeOfLastChange(IMoniker pmkObjectName, out FILETIME pfiletime);
+  int EnumRunning(out IEnumMoniker ppenumMoniker);
+}
+
+interface IRecordInfo : IUnknown {
+  mixin(uuid("0000002f-0000-0000-c000-000000000046"));
+  int RecordInit(void* pvNew);
+  int RecordClear(void* pvExisting);
+  int RecordCopy(void* pvExisting, void* pvNew);
+  int GetGuid(out GUID pguid);
+  int GetName(out wchar* pbstrName);
+  int GetSize(out uint pcbSize);
+  int GetTypeInfo(out ITypeInfo ppTypeInfo);
+  int GetField(void* pvData, wchar* szFieldName, out VARIANT pvarField);
+  int GetFieldNoCopy(void* pvData, wchar* szFieldName, out VARIANT pvarField, void** ppvDataCArray);
+  int PutField(uint wFlags, void* pvData, wchar* szFieldName, ref VARIANT pvarField);
+  int PutFieldNoCopy(uint wFlags, void* pvData, wchar* szFieldName, ref VARIANT pvarField);
+  int GetFieldNames(out uint pcNames, wchar** rgBstrNames);
+  bool IsMatchingType(IRecordInfo pRecordInfo);
+  void* RecordCreate();
+  int RecordCreateCopy(void* pvSource, out void* ppvDest);
+  int RecordDestroy(void* pvRecord);
+}
+
+interface IEnumUnknown : IUnknown {
+  mixin(uuid("00000100-0000-0000-c000-000000000046"));
+  int Next(uint celt, IUnknown* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumUnknown ppenum);
+}
+
+interface IEnumString : IUnknown {
+  mixin(uuid("00000101-0000-0000-c000-000000000046"));
+  int Next(uint celt, wchar** rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumString ppenum);
+}
+
+interface IEnumMoniker : IUnknown {
+  mixin(uuid("00000102-0000-0000-c000-000000000046"));
+  int Next(uint celt, IEnumMoniker* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumMoniker ppenum);
+}
+
+struct DVTARGETDEVICE {
+  uint tdSize;
+  ushort tdDriverNameOffset;
+  ushort tdDeviceNameOffset;
+  ushort tdPortNameOffset;
+  ushort tdExtDevmodeOffset;
+  ubyte* tdData;
+}
+
+struct FORMATETC {
+  ushort cfFormat;
+  DVTARGETDEVICE* ptd;
+  uint dwAspect;
+  int lindex;
+  uint tymed;
+}
+
+interface IEnumFORMATETC : IUnknown {
+  mixin(uuid("00000103-0000-0000-c000-000000000046"));
+  int Next(uint celt, FORMATETC* rgelt, ref uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumFORMATETC ppenum);
+}
+
+struct OLEVERB {
+  int lVerb;
+  wchar* lpszVerbName;
+  uint fuFlags;
+  uint grfAttribs;
+}
+
+interface IEnumOLEVERB : IUnknown {
+  mixin(uuid("00000104-0000-0000-c000-000000000046"));
+  int Next(uint celt, OLEVERB* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumOLEVERB ppenum);
+}
+
+enum DVASPECT : uint {
+  DVASPECT_CONTENT = 1,
+  DVASPECT_THUMBNAIL = 2,
+  DVASPECT_ICON = 4,
+  DVASPECT_DOCPRINT = 8
+}
+
+enum TYMED : uint {
+  TYMED_NULL = 0,
+  TYMED_HGLOBAL = 1,
+  TYMED_FILE = 2,
+  TYMED_ISTREAM = 4,
+  TYMED_ISTORAGE = 8,
+  TYMED_GDI = 16,
+  TYMED_MFPICT = 32,
+  TYMED_ENHMF = 64
+}
+
+struct STGMEDIUM {
+  uint tymed;
   union {
-    struct {
-      VARTYPE vt;
-      ushort wReserved1;
-      ushort wReserved2;
-      ushort wReserved3;
-      union {
-        ubyte cVal;
-        byte bVal;
-        short iVal;
-        ushort uiVal;
-        int lVal;
-        uint ulVal;
-        int intVal;
-        uint uintVal;
-        long hVal;
-        ulong uhVal;
-        float fltVal;
-        double dblVal;
-        VARIANT_BOOL boolVal;
-        int scode;
-        long cyVal;
-        double date;
-        FILETIME filetime;
-        GUID* puuid;
-        wchar* bstrVal;
-        BSTRBLOB bstrblobVal;
-        BLOB blob;
-        char* pszVal;
-        wchar* pwszVal;
-        IUnknown punkVal;
-        IDispatch pdispVal;
-        IStream pStream;
-        IStorage pStorage;
-        VERSIONEDSTREAM* pVersionedStream;
-        SAFEARRAY* parray;
-        CAC cac;
-        CAUB caub;
-        CAI cai;
-        CAUI caui;
-        CAL cal;
-        CAUL caul;
-        CAH cah;
-        CAUH cauh;
-        CAFLT caflt;
-        CADBL cadbl;
-        CABOOL cabool;
-        CASCODE cascode;
-        CACY cacy;
-        CADATE cadate;
-        CAFILETIME cafiletime;
-        CACLSID cauuid;
-        CABSTR cabstr;
-        CABSTRBLOB cabstrblob;
-        CAPROPVARIANT capropvar;
-        byte* pcVal;
-        ubyte* pbVal;
-        short* piVal;
-        ushort* puiVal;
-        int* plVal;
-        uint* pulVal;
-        int* pintVal;
-        uint* puintVal;
-        float* pfltVal;
-        double pdblVal;
-        VARIANT_BOOL* pboolVal;
-        DECIMAL* pdecVal;
-        int* pscode;
-        long* pcyVal;
-        double* pdate;
-        wchar** pbstrVal;
-        IUnknown* ppunkVal;
-        IDispatch* ppdispVal;
-        SAFEARRAY** pparray;
-        PROPVARIANT* pvarVal;
-      }
-    }
-    DECIMAL decVal;
+    Handle hBitmap;
+    Handle hMetaFilePict;
+    Handle hEnhMetaFile;
+    Handle hGlobal;
+    wchar* lpszFileName;
+    IStream pstm;
+    IStorage pstg;
   }
+  IUnknown pUnkForRelease;
+}
 
-  public static PROPVARIANT opCall(T)(T value, VARTYPE type = VariantType!(T)) {
-    PROPVARIANT v;
-    v.vt = type;
+struct STATDATA {
+  FORMATETC formatetc;
+  uint advf;
+  IAdviseSink pAdvSink;
+  uint dwConnection;
+}
 
-    static if (is(T == ubyte))
-      v.bVal = value;
-    else static if (is(T == byte))
-      v.cVal = value;
-    else static if (is(T == ushort))
-      v.uiVal = value;
-    else static if (is(T == short))
-      v.iVal = value;
-    else static if (is(T == uint))
-      v.ulVal = value;
-    else static if (is(T == int))
-      v.lVal = value;
-    else static if (is(T == ulong))
-      v.ullVal = value;
-    else static if (is(T == long))
-      v.llVal = value;
-    else static if (is(T == float))
-      v.fltValue = value;
-    else static if (is(T == double))
-      v.dblVal = value;
-    else static if(is(T == DECIMAL))
-      v.decVal = value;
-    else static if (is(T : IDispatch))
-      v.pdispVal = value, value.AddRef();
-    else static if (is(T : IUnknown))
-      v.punkVal = value, value.AddRef();
-    else static if (is(T : Object))
-      v.byref = cast(void*)value;
-    else static if(is(T E == enum))
-      v = VARIANT(cast(E)value);
-    else static if(is(T == bool))
-      v.boolVal = (value == true) ? VARIANT_TRUE : VARIANT_FALSE;
-    else static if (is(T : string))
-      v.bstrVal = value.toBStr();
-    else static assert(false, "The type '" ~ typeof(T).stringof ~ "' must be one of the allowed types.");
+interface IEnumSTATDATA : IUnknown {
+  mixin(uuid("00000105-0000-0000-c000-000000000046"));
+  int Next(uint celt, STATDATA* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumSTATDATA ppenum);
+}
 
-    return v;
-  }
+interface IPersist : IUnknown {
+  mixin(uuid("0000010c-0000-0000-c000-000000000046"));
+  int GetClassID(out GUID pClassID);
+}
 
-  public void copyTo(out PROPVARIANT dest) {
-    PropVariantCopy(&dest, this);
-  }
+interface IPersistStream : IPersist {
+  mixin(uuid("00000109-0000-0000-c000-000000000046"));
+  int IsDirty();
+  int Load(IStream pStm);
+  int Save(IStream pStm, int fClearDirty);
+  int GetSizeMax(out ulong pcbSize);
+}
 
-  public string toString() {
-    if (vt == VARTYPE.VT_BSTR)
-      return fromBStr(bstrVal);
+interface IPersistStreamInit : IPersist {
+  mixin(uuid("7FD52380-4E07-101B-AE2D-08002B2EC713"));
+  int IsDirty();
+  int Load(IStream pStm);
+  int Save(IStream pStm, int fClearDirty);
+  int GetSizeMax(out ulong pcbSize);
+  int InitNew();
+}
 
-    wchar* bstr;
-    PropVariantToBSTR(this, &bstr);
-    return fromBStr(bstr);
-  }
+enum {
+  DV_E_FORMATETC = 0x80040064,
+  DV_E_DVTARGETDEVICE = 0x80040065,
+  DV_E_STGMEDIUM = 0x80040066,
+  DV_E_STATDATA = 0x80040067,
+  DV_E_LINDEX = 0x80040068,
+  DV_E_TYMED = 0x80040069,
+  DV_E_CLIPFORMAT = 0x8004006A,
+  DV_E_DVASPECT = 0x8004006B
+}
 
+interface IDataObject : IUnknown {
+  mixin(uuid("0000010e-0000-0000-c000-000000000046"));
+  int GetData(ref FORMATETC pformatetcIn, out STGMEDIUM pmedium);
+  int GetDataHere(ref FORMATETC pformatetc, ref STGMEDIUM pmedium);
+  int QueryGetData(ref FORMATETC pformatetc);
+  int GetCanonicalFormatEtc(ref FORMATETC pformatetcIn, out FORMATETC pformatetcOut);
+  int SetData(ref FORMATETC pformatetc, ref STGMEDIUM pmedium, int fRelease);
+  int EnumFormatEtc(uint dwDirection, out IEnumFORMATETC ppenumFormatEtc);
+  int DAdvise(ref FORMATETC pformatetc, uint advf, IAdviseSink pAdvSink, out uint pdwConnection);
+  int DUnadvise(uint dwConnection);
+  int EnumDAdvise(out IEnumSTATDATA ppenumAdvise);
+}
+
+int OleSetClipboard(IDataObject pDataObj);
+int OleGetClipboard(out IDataObject ppDataObj);
+int OleFlushClipboard();
+int OleIsCurrentClipboard(IDataObject pDataObj);
+
+interface IAdviseSink : IUnknown {
+  mixin(uuid("0000010f-0000-0000-c000-000000000046"));
+  int OnDataChange(ref FORMATETC pFormatetc, ref STGMEDIUM pStgmed);
+  int OnViewChange(uint dwAspect, int lindex);
+  int OnRename(IMoniker pmk);
+  int OnSave();
+  int OnClose();
+}
+
+interface IDropSource : IUnknown {
+  mixin(uuid("00000121-0000-0000-c000-000000000046"));
+  int QueryContinueDrag(int fEscapePressed, uint grfKeyState);
+  int GiveFeedback(uint dwEffect);
+}
+
+enum : uint {
+  DROPEFFECT_NONE = 0,
+  DROPEFFECT_COPY = 1,
+  DROPEFFECT_MOVE = 2,
+  DROPEFFECT_LINK = 4,
+  DROPEFFECT_SCROLL = 0x80000000
+}
+
+interface IDropTarget : IUnknown {
+  mixin(uuid("00000122-0000-0000-c000-000000000046"));
+  int DragEnter(IDataObject pDataObj, uint grfKeyState, POINT pt, ref uint pdwEffect);
+  int DragOver(uint grfKeyState, POINT pt, ref uint pdwEffect);
+  int DragLeave();
+  int Drop(IDataObject pDataObj, uint grfKeyState, POINT pt, ref uint pdwEffect);
+}
+
+enum {
+  DRAGDROP_E_NOTREGISTERED = 0x80040100,
+  DRAGDROP_E_ALREADYREGISTERED = 0x80040101,
+  DRAGDROP_E_INVALIDHWND = 0x80040102
+}
+
+int RegisterDragDrop(Handle hwnd, IDropTarget pDropTarget);
+int RevokeDragDrop(Handle hwnd);
+int DoDragDrop(IDataObject pDataObject, IDropSource pDropSource, uint dwOKEffects, out uint pdwEffect);
+
+struct DISPPARAMS {
+  VARIANT* rgvarg;
+  int* rgdispidNamedArgs;
+  uint cArgs;
+  uint cNamedArgs;
+}
+
+struct EXCEPINFO {
+  ushort wCode;
+  ushort wReserved;
+  wchar* bstrSource;
+  wchar* bstrDescription;
+  wchar* bstrHelpFile;
+  uint dwHelpContext;
+  void* pvReserved;
+  int function(EXCEPINFO*) pfnDeferredFillIn;
+  int scode;
+}
+
+enum : ushort {
+  DISPATCH_METHOD         = 0x1,
+  DISPATCH_PROPERTYGET    = 0x2,
+  DISPATCH_PROPERTYPUT    = 0x4,
+  DISPATCH_PROPERTYPUTREF = 0x8
+}
+
+enum {
+  DISPID_UNKNOWN     = -1,
+  DISPID_VALUE       = 0,
+  DISPID_PROPERTYPUT = -3,
+  DISPID_NEWENUM     = -4,
+  DISPID_EVALUATE    = -5,
+  DISPID_CONSTRUCTOR = -6,
+  DISPID_DESTRUCTOR  = -7,
+  DISPID_COLLECT     = -8
+}
+
+enum {
+  DISP_E_UNKNOWNINTERFACE = 0x80020001,
+  DISP_E_MEMBERNOTFOUND   = 0x80020003,
+  DISP_E_PARAMNOTFOUND    = 0x80020004,
+  DISP_E_TYPEMISMATCH     = 0x80020005,
+  DISP_E_UNKNOWNNAME      = 0x80020006,
+  DISP_E_NONAMEDARGS      = 0x80020007,
+  DISP_E_BADVARTYPE       = 0x80020008,
+  DISP_E_EXCEPTION        = 0x80020009,
+  DISP_E_BADPARAMCOUNT    = 0x8002000E
+}
+
+interface IDispatch : IUnknown {
+  mixin(uuid("00020400-0000-0000-c000-000000000046"));
+  int GetTypeInfoCount(out uint pctinfo);
+  int GetTypeInfo(uint iTInfo, uint lcid, out ITypeInfo ppTInfo);
+  int GetIDsOfNames(ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId);
+  int Invoke(int dispIdMember, ref GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint* puArgError);
 }
 
 enum TYPEKIND {
@@ -1015,25 +1667,6 @@ struct TYPEATTR {
   ushort wMinorVerNum;
   TYPEDESC tdescAlias;
   IDLDESC idldescType;
-}
-
-struct DISPPARAMS {
-  VARIANT* rgvarg;
-  int* rgdispidNamedArgs;
-  uint cArgs;
-  uint cNamedArgs;
-}
-
-struct EXCEPINFO {
-  ushort wCode;
-  ushort wReserved;
-  wchar* bstrSource;
-  wchar* bstrDescription;
-  wchar* bstrHelpFile;
-  uint dwHelpContext;
-  void* pvReserved;
-  int function(EXCEPINFO*) pfnDeferredFillIn;
-  int scode;
 }
 
 enum CALLCONV {
@@ -1192,418 +1825,12 @@ struct TLIBATTR {
   ushort wLibFlags;
 }
 
-enum CHANGEKIND {
-  CHANGEKIND_ADDMEMBER,
-  CHANGEKIND_DELETEMEMBER,
-  CHANGEKIND_SETNAMES,
-  CHANGEKIND_SETDOCUMENTATION,
-  CHANGEKIND_GENERAL,
-  CHANGEKIND_INVALIDATE,
-  CHANGEKIND_CHANGEFAILED,
-  CHANGEKIND_MAX
-}
-
-struct COAUTHIDENTITY {
-  wchar* User;
-  uint UserLength;
-  wchar* Domain;
-  uint DomainLength;
-  wchar* Password;
-  uint PasswordLength;
-}
-
-struct COAUTHINFO {
-  uint dwAuthnSvc;
-  uint dwAuthzSvc;
-  wchar* pwszServerPrincName;
-  uint dwAuthnLevel;
-  uint dwImpersonationLevel;
-  COAUTHIDENTITY* pAuthIdentityData;
-  uint dwCapabilities;
-}
-
-struct COSERVERINFO {
-  uint dwReserved1;
-  wchar* pwszName;
-  COAUTHINFO* pAuthInfo;
-  uint dwReserved2;
-}
-
-struct MULTI_QI {
-  GUID* pIID;
-  IUnknown pItf;
-  int hr;
-}
-
-struct CATEGORYINFO {
-  GUID catid;
-  uint lcid;
-  wchar[128] szDescription;
-}
-
-extern(Windows):
-
-//GUID IID_NULL = { 0x00000000, 0x0000, 0x0000, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-interface IUnknown {
-  static GUID IID = { 0x00000000, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int QueryInterface(ref GUID riid, void** ppvObject);
-  uint AddRef();
-  uint Release();
-}
-
-interface IClassFactory : IUnknown {
-  static GUID IID = { 0x00000001, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int CreateInstance(IUnknown pUnkOuter, ref GUID riid, void** ppvObject);
-  int LockServer(int fLock);
-}
-
-interface IMalloc : IUnknown {
-  static GUID IID = { 0x00000002, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  void* Alloc(size_t cb);
-  void* Realloc(void* pv, size_t cb);
-  void Free(void* pv);
-  size_t GetSize(void* pv);
-  int DidAlloc(void* pv);
-  void HeapMinimize();
-}
-
-struct STATSTG {
-  wchar* pwcsName;
-  uint type;
-  ulong cbSize;
-  FILETIME mtime;
-  FILETIME ctime;
-  FILETIME atime;
-  uint grfMode;
-  uint grfLocksSupported;
-  GUID clsid;
-  uint grfStateBits;
-  uint reserved;
-}
-
-enum STGTY : uint {
-  STGTY_STORAGE = 1,
-  STGTY_STREAM = 2,
-  STGTY_LOCKBYTES = 3,
-  STGTY_PROPERTY = 4
-}
-
-enum STREAM_SEEK : uint {
-  STREAM_SEEK_SET,
-  STREAM_SEEK_CUR,
-  STREAM_SEEK_END
-}
-
-enum STATFLAG : uint {
-  STATFLAG_DEFAULT,
-  STATFLAG_NONAME,
-  STATFLAG_NOOPEN
-}
-
-interface IStorage : IUnknown {
-  static GUID IID = { 0x0000000b, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int CreateStream(wchar* pwcsName, uint grfMode, uint reserved1, uint reserved2, out IStream ppstm);
-  int OpenStream(wchar* pwcsName, void* reserved1, uint grfMode, uint reserved2, out IStream ppstm);
-  int CreateStorage(wchar* pwcsName, uint grfMode, uint reserved1, uint reserved2, out IStorage ppstg);
-  int OpenStorage(wchar* pwcsName, IStorage psrgPriority, uint grfMode, wchar** snbExclude, uint reserved, out IStorage ppstg);
-  int CopyTo(uint ciidExclude, GUID* rgiidExclude, wchar** snbExclude, IStorage pstgDest);
-  int MoveElementTo(wchar* pwcsName, IStorage pstgDest, wchar* pwcsNewName, uint grfFlags);
-  int Commit(uint grfCommitFlags);
-  int Revert();
-  int EnumElements(uint reserved1, void* reserved2, uint reserved3, out IEnumSTATSTG ppenum);
-  int DestroyElement(wchar* pwcsName);
-  int RenameElement(wchar* pwcsOldName, wchar* pwcsNewName);
-  int SetElementTimes(wchar* pwcsName, ref FILETIME pctime, ref FILETIME patime, ref FILETIME pmtime);
-  int SetClass(ref GUID clsid);
-  int SetStateBits(uint grfStateBits, uint grfMask);
-  int Stat(out STATSTG pstatstg, uint grfStatFlag);
-}
-
-interface ISequentialStream : IUnknown {
-  static GUID IID = { 0x0c733a30, 0x2a1c, 0x11ce, 0xad, 0xe5, 0x00, 0xaa, 0x00, 0x44, 0x77, 0x3d };
-  int Read(void* pv, uint cb, ref uint pcbRead);
-  int Write(void* pv, uint cb, ref uint pcbWritten);
-}
-
-interface IStream : ISequentialStream {
-  static GUID IID = { 0x0000000C, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Seek(long dlibMove, uint dwOrigin, ref ulong plibNewPosition);
-  int SetSize(ulong libNewSize);
-  int CopyTo(IStream stm, ulong cb, ref ulong pcbRead, ref ulong pcbWritten);
-  int Commit(uint hrfCommitFlags);
-  int Revert();
-  int LockRegion(ulong libOffset, ulong cb, uint dwLockType);
-  int UnlockRegion(ulong libOffset, ulong cb, uint dwLockType);
-  int Stat(out STATSTG pstatstg, uint gfrStatFlag);
-  int Clone(out IStream ppstm);
-}
-
-interface IEnumSTATSTG : IUnknown {
-  static GUID IID = { 0x0000000d, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, STATSTG* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumSTATSTG ppenum);
-}
-
-struct BIND_OPTS {
-  uint cbStruct = BIND_OPTS.sizeof;
-  uint grfFlags;
-  uint grfMode;
-  uint dwTickCountDeadline;
-}
-
-interface IBindCtx : IUnknown {
-  static GUID IID = { 0x0000000e, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int RegisterObjectBound(IUnknown punk);
-  int RevokeObjectBound(IUnknown punk);
-  int ReleaseBoundObjects();
-  int SetBindOptions(ref BIND_OPTS pbindopts);
-  int GetRunningObjectTable(out IRunningObjectTable pprot);
-  int RegisterObjectParam(wchar* pszKey, IUnknown punk);
-  int GetObjectParam(wchar* pszKey, out IUnknown ppunk);
-  int EnumObjectParam(out IEnumString ppenum);
-  int RemoveObjectParam(wchar* pszKey);
-}
-
-interface IMoniker : IUnknown {
-  static GUID IID = { 0x0000000f, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int BindToObject(IBindCtx pbc, IMoniker pmkToLeft, ref GUID riidResult, void** ppvResult);
-  int BindToStorage(IBindCtx pbc, IMoniker pmkToLeft, ref GUID riid, void** ppv);
-  int Reduce(IBindCtx pbc, uint dwReduceHowFar, ref IMoniker ppmkToLeft, out IMoniker ppmkReduced);
-  int ComposeWith(IMoniker pmkRight, bool fOnlyIfNotGeneric, out IMoniker ppmkComposite);
-  int Enum(bool fForward, out IEnumMoniker ppenumMoniker);
-  int IsEqual(IMoniker pmkOtherMoniker);
-  int Hash(out uint pdwHash);
-  int IsRunning(IBindCtx pbc, IMoniker pmkToLeft, IMoniker pmkNewlyRunning);
-  int GetTimeOfLastChange(IBindCtx pbc, IMoniker pmkToLeft, out FILETIME pFileTime);
-  int Inverse(out IMoniker ppmk);
-  int CommonPrefixWith(IMoniker pmkOther, out IMoniker ppmkPrefix);
-  int RelativePathTo(IMoniker pmkOther, out IMoniker ppmkRelPath);
-  int GetDisplayName(IBindCtx pbc, IMoniker pmkToLeft, out wchar* ppszDisplayName);
-  int ParseDisplayName(IBindCtx pbc, IMoniker pmkToLeft, wchar* pszDisplayName, out uint pchEaten, out IMoniker ppmkOut);
-  int IsSystemMoniker(out uint pswMkSys);
-}
-
-interface IRunningObjectTable : IUnknown {
-  static GUID IID = { 0x00000010, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Register(uint grfFlags, IUnknown punkObject, IMoniker pmkObjectName, out uint pdwRegister);
-  int Revoke(uint dwRegister);
-  int IsRunning(IMoniker pmkObjectName);
-  int GetObject(IMoniker pmkObjectName, out IUnknown ppunkObject);
-  int NoteChangeTime(uint dwRegister, ref FILETIME pfiletime);
-  int GetTimeOfLastChange(IMoniker pmkObjectName, out FILETIME pfiletime);
-  int EnumRunning(out IEnumMoniker ppenumMoniker);
-}
-
-interface ITypeMarshal : IUnknown {
-  static GUID IID = { 0x0000002D, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Size(void* pvType, uint dwDestContext, void* pvDestContext, out uint pSize);
-  int Marshal(void* pvType, uint dwDestContext, void* pvDestContext, uint cbBufferLength, ubyte* pBuffer, out uint pcbWritten);
-  int Unmarshal(void* pvType, uint dwFlags, uint cbBufferLength, ubyte* pBuffer, out uint pcbRead);
-  int Free(void* pvType);
-}
-
-interface ITypeFactory : IUnknown {
-  static GUID IID = { 0x0000002E, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int CreateFromTypeInfo(ITypeInfo pTypeInfo, ref GUID riid, out IUnknown ppv);
-}
-
-interface IRecordInfo : IUnknown {
-  static GUID IID = { 0x0000002F, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int RecordInit(void* pvNew);
-  int RecordClear(void* pvExisting);
-  int RecordCopy(void* pvExisting, void* pvNew);
-  int GetGuid(out GUID pguid);
-  int GetName(out wchar* pbstrName);
-  int GetSize(out uint pcbSize);
-  int GetTypeInfo(out ITypeInfo ppTypeInfo);
-  int GetField(void* pvData, wchar* szFieldName, out VARIANT pvarField);
-  int GetFieldNoCopy(void* pvData, wchar* szFieldName, out VARIANT pvarField, void** ppvDataCArray);
-  int PutField(uint wFlags, void* pvData, wchar* szFieldName, ref VARIANT pvarField);
-  int PutFieldNoCopy(uint wFlags, void* pvData, wchar* szFieldName, ref VARIANT pvarField);
-  int GetFieldNames(out uint pcNames, wchar** rgBstrNames);
-  bool IsMatchingType(IRecordInfo pRecordInfo);
-  void* RecordCreate();
-  int RecordCreateCopy(void* pvSource, out void* ppvDest);
-  int RecordDestroy(void* pvRecord);
-}
-
-interface IEnumUnknown : IUnknown {
-  static GUID IID = { 0x00000100, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, IUnknown* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumUnknown ppenum);
-}
-
-interface IEnumString : IUnknown {
-  static GUID IID = { 0x00000101, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, wchar** rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumString ppenum);
-}
-
-interface IEnumMoniker : IUnknown {
-  static GUID IID = { 0x00000102, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, IEnumMoniker* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumMoniker ppenum);
-}
-
-struct DVTARGETDEVICE {
-  uint tdSize;
-  ushort tdDriverNameOffset;
-  ushort tdDeviceNameOffset;
-  ushort tdPortNameOffset;
-  ushort tdExtDevmodeOffset;
-  ubyte* tdData;
-}
-
-struct FORMATETC {
-  ushort cfFormat;
-  DVTARGETDEVICE* ptd;
-  uint dwAspect;
-  int lindex;
-  uint tymed;
-}
-
-interface IEnumFORMATETC : IUnknown {
-  static GUID IID = { 0x00000103, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, FORMATETC* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumFORMATETC ppenum);
-}
-
-struct OLEVERB {
-  int lVerb;
-  wchar* lpszVerbName;
-  uint fuFlags;
-  uint grfAttribs;
-}
-
-interface IEnumOLEVERB : IUnknown {
-  static GUID IID = { 0x00000104, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, OLEVERB* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumOLEVERB ppenum);
-}
-
-struct STGMEDIUM {
-  uint tymed;
-  union {
-    Handle hBitmap;
-    Handle hMetaFilePict;
-    Handle hEnhMetaFile;
-    Handle hGlobal;
-    wchar* lpszFileName;
-    IStream pstm;
-    IStorage pstg;
-  }
-  IUnknown pUnkForRelease;
-}
-
-struct STATDATA {
-  FORMATETC formatetc;
-  uint advf;
-  IAdviseSink pAdvSink;
-  uint dwConnection;
-}
-
-interface IEnumSTATDATA : IUnknown {
-  static GUID IID = { 0x00000105, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, STATDATA* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumSTATDATA ppenum);
-}
-
-interface IPersist : IUnknown {
-  static GUID IID = { 0x0000010c, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int GetClassID(out GUID pClassID);
-}
-
-interface IPersistStream : IPersist {
-  static GUID IID = { 0x00000109, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int IsDirty();
-  int Load(IStream pStm);
-  int Save(IStream pStm, int fClearDirty);
-  int GetSizeMax(out ulong pcbSize);
-}
-
-interface IDataObject : IUnknown {
-  static GUID IID = { 0x0000010e, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int GetData(ref FORMATETC pformatetcIn, out STGMEDIUM pmedium);
-  int GetDataHere(ref FORMATETC pformatetc, ref STGMEDIUM pmedium);
-  int QueryGetData(ref FORMATETC pformatetc);
-  int GetCanonicalFormatEtc(ref FORMATETC pformatetcIn, out FORMATETC pformatetcOut);
-  int SetData(ref FORMATETC pformatetc, ref STGMEDIUM pmedium, bool fRelease);
-  int EnumFormatEtc(uint dwDirection, out IEnumFORMATETC ppenumFormatEtc);
-  int DAdvise(ref FORMATETC pformatetc, uint advf, IAdviseSink pAdvSink, out uint pdwConnection);
-  int DUnadvise(uint dwConnection);
-  int EnumDAdvise(out IEnumSTATDATA ppenumAdvise);
-}
-
-interface IAdviseSink : IUnknown {
-  static GUID IID = { 0x0000010f, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int OnDataChange(ref FORMATETC pFormatetc, ref STGMEDIUM pStgmed);
-  int OnViewChange(uint dwAspect, int lindex);
-  int OnRename(IMoniker pmk);
-  int OnSave();
-  int OnClose();
-}
-
-interface IDropSource : IUnknown {
-  static GUID IID = { 0x00000121, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int QueryContinueDrag(int fEscapePressed, uint grfKeyState);
-  int GiveFeedback(uint dwEffect);
-}
-
-interface IDropTarget : IUnknown {
-  static GUID IID = { 0x00000122, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int DragEnter(IDataObject pDataObj, uint grfKeyState, POINT pt, ref uint pdwEffect);
-  int DragOver(uint grfKeyState, POINT pt, ref uint pdwEffect);
-  int DragLeave();
-  int Drop(IDataObject pDataObj, uint grfKeyState, POINT pt, ref uint pdwEffect);
-}
-
-int RegisterDragDrop(Handle hwnd, IDropTarget pDropTarget);
-int RevokeDragDrop(Handle hwnd);
-int DoDragDrop(IDataObject pDataObject, IDropSource pDropSource, uint dwOKEffects, out uint pdwEffect);
-
-enum : ushort {
-  DISPATCH_METHOD         = 0x1,
-  DISPATCH_PROPERTYGET    = 0x2,
-  DISPATCH_PROPERTYPUT    = 0x4,
-  DISPATCH_PROPERTYPUTREF = 0x8
-}
-
 enum {
-  DISPID_UNKNOWN = -1,
-  DISPID_VALUE = 0,
-  DISPID_PROPERTYPUT = -3,
-  DISPID_NEWENUM = -4,
-  DISPID_EVALUATE = -5,
-  DISPID_CONSTRUCTOR = -6,
-  DISPID_DESTRUCTOR = -7,
-  DISPID_COLLECT = -8
-}
-
-interface IDispatch : IUnknown {
-  static GUID IID = { 0x00020400, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int GetTypeInfoCount(out uint pctinfo);
-  int GetTypeInfo(uint iTInfo, uint lcid, out ITypeInfo ppTInfo);
-  int GetIDsOfNames(ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId);
-  int Invoke(int dispIdMember, ref GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint* puArgErr);
+  TYPE_E_ELEMENTNOTFOUND      = 0x8002802B
 }
 
 interface ITypeInfo : IUnknown {
-  static GUID IID = { 0x00020401, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  mixin(uuid("00020401-0000-0000-c000-000000000046"));
   int GetTypeAttr(out TYPEATTR* ppTypeAttr);
   int GetTypeComp(out ITypeComp ppTComp);
   int GetFuncDesc(uint index, out FUNCDESC* ppFuncDesc);
@@ -1625,31 +1852,11 @@ interface ITypeInfo : IUnknown {
   int ReleaseVarDesc(VARDESC* pVarDesc);
 }
 
-/**
- */
 interface ITypeLib : IUnknown {
-  static GUID IID = { 0x00020402, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  /**
-   * Returns the number of type descriptions in the type library.
-   */
+  mixin(uuid("00020402-0000-0000-c000-000000000046"));
   uint GetTypeInfoCount();
-  /**
-   * Retrieves the specified type description in the library.
-   * Params:
-   *   index = The _index of the ITypeInfo interface to return.
-   *   ppTInfo = When the method returns, the ITypeInfo describing the type referenced by index.
-   */
   int GetTypeInfo(uint index, out ITypeInfo ppTInfo);
-  /**
-   * Retrieves the type of a type description.
-   * Params:
-   *   index = The _index of the type desciption in the library.
-   *   pTKind = When the method returns, the TYPEKIND enumeration for the type description.
-   */
   int GetTypeInfoType(uint index, out TYPEKIND pTKind);
-  /**
-   * Retrieves the type description that corresponds to the specified GUID.
-   */
   int GetTypeInfoOfGuid(ref GUID guid, out ITypeInfo ppTInfo);
   int GetLibAttr(out TLIBATTR* ppTLibAttr);
   int GetTypeComp(out ITypeComp ppTComp);
@@ -1660,21 +1867,13 @@ interface ITypeLib : IUnknown {
 }
 
 interface ITypeComp : IUnknown {
-  static GUID IID = { 0x00020403, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  mixin(uuid("00020403-0000-0000-c000-000000000046"));
   int Bind(wchar* szName, uint lHashVal, ushort wFlags, out ITypeInfo ppTInfo, out DESCKIND pDescKind, out BINDPTR pBindPtr);
   int BindType(wchar* szName, uint lHashVal, out ITypeInfo ppTInfo, out ITypeComp ppTComp);
 }
 
-interface IEnumVARIANT : IUnknown {
-  static GUID IID = { 0x00020404, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, VARIANT* rgVar, out uint pCeltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumVARIANT ppEnum);
-}
-
 interface ICreateTypeInfo : IUnknown {
-  static GUID IID = { 0x00020405, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  mixin(uuid("00020405-0000-0000-c000-000000000046"));
   int SetGuid(ref GUID guid);
   int SetTypeFlags(uint uTypeFlags);
   int SetDocString(wchar* szStrDoc);
@@ -1700,8 +1899,22 @@ interface ICreateTypeInfo : IUnknown {
   int LayOut();
 }
 
+interface ICreateTypeLib : IUnknown {
+  mixin(uuid("00020406-0000-0000-c000-000000000046"));
+  int CreateTypeInfo(wchar* szName, TYPEKIND tkind, out ICreateTypeInfo ppCTInfo);
+  int SetName(wchar* szName);
+  int SetVersion(ushort wMajorVerNum, ushort wMinorVerNum);
+  int SetGuid(ref GUID guid);
+  int SetDocString(wchar* szDoc);
+  int SetHelpFileName(wchar* szHelpFileName);
+  int SetHelpContext(uint dwHelpContext);
+  int SetLcid(uint lcid);
+  int SetLibFlags(uint uLibFlags);
+  int SaveAllChanges();
+}
+
 interface ICreateTypeInfo2 : ICreateTypeInfo {
-  static GUID IID = { 0x0002040E, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  mixin(uuid("0002040e-0000-0000-c000-000000000046"));
   int DeleteFuncDesc(uint index);
   int DeleteFuncDescByMemId(int memid, INVOKEKIND invKind);
   int DeleteVarDesc(uint index);
@@ -1718,30 +1931,27 @@ interface ICreateTypeInfo2 : ICreateTypeInfo {
   int Invalidate();
 }
 
-interface ICreateTypeLib : IUnknown {
-  static GUID IID = { 0x00020406, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int CreateTypeInfo(wchar* szName, TYPEKIND tkind, out ICreateTypeInfo ppCTInfo);
-  int SetName(wchar* szName);
-  int SetVersion(ushort wMajorVerNum, ushort wMinorVerNum);
-  int SetGuid(ref GUID guid);
-  int SetDocString(wchar* szDoc);
-  int SetHelpFileName(wchar* szHelpFileName);
-  int SetHelpContext(uint dwHelpContext);
-  int SetLcid(uint lcid);
-  int SetLibFlags(uint uLibFlags);
-  int SaveAllChanges();
-}
-
 interface ICreateTypeLib2 : ICreateTypeLib {
-  static GUID IID = { 0x0002040F, 0x0000, 0x0000, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  mixin(uuid("0002040f-0000-0000-c000-000000000046"));
   int DeleteTypeInfo(wchar* szName);
   int SetCustData(ref GUID guid, ref VARIANT pVarVal);
   int SetHelpStringContext(uint dwHelpStringContext);
   int SetHelpStringDll(wchar* szFileName);
 }
 
+enum CHANGEKIND {
+  CHANGEKIND_ADDMEMBER,
+  CHANGEKIND_DELETEMEMBER,
+  CHANGEKIND_SETNAMES,
+  CHANGEKIND_SETDOCUMENTATION,
+  CHANGEKIND_GENERAL,
+  CHANGEKIND_INVALIDATE,
+  CHANGEKIND_CHANGEFAILED,
+  CHANGEKIND_MAX
+}
+
 interface ITypeChangeEvents : IUnknown {
-  static GUID IID = { 0x00020410, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  mixin(uuid("00020410-0000-0000-c000-000000000046"));
   int RequestTypeChange(CHANGEKIND changeKind, ITypeInfo pTInfoBefore, wchar* pStrName, out int pfCancel);
   int AfterTypeChange(CHANGEKIND changeKind, ITypeInfo pTInfoAfter, wchar* pStrName);
 }
@@ -1757,7 +1967,7 @@ struct CUSTDATA {
 }
 
 interface ITypeLib2 : ITypeLib {
-  static GUID IID = { 0x00020411, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  mixin(uuid("00020411-0000-0000-c000-000000000046"));
   int GetCustData(ref GUID guid, out VARIANT pVarVal);
   int GetLibStatistics(out uint pcUniqueNames, out uint pcchUniqueNames);
   int GetDocumentation2(int index, uint lcid, wchar** pBstrHelpString, uint* pdwHelpContext, wchar** pBstrHelpStringDll);
@@ -1765,7 +1975,7 @@ interface ITypeLib2 : ITypeLib {
 }
 
 interface ITypeInfo2 : ITypeInfo {
-  static GUID IID = { 0x00020412, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
+  mixin(uuid("00020412-0000-0000-c000-000000000046"));
   int GetTypeKind(out TYPEKIND pTypeKind);
   int GetTypeFlags(out uint pTypeFlags);
   int GetFuncIndexOfMemId(int memid, INVOKEKIND invKind, out uint pFuncIndex);
@@ -1783,46 +1993,64 @@ interface ITypeInfo2 : ITypeInfo {
   int GetAllTypeImplCustData(uint index, out CUSTDATA pCustData);
 }
 
-interface ICatRegister : IUnknown {
-  static GUID IID = { 0x0002E012, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int RegisterCategories(uint cCategories, CATEGORYINFO* rgCategoryInfo);
-  int UnRegisterCategories(uint cCategories, GUID* rgcatid);
-  int RegisterClassImplCategories(ref GUID rclsid, uint cCategories, GUID* rgcatid);
-  int UnRegisterClassImplCategories(ref GUID rclsid, uint cCategories, GUID* rgcatid);
-  int RegisterClassReqCategories(ref GUID rclsid, uint cCategories, GUID* rgcatid);
-  int UnRegisterClassReqCategories(ref GUID rclsid, uint cCategories, GUID* rgcatid);
+interface IEnumGUID : IUnknown {
+  mixin(uuid("0002E000-0000-0000-c000-000000000046"));
+  int Next(uint celt, GUID* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumGUID ppenum);
+}
+
+struct CATEGORYINFO {
+  GUID catid;
+  uint lcid;
+  wchar[128] szDescription;
+}
+
+interface IEnumCATEGORYINFO : IUnknown {
+  mixin(uuid("0002E011-0000-0000-c000-000000000046"));
+  int Next(uint celt, CATEGORYINFO* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumGUID ppenum);
+}
+
+interface ICatInformation : IUnknown {
+  mixin(uuid("0002E013-0000-0000-c000-000000000046"));
+  int EnumCategories(uint lcid, out IEnumCATEGORYINFO ppenumCategoryInfo);
+  int GetCategoryDesc(inout GUID rcatid, uint lcid, out wchar* pszDesc);
+  int EnumClassesOfCategories(uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq, out IEnumGUID ppenumClsid);
+  int IsClassOfCategories(inout GUID rclsid, uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq);
+  int EnumImplCategoriesOfClass(inout GUID rclsid, out IEnumGUID ppenumCatid);
+  int EnumReqCategoriesOfClass(inout GUID rclsid, out IEnumGUID ppenumCatid);
+}
+
+abstract final class StdComponentCategoriesMgr {
+  mixin(uuid("0002E005-0000-0000-c000-000000000046"));
+  mixin Interfaces!(ICatInformation);
 }
 
 interface IConnectionPointContainer : IUnknown {
-  static GUID IID = { 0xB196B284, 0xBAB4, 0x101A, 0xB6, 0x9C, 0x00, 0xAA, 0x00, 0x34, 0x1D, 0x07 };
+  mixin(uuid("b196b284-bab4-101a-b69c-00aa00341d07"));
   int EnumConnectionPoints(out IEnumConnectionPoints ppEnum);
   int FindConnectionPoint(ref GUID riid, out IConnectionPoint ppCP);
 }
 
 interface IEnumConnectionPoints : IUnknown {
-  static GUID IID = { 0xB196B285, 0xBAB4, 0x101A, 0xB6, 0x9C, 0x00, 0xAA, 0x00, 0x34, 0x1D, 0x07 };
-  int Next(uint celt, IConnectionPoint* ppCP, out uint pceltFetched);
-  int Skip(uint celt);
+  mixin(uuid("b196b285-bab4-101a-b69c-00aa00341d07"));
+  int Next(uint cConnections, IConnectionPoint* ppCP, out uint pcFetched);
+  int Skip(uint cConnections);
   int Reset();
-  int Clone(out IEnumConnectionPoints ppenum);
-}
-
-interface IErrorInfo : IUnknown {
-  static GUID IID = { 0x1CF2B120, 0x547D, 0x101B, 0x8E, 0x65, 0x08, 0x00, 0x2B, 0x2B, 0xD1, 0x19 };
-  int GetGUID(out GUID pGUID);
-  int GetSource(out wchar* pBstrSource);
-  int GetDescription(out wchar* pBstrDescription);
-  int GetHelpFile(out wchar* pBstrHelpFile);
-  int GetHelpContext(out uint pdwHelpContext);
+  int Clone(out IEnumConnectionPoints ppEnum);
 }
 
 interface IConnectionPoint : IUnknown {
-  static GUID IID = { 0xB196B286, 0xBAB4, 0x101A, 0xB6, 0x9C, 0x00, 0xAA, 0x00, 0x34, 0x1D, 0x07 };
+  mixin(uuid("b196b286-bab4-101a-b69c-00aa00341d07"));
   int GetConnectionInterface(out GUID pIID);
   int GetConnectionPointContainer(out IConnectionPointContainer ppCPC);
   int Advise(IUnknown pUnkSink, out uint pdwCookie);
   int Unadvise(uint dwCookie);
-  int EnumConnections(out IEnumConnections ppenum);
+  int EnumConnections(out IEnumConnections ppEnum);
 }
 
 struct CONNECTDATA {
@@ -1831,11 +2059,29 @@ struct CONNECTDATA {
 }
 
 interface IEnumConnections : IUnknown {
-  static GUID IID = { 0xB196B287, 0xBAB4, 0x101A, 0xB6, 0x9C, 0x00, 0xAA, 0x00, 0x34, 0x1D, 0x07 };
-  int Next(uint celt, CONNECTDATA* rgcd, out uint pceltFetched);
-  int Skip(uint celt);
+  mixin(uuid("b196b287-bab4-101a-b69c-00aa00341d07"));
+  int Next(uint cConnections, CONNECTDATA* rgcd, out uint pcFetched);
+  int Skip(uint cConnections);
   int Reset();
-  int Clone(out IEnumConnections ppenum);
+  int Clone(out IEnumConnections ppEnum);
+}
+
+interface IErrorInfo : IUnknown {
+  mixin(uuid("1cf2b120-547d-101b-8e65-08002b2bd119"));
+  int GetGUID(out GUID pGUID);
+  int GetSource(out wchar* pBstrSource);
+  int GetDescription(out wchar* pBstrDescription);
+  int GetHelpFile(out wchar* pBstrHelpFile);
+  int GetHelpContext(out uint pdwHelpContext);
+}
+
+int SetErrorInfo(uint dwReserved, IErrorInfo perrinfo);
+int GetErrorInfo(uint dwReserved, out IErrorInfo pperrinfo);
+int CreateErrorInfo(out IErrorInfo pperrinfo);
+
+interface ISupportErrorInfo : IUnknown {
+  mixin(uuid("df0b3d60-548f-101b-8e65-08002b2bd119"));
+  int InterfaceSupportsErrorInfo(ref GUID riid);
 }
 
 struct LICINFO {
@@ -1845,7 +2091,7 @@ struct LICINFO {
 }
 
 interface IClassFactory2 : IClassFactory {
-  static GUID IID = { 0xB196B28F, 0xBAB4, 0x101A, 0xB6, 0x9C, 0x00, 0xAA, 0x00, 0x34, 0x1D, 0x07 };
+  mixin(uuid("b196b28f-bab4-101a-b69c-00aa00341d07"));
   int GetLicInfo(out LICINFO pLicInfo);
   int RequestLicKey(uint dwReserved, out wchar* pBstrKey);
   int CreateInstanceLic(IUnknown pUnkOuter, IUnknown pUnkReserved, ref GUID riid, wchar* bstrKey, void** ppvObj);
@@ -1875,7 +2121,7 @@ struct TEXTMETRICOLE {
 }
 
 interface IFont : IUnknown {
-  static GUID IID = { 0xBEF6E002, 0xA874, 0x101A, 0x8B, 0xBA, 0x00, 0xAA, 0x00, 0x30, 0x0C, 0xAB };
+  mixin(uuid("BEF6E002-A874-101A-8BBA-00AA00300CAB"));
   int get_Name(out wchar* pName);
   int set_Name(wchar* name);
   int get_Size(out long pSize);
@@ -1903,7 +2149,7 @@ interface IFont : IUnknown {
 }
 
 interface IPicture : IUnknown {
-  static GUID IID = { 0x7BF80980, 0xBF32, 0x101A, 0x8B, 0xBB, 0x00, 0xAA, 0x00, 0x30, 0x0C, 0xAB };
+  mixin(uuid("7BF80980-BF32-101A-8BBB-00AA00300CAB"));
   int get_Handle(out uint pHandle);
   int get_hPal(out uint phPal);
   int get_Type(out short pType);
@@ -1921,98 +2167,70 @@ interface IPicture : IUnknown {
 }
 
 interface IFontEventsDisp : IDispatch {
-  static GUID IID = { 0x4EF6100A, 0xAF88, 0x11D0, 0x98, 0x46, 0x00, 0xC0, 0x4F, 0xC2, 0x99, 0x93 };
+  mixin(uuid("4EF6100A-AF88-11D0-9846-00C04FC29993"));
 }
 
 interface IFontDisp : IDispatch {
-  static GUID IID = { 0xBEF6E003, 0xA874, 0x101A, 0x8B, 0xBA, 0x00, 0xAA, 0x00, 0x30, 0x0C, 0xAB };
+  mixin(uuid("BEF6E003-A874-101A-8BBA-00AA00300CAB"));
 }
 
 interface IPictureDisp : IDispatch {
-  static GUID IID = { 0x7BF80981, 0xBF32, 0x101A, 0x8B, 0xBB, 0x00, 0xAA, 0x00, 0x30, 0x0C, 0xAB };
+  mixin(uuid("7BF80981-BF32-101A-8BBB-00AA00300CAB"));
 }
 
-interface IEnumGUID : IUnknown {
-  static GUID IID = { 0x0002E000, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, GUID* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumGUID ppenum);
+/*//////////////////////////////////////////////////////////////////////////////////////////
+// Ole32 API                                                                              //
+//////////////////////////////////////////////////////////////////////////////////////////*/
+
+int OleInitialize(void* pvReserved);
+void OleUninitialize();
+
+enum : uint {
+  COINIT_MULTITHREADED = 0x0,
+  COINIT_APARTMENTTHREADED = 0x2,
+  COINIT_DISABLE_OLE1DDE = 0x4,
+  COINIT_SPEED_OVER_MEMORY = 0x8
 }
 
-interface IEnumCATEGORYINFO : IUnknown {
-  static GUID IID = { 0x0002E011, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int Next(uint celt, CATEGORYINFO* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumGUID ppenum);
-}
-
-interface ICatInformation : IUnknown {
-  static GUID IID = { 0x0002E013, 0x0000, 0x0000, 0xC0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46 };
-  int EnumCategories(uint lcid, out IEnumCATEGORYINFO ppenumCategoryInfo);
-  int GetCategoryDesc(inout GUID rcatid, uint lcid, out wchar* pszDesc);
-  int EnumClassesOfCategories(uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq, out IEnumGUID ppenumClsid);
-  int IsClassOfCategories(inout GUID rclsid, uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq);
-  int EnumImplCategoriesOfClass(inout GUID rclsid, out IEnumGUID ppenumCatid);
-  int EnumReqCategoriesOfClass(inout GUID rclsid, out IEnumGUID ppenumCatid);
-}
-
-struct PROPERTYKEY {
-  GUID fmtid;
-  uint pid;
-}
-
-interface IPropertyStore : IUnknown {
-  static GUID IID = { 0x886d8eeb, 0x8cf2, 0x4446, 0x8d, 0x02, 0xcd, 0xba, 0x1d, 0xbd, 0xcf, 0x99 };
-  int GetCount(out uint cProps);
-  int GetAt(uint iProp, out PROPERTYKEY pkey);
-  int GetValue(ref PROPERTYKEY key, out PROPVARIANT pv);
-  int SetValue(ref PROPERTYKEY key, ref PROPVARIANT propvar);
-  int Commit();
-}
-
-int CoCreateGuid(out GUID pguid);
-
-enum COINIT : uint {
-  COINIT_MULTITHREADED        = 0x0,
-  COINIT_APARTMENTTHREADED    = 0x2,
-  COINIT_DISABLE_OLE1DDE      = 0x4,
-  COINIT_SPEED_OVER_MEMORY    = 0x8
-}
-
-int CoInitializeEx(void* pvReserved, uint dwCoInit);
 int CoInitialize(void*);
 void CoUninitialize();
+int CoInitializeEx(void*, uint dwCoInit);
 
-enum CLSCTX : uint {
+int CoCreateGuid(out GUID pGuid);
+
+void* CoTaskMemAlloc(size_t cb);
+void* CoTaskMemRealloc(void* pv, size_t cb);
+void CoTaskMemFree(void* pv);
+
+int CoGetMalloc(uint dwMemContext/* = 1*/, out IMalloc ppMalloc);
+
+enum : uint {
   CLSCTX_INPROC_SERVER = 0x1,
   CLSCTX_INPROC_HANDLER = 0x2,
   CLSCTX_LOCAL_SERVER = 0x4,
   CLSCTX_INPROC_SERVER16 = 0x8,
   CLSCTX_REMOTE_SERVER = 0x10,
   CLSCTX_INPROC_HANDLER16 = 0x20,
-  CLSCTX_RESERVED1 = 0x40,
-  CLSCTX_RESERVED2 = 0x80,
-  CLSCTX_RESERVED3 = 0x100,
-  CLSCTX_RESERVED4 = 0x200,
-  CLSCTX_NO_CODE_DOWNLOAD = 0x400,
-  CLSCTX_RESERVED5 = 0x800,
-  CLSCTX_NO_CUSTOM_MARSHAL = 0x1000,
-  CLSCTX_ENABLE_CODE_DOWNLOAD = 0x2000,
-  CLSCTX_NO_FAILURE_LOG = 0x4000,
-  CLSCTX_DISABLE_AAA = 0x8000,
-  CLSCTX_ENABLE_AAA = 0x10000,
-  CLSCTX_FROM_DEFAULT_CONTEXT = 0x20000,
-  CLSCTX_ACTIVATE_32_BIT_SERVER = 0x40000,
-  CLSCTX_ACTIVATE_64_BIT_SERVER = 0x80000,
   CLSCTX_INPROC = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER,
-  CLSCTX_ALL = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER | CLSCTX_LOCAL_SERVER,
-  CLSCTX_SERVER = CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER
+  CLSCTX_SERVER = CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER,
+  CLSCTX_ALL = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER
 }
 
 int CoCreateInstance(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, ref GUID riid, void** ppv);
 int CoGetClassObject(ref GUID rclsid, uint dwClsContext, void* pvReserved, ref GUID riid, void** ppv);
+
+struct MULTI_QI {
+  GUID* pIID;
+  IUnknown pItf;
+  int hr;
+}
+
+int CoCreateInstanceEx(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, COSERVERINFO* pServerInfo, uint dwCount, MULTI_QI* pResults);
+
+interface IMultiQI : IUnknown {
+  mixin(uuid("00000020-0000-0000-c000-000000000046"));
+  int QueryMultipleInterfaces(uint cMQIs, MULTI_QI* pMQIs);
+}
 
 enum : uint {
   ACTIVEOBJECT_STRONG,
@@ -2023,55 +2241,31 @@ int RegisterActiveObject(IUnknown punk, ref GUID rclsid, uint dwFlags, out uint 
 int RevokeActiveObject(uint dwRegister, void* pvReserved);
 int GetActiveObject(ref GUID rclsid, void* pvReserved, out IUnknown ppunk);
 
-int ProgIDFromCLSID(ref GUID clsid, out wchar* lplpszProgID);
-int CLSIDFromProgID(wchar* lpszProgID, out GUID lpclsid);
-
-void* CoTaskMemAlloc(size_t cb);
-void* CoTaskMemRealloc(void* pv, size_t cb);
-void CoTaskMemFree(void* pv);
-
-int CoGetMalloc(uint dwMemContext/* = 1*/, out IMalloc ppMalloc);
-
-int LoadTypeLib(wchar* szFile, out ITypeLib pptlib);
-
-enum REGKIND {
-  REGKIND_DEFAULT,
-  REGKIND_REGISTER,
-  REGKIND_NONE
+enum : uint {
+  MSHLFLAGS_NORMAL = 0x0,
+  MSHLFLAGS_TABLESTRONG = 0x1,
+  MSHLFLAGS_TABLEWEAK = 0x2,
+  MSHLFLAGS_NOPING = 0x4
 }
 
-int LoadTypeLibEx(wchar* szFile, REGKIND regkind, out ITypeLib pptlib);
-int LoadRegTypeLib(ref GUID rgiud, ushort wVerMajor, ushort wVerMinor, uint lcid, out ITypeLib pptlib);
-int QueryPathOfRegTypeLib(ref GUID guid, ushort wVerMajor, ushort wVerMinor, uint lcid, out wchar* lpbstrPathName);
-int RegisterTypeLib(ITypeLib ptlib, wchar* szFullPath, wchar* szHelpDir);
-int UnRegisterTypeLib(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
-int RegisterTypeLibForUser(ITypeLib ptlib, wchar* szFullPath, wchar* szHelpDir);
-int UnRegisterTypeLibForUser(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
-int CreateTypeLib(SYSKIND syskind, wchar* szFile, out ICreateTypeLib ppctlib);
-int CreateTypeLib2(SYSKIND syskind, wchar* szFile, out ICreateTypeLib2 ppctlib);
+enum : uint {
+  MSHCTX_LOCAL,
+  MSHCTX_NOSHAREDMEM,
+  MSHCTX_DIFFERENTMACHINE,
+  MSHCTX_INPROC,
+  MSHCTX_CROSSCTX
+}
 
-wchar* SysAllocString(wchar* psz);
-int SysReAllocString(ref wchar* pbstr, wchar* psz);
-wchar* SysAllocStringLen(wchar* strIn, uint ui);
-int SysReAllocStringLen(ref wchar* pbstr, wchar* psz, uint len);
-void SysFreeString(wchar* bstr);
-uint SysStringLen(wchar* bstr);
-uint SysStringByteLen(wchar* bstr);
-wchar* SysAllocStringByteLen(wchar* psz, uint len);
+int CoMarshalInterface(IStream pStm, ref GUID riid, IUnknown pUnk, uint dwDestContext, void* pvDestContext, uint mshlflags);
+int CoUnmarshalInterface(IStream pStm, ref GUID riid, void** ppv);
+
+int ProgIDFromCLSID(ref GUID clsid, out wchar* lplpszProgID);
+int CLSIDFromProgID(in wchar* lpszProgID, out GUID lpclsid);
+int CLSIDFromProgIDEx(in wchar* lpszProgID, out GUID lpclsid);
 
 void VariantInit(VARIANT* pvarg);
 int VariantClear(VARIANT* pvarg);
 int VariantCopy(VARIANT* pvargDest, in VARIANT* pvargSrc);
-int VariantChangeType(VARIANT* pvargDest, in VARIANT* pvarSrc, ushort wFlags, VARTYPE vt);
-int VariantChangeTypeEx(VARIANT* pvargDest, in VARIANT* pvarSrc, uint lcid, ushort wFlags, VARTYPE vt);
-
-alias DllImport!("propsys.dll", "PropVariantCopy",
-  int function(PROPVARIANT* pvarDest, in PROPVARIANT* pvarSrc))
-  PropVariantCopy;
-
-alias DllImport!("propsys.dll", "PropVariantToBSTR",
-  int function(PROPVARIANT* propvar, wchar** pbstrOut))
-  PropVariantToBSTR;
 
 enum : uint {
   VARIANT_NOVALUEPROP = 0x1,
@@ -2083,6 +2277,27 @@ enum : uint {
   VARIANT_CALENDAR_GREGORIAN = 0x40,
   VARIANT_USE_NLS = 0x80
 }
+
+int VariantChangeType(VARIANT* pvargDest, in VARIANT* pvarSrc, ushort wFlags, ushort vt);
+int VariantChangeTypeEx(VARIANT* pvargDest, in VARIANT* pvarSrc, uint lcid, ushort wFlags, ushort vt);
+
+int LoadTypeLib(in wchar* szFile, out ITypeLib pptlib);
+
+enum REGKIND {
+  REGKIND_DEFAULT,
+  REGKIND_REGISTER,
+  REGKIND_NONE
+}
+
+int LoadTypeLibEx(in wchar* szFile, REGKIND regkind, out ITypeLib pptlib);
+int LoadRegTypeLib(ref GUID rgiud, ushort wVerMajor, ushort wVerMinor, uint lcid, out ITypeLib pptlib);
+int QueryPathOfRegTypeLib(ref GUID guid, ushort wVerMajor, ushort wVerMinor, uint lcid, out wchar* lpbstrPathName);
+int RegisterTypeLib(ITypeLib ptlib, in wchar* szFullPath, in wchar* szHelpDir);
+int UnRegisterTypeLib(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
+int RegisterTypeLibForUser(ITypeLib ptlib, wchar* szFullPath, wchar* szHelpDir);
+int UnRegisterTypeLibForUser(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
+int CreateTypeLib(SYSKIND syskind, in wchar* szFile, out ICreateTypeLib ppctlib);
+int CreateTypeLib2(SYSKIND syskind, in wchar* szFile, out ICreateTypeLib2 ppctlib);
 
 int SafeArrayAllocDescriptor(uint cDims, out SAFEARRAY* ppsaOut);
 int SafeArrayAllocDescriptorEx(VARTYPE vt, uint cDims, out SAFEARRAY* ppsaOut);
@@ -2114,6 +2329,31 @@ int SafeArrayGetVartype(SAFEARRAY* psa, out VARTYPE pvt);
 SAFEARRAY* SafeArrayCreateVector(VARTYPE vt, int lLbound, uint cElements);
 SAFEARRAY* SafeArrayCreateVectorEx(VARTYPE vt, int lLbound, uint cElements, void* pvExtra);
 
+int VarDecFromUI4(uint ulIn, out DECIMAL pdecOut);
+int VarDecFromI4(int lIn, out DECIMAL pdecOut);
+int VarDecFromUI8(ulong ui64In, out DECIMAL pdecOut);
+int VarDecFromI8(long i64In, out DECIMAL pdecOut);
+int VarDecFromR4(float dlbIn, out DECIMAL pdecOut);
+int VarDecFromR8(double dlbIn, out DECIMAL pdecOut);
+int VarDecFromStr(in wchar* StrIn, uint lcid, uint dwFlags, out DECIMAL pdecOut);
+int VarBstrFromDec(in DECIMAL* pdecIn, uint lcid, uint dwFlags, out wchar* pbstrOut);
+int VarUI4FromDec(in DECIMAL* pdecIn, out uint pulOut);
+int VarI4FromDec(in DECIMAL* pdecIn, out int plOut);
+int VarUI8FromDec(in DECIMAL* pdecIn, out ulong pui64Out);
+int VarI8FromDec(in DECIMAL* pdecIn, out long pi64Out);
+int VarR8FromDec(in DECIMAL* pdecIn, out double pdblOut);
+
+int VarDecAdd(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
+int VarDecSub(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
+int VarDecMul(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
+int VarDecDiv(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
+int VarDecRound(DECIMAL* pdecIn, int cDecimals, DECIMAL* pdecResult);
+int VarDecAbs(DECIMAL* pdecIn, DECIMAL* pdecResult);
+int VarDecFix(DECIMAL* pdecIn, DECIMAL* pdecResult);
+int VarDecInt(DECIMAL* pdecIn, DECIMAL* pdecResult);
+int VarDecNeg(DECIMAL* pdecIn, DECIMAL* pdecResult);
+int VarDecCmp(DECIMAL* pdecLeft, DECIMAL* pdecRight);
+
 int CreateStreamOnHGlobal(Handle hGlobal, int fDeleteOnRelease, out IStream ppstm);
 
 struct PICTDESC {
@@ -2125,298 +2365,117 @@ struct PICTDESC {
 int OleCreatePictureIndirect(PICTDESC* lpPictDesc, ref GUID riid, int fOwn, void** lplpvObj);
 int OleLoadPicture(IStream lpstream, int lSize, int fRunmode, ref GUID riid, void** lplpvObj);
 
+/*//////////////////////////////////////////////////////////////////////////////////////////
+// Helpers                                                                                //
+//////////////////////////////////////////////////////////////////////////////////////////*/
+
 extern(D):
 
-private bool isCOMInitialized = false;
+package bool isCOMAlive;
 
 private void startupCOM() {
-  synchronized {
-    if (!isCOMInitialized) {
-      isCOMInitialized = true;
-      CoInitialize(null);
-    }
-  }
+  isCOMAlive = SUCCEEDED(CoInitializeEx(null, COINIT_APARTMENTTHREADED));
 }
 
 private void shutdownCOM() {
-  synchronized {
-    if (isCOMInitialized) {
-      std.gc.fullCollect();
-      isCOMInitialized = false;
-      CoUninitialize();
-    }
+  // Before we shut down COM, give classes a chance to release any COM resources.
+  try {
+    std.gc.fullCollect();
+  }
+  finally {
+    isCOMAlive = false;
+    CoUninitialize();
   }
 }
+
+// BSTR
+// http://msdn2.microsoft.com/en-us/library/ms221069.aspx
+
+/*wchar* allocBSTR(string s) {
+  if (s == null)
+    return null;
+
+  return bstr.SysAllocString(s.toUTF16z());
+}
+
+void freeBSTR(wchar* s) {
+  if (s != null)
+    bstr.SysFreeString(s);
+}*/
 
 /**
- * The exception thrown when an unrecognized HRESULT is returned from a COM operation.
+ * Speciifes whether to throw exceptions or return null when COM operations fail.
  */
-public class COMException : BaseException {
-
-  private int errorCode_;
-
-  /**
-   * Initializes a new instance with a specified error code.
-   * Params: errorCode = The error code (HRESULT) value associated with this exception.
-   */
-  public this(int errorCode = E_FAIL) {
-    errorCode_ = errorCode;
-    super(getErrorMessage(errorCode));
-  }
-
-  /**
-   * Initializes a new instance with a specified message and reference to the inner exception that caused this exception.
-   * Params:
-   *   message = The error _message that explains this exception.
-   *   cause = The exception that caused this exception.
-   */
-  public this(string message, Exception cause = null) {
-    super(message, cause);
-  }
-
-  /**
-   * Gets the HRESULT of the error.
-   * Returns: The HRESULT of the error.
-   */
-  public int errorCode() {
-    return errorCode_;
-  }
-
-  private static string getErrorMessage(int error) {
-    wchar[256] buffer;
-    uint r = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, error, LOCALE_USER_DEFAULT, buffer.ptr, buffer.length + 1, null);
-    if (r != 0) {
-      string s = toUtf8(buffer.ptr, 0, r);
-      while (r > 0) {
-        char ch = s[r - 1];
-        if (ch > ' ' && ch != '.')
-          break;
-        r--;
-      }
-      return format("{0}. (Exception from HRESULT: 0x{1:X8})", s[0 .. r], error);
-    }
-    return format("Unspecified error (0x{0:X8})", error);
-  }
-
+enum ExceptionPolicy {
+  NoThrow, /// Returns null on failure.
+  Throw    /// Throws an exception on failure.
 }
 
-template QueryInterfaceImpl(T ...) {
+template com_cast_impl(T, ExceptionPolicy policy) {
 
-  int QueryInterface(ref GUID riid, void** ppvObject) {
-    *ppvObject = null;
-
-    if (riid == IUnknown.IID)
-      *ppvObject = cast(void*)cast(IUnknown)this;
-    else foreach (I; T) {
-      if (riid == I.IID) {
-        *ppvObject = cast(void*)cast(I)this;
-        break;
-      }
-    }
-
-    if (*ppvObject is null)
-      return E_NOINTERFACE;
-
-    (cast(IUnknown)this).AddRef();
-    return S_OK;
-  }
-
-}
-
-void runFinalizer(Object obj) {
-  if (obj !is null) {
-    ClassInfo** ci = cast(ClassInfo**)cast(void*)obj;
-    if (*ci !is null) {
-      ClassInfo c = **ci;
-      if (c !is null) {
-        do {
-          if (c.destructor) {
-            auto finalizer = cast(void function(Object))c.destructor;
-            finalizer(obj);
-          }
-          c = c.base;
-        } while (c !is null);
-      }
-    }
-  }
-}
-
-template RefCountImpl() {
-
-  private int refCount = 1;
-  private bool finalized = false;
-
-  uint AddRef() {
-    return InterlockedIncrement(refCount);
-  }
-
-  uint Release() {
-    if (InterlockedDecrement(refCount) == 0) {
-      if (!finalized) {
-        runFinalizer(this);
-        finalized = true;
-      }
-
-      std.gc.removeRange(cast(void*)this);
-      std.c.stdlib.free(cast(void*)this);
-    }
-    return refCount;
-  }
-
-  extern(D):
-
-  new(size_t sz) {
-    void* p = std.c.stdlib.malloc(sz);
-
-    if (p == null)
-      throw new OutOfMemoryException;
-
-    std.gc.addRange(p, p + sz);
-    return p;
-  }
-
-}
-
-template IUnknownImpl(T ...) {
-  mixin RefCountImpl;
-  mixin QueryInterfaceImpl!(T);
-}
-
-// Only mix this in if you want the default behaviour as declared here implemented. You should subclass the type to override these methods.
-template IDispatchImpl(T ...) {
-
-  mixin IUnknownImpl!(IDispatch, T);
-
-  int GetTypeInfoCount(out uint pctinfo) {
-    pctinfo = 0;
-    return E_NOTIMPL;
-  }
-
-  int GetTypeInfo(uint iTInfo, uint lcid, out ITypeInfo ppTInfo) {
-    ppTInfo = null;
-    return E_NOTIMPL;
-  }
-
-  int GetIDsOfNames(ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId) {
-    rgDispId = null;
-    return DISP_E_UNKNOWNNAME;
-  }
-
-  int Invoke(int dispIdMember, ref GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint* puArgErr) {
-    return DISP_E_MEMBERNOTFOUND;
-  }
-
-}
-
-template DerivesFrom(T, TList ...) {
-  const bool DerivesFrom = is(MostDerived!(T, TList) : T);
-}
-
-/**
- * The abstract base class for COM objects that derive from IUnknown or IDispatch.
- *
- * The Implements class provides default implementations of methods required by those interfaces, therefore subclasses need only override them when they 
- * specifically need to provide extra functionality. This class also overrides the new operator so that instances are not garbage collected.
- * Examples:
- * ---
- * class MyImpl : Implements!(IUnknown) {
- * }
- * ---
- */
-public abstract class Implements(T ...) : T {
-  static if (DerivesFrom!(IDispatch, T))
-    mixin IDispatchImpl!(T);
-  else
-    mixin IUnknownImpl!(T);
-}
-
-/**
- * Specified whether to throw exceptions or return null when COM operations fail.
- */
-public enum ExceptionPolicy {
-  AllowNull,  /// Returns null on failure.
-  ThrowIfNull /// Throws a COMException on failure.
-}
-
-template com_cast_impl(T, ExceptionPolicy exceptionPolicy) {
-
-  public T com_cast_impl(U)(U obj) {
+  T com_cast_impl(U)(U obj) {
     static if (is(U : IUnknown)) {
       if (obj is null) {
-        static if (exceptionPolicy == ExceptionPolicy.ThrowIfNull)
+        static if (policy == ExceptionPolicy.Throw)
           throw new ArgumentNullException("obj");
         else
           return null;
       }
 
-      T ret = null;
-      if (obj.QueryInterface(T.IID, cast(void**)&ret) == S_OK) {
-        return ret;
-      }
+      T result;
+      if (SUCCEEDED(obj.QueryInterface(uuidof!(T), outval(result))))
+        return result;
 
-      static if (exceptionPolicy == ExceptionPolicy.ThrowIfNull)
-        throw new InvalidCastException("Invalid cast from '" ~ typeof(U).stringof ~ "' to '" ~ typeof(T).stringof ~ "'.");
+      static if (policy == ExceptionPolicy.Throw)
+        throw new InvalidCastException("Invalid cast from '" ~ U.stringof ~ "' to '" ~ T.stringof ~ "'.");
       else
         return null;
     }
     else static if (is(U == VARIANT)) {
-      const vt = VariantType!(T);
-      static if (vt != VARTYPE.VT_VOID) {
-        VARIANT v;
-        if (VariantChangeTypeEx(&v, &obj, LOCALE_USER_DEFAULT, 0, vt) == S_OK) {
-          static if (vt == VARTYPE.VT_BOOL) // bool
-            return (v.boolVal == VARIANT_TRUE) ? true : false;
-          else static if (vt == VARTYPE.VT_UI1) // ubyte
-            return v.bVal;
-          else static if (vt == VARTYPE.VT_I1) // byte
-            return v.cVal;
-          else static if (vt == VARTYPE.VT_UI2) // ushort
-            return v.uiVal;
-          else static if (vt == VARTYPE.VT_I2) // short
-            return v.iVal;
-          else static if (vt == VARTYPE.VT_UI4) // uint
-            return v.ulVal;
-          else static if (vt == VARTYPE.VT_I4) // int
-            return v.lVal;
-          else static if (vt == VARTYPE.VT_UI8) // ulong
-            return v.ullVal;
-          else static if (vt == VARTYPE.VT_I8) // long
-            return v.llVal;
-          else static if (vt == VARTYPE.VT_R4) // float
-            return v.fltVal;
-          else static if (vt == VARTYPE.VT_R8) // double
-            return v.dblVal;
-          else static if (vt == VARTYPE.VT_BSTR) {
-            static if (is(T == wchar*))
-              return v.bstrVal;
-            else // string
-              return fromBStr(v.bstrVal);
+      const type = VariantType!(T);
+      static if (type != VT_VOID) {
+        VARIANT temp;
+        if (VariantChangeType(&temp, &obj, VARIANT_ALPHABOOL, type) == S_OK) {
+          with (temp) {
+            static if (type == VT_BOOL) {
+              static if (is(T == bool)) return (boolVal == VARIANT_TRUE) ? true : false;
+              else return boolVal;
+            }
+            else static if (type == VT_UI1) return bVal;
+            else static if (type == VT_I1) return cVal;
+            else static if (type == VT_UI2) return uiVal;
+            else static if (type == VT_I2) return iVal;
+            else static if (type == VT_UI4) return ulVal;
+            else static if (type == VT_I4) return lVal;
+            else static if (type == VT_UI8) return ullVal;
+            else static if (type == VT_I8) return llVal;
+            else static if (type == VT_R4) return fltVal;
+            else static if (type == VT_R8) return dblVal;
+            else static if (type == VT_DECIMAL) return decVal;
+            else static if (type == VT_BSTR) {
+              static if (is(T : string)) return bstr.toString(bstrVal);
+              else return bstrVal;
+            }
+            else static if (type == VT_UNKNOWN) return com_cast_impl(obj.punkVal);
+            else static if (type == VT_DISPATCH) return com_cast_impl(obj.pdispVal);
+            else return T.init;
           }
-          else static if (vt == VARTYPE.VT_UNKNOWN) // IUnknown
-            return com_cast_impl(obj.punkVal);
-          else static if (vt == VARTYPE.VT_DISPATCH) // IDispatch
-            return com_cast_impl(obj.pdispVal);
-          else static if (exceptionPolicy == ExceptionPolicy.ThrowIfNull)
-            throw new InvalidCastException("Invalid cast from '" ~ typeof(U).stringof ~ "' to '" ~ typeof(T).stringof ~ "'.");
-          else
-            return T.init;
         }
-        else static if (exceptionPolicy == ExceptionPolicy.ThrowIfNull)
-          throw new InvalidCastException("Invalid cast from '" ~ typeof(U).stringof ~ "' to '" ~ typeof(T).stringof ~ "'.");
-        else
-          return T.init;
+        else static if (policy == ExceptionPolicy.Throw)
+          throw new InvalidCastException("Invalid cast from '" ~ U.stringof ~ "' to '" ~ T.stringof ~ "'.");
+        else return T.init;
       }
-      else static assert(false, "Cannot cast from '" ~ typeof(U).stringof ~ "' to '" ~ typeof(T).stringof ~ "'.");
+      else static assert(false, "Cannot cast from '" ~ U.stringof ~ "' to '" ~ T.stringof ~ "'.");
     }
-    else static assert(false, "Cannot cast from '" ~ typeof(U).stringof ~ "' to '" ~ typeof(T).stringof ~ "'.");
+    else static assert(false, "Cannot cast from '" ~ U.stringof ~ "' to '" ~ T.stringof ~ "'.");
   }
 
 }
 
 /**
  * Invokes the conversion operation to convert from one COM type to another.
-
- * If the operand is a VARIANT, this function converts its value to the type represented by T. If the operand is an IUnknown-derived object, this function 
+ *
+ * If the operand is a VARIANT, this function converts its value to the type represented by $(I T). If the operand is an IUnknown-derived object, this function 
  * calls the object's QueryInterface method. If the conversion operation fails, the function returns T.init.
  *
  * Examples:
@@ -2451,41 +2510,60 @@ template com_cast_impl(T, ExceptionPolicy exceptionPolicy) {
  * ---
  */
 template com_cast(T) {
-  alias com_cast_impl!(T, ExceptionPolicy.AllowNull) com_cast;
+  alias com_cast_impl!(T, ExceptionPolicy.NoThrow) com_cast;
 }
 
 /**
- * Invokes the conversion operation to convert from one COM type to another.
-
- * If the operand is a VARIANT, this function converts its value to the type represented by T. If the operand is an IUnknown-derived object, this function 
- * calls the object's QueryInterface method.
- * Throws: COMException if the conversion operation fails.
  */
 template safe_com_cast(T) {
-  alias com_cast_impl!(T, ExceptionPolicy.ThrowIfNull) safe_com_cast;
+  alias com_cast_impl!(T, ExceptionPolicy.Throw) safe_com_cast;
 }
 
 /**
  * Indicates the execution contexts in which a COM object is to be run.
  */
-public enum ExecutionContext {
-  InProcessServer = CLSCTX.CLSCTX_INPROC_SERVER,    /// Runs in the same process as the caller of the function.
-  InProcessHandler = CLSCTX.CLSCTX_INPROC_HANDLER,  /// Runs in the client process.
-  LocalServer = CLSCTX.CLSCTX_LOCAL_SERVER,         /// Runs on the same machine but in a separate process.
-  RemoteServer = CLSCTX.CLSCTX_REMOTE_SERVER,       /// Runs on a different machine.
-  All = CLSCTX.CLSCTX_ALL
+enum ExecutionContext : uint {
+  InProcessServer = CLSCTX_INPROC_SERVER,   ///
+  InProcessHandler = CLSCTX_INPROC_HANDLER, ///
+  LocalServer = CLSCTX_LOCAL_SERVER,        ///
+  RemoteServer = CLSCTX_REMOTE_SERVER,      ///
+  All = CLSCTX_ALL                          ///
 }
 
-public IUnknown coCreateInstance(GUID clsid, IUnknown outer, ExecutionContext context, GUID iid) {
+private void** outval(T)(out T ppv)
+in {
+  assert(&ppv != null);
+}
+body {
+  return cast(void**)&ppv;
+}
+
+IUnknown coCreateInstance(GUID clsid, IUnknown outer, ExecutionContext context, GUID iid) {
   IUnknown ret;
-  if (CoCreateInstance(clsid, outer, cast(uint)context, iid, cast(void**)&ret) == S_OK)
+  if (SUCCEEDED(CoCreateInstance(clsid, outer, cast(uint)context, iid, outval(ret))))
     return ret;
   return null;
 }
 
 /**
+ * Returns a reference to a running object that has been registered with OLE.
+ * See_Also: $(LINK2 http://msdn2.microsoft.com/en-us/library/ms221467.aspx, GetActiveObject).
  */
-template coCreate(T, ExceptionPolicy exceptionPolicy = ExceptionPolicy.AllowNull) {
+IUnknown getActiveObject(string progId) {
+  GUID clsid;
+  wchar* str = bstr.fromString(progId);
+  CLSIDFromProgID(str, clsid);
+  bstr.free(str);
+
+  IUnknown obj = null;
+  if (SUCCEEDED(GetActiveObject(clsid, null, obj)))
+    return obj;
+
+  return null;
+}
+
+///
+template coCreate(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
 
   /**
    * Creates a COM object of the class associated with the specified CLSID.
@@ -2500,48 +2578,246 @@ template coCreate(T, ExceptionPolicy exceptionPolicy = ExceptionPolicy.AllowNull
    * }
    * ---
    */
-  public T coCreate(U)(U clsid, ExecutionContext context = ExecutionContext.InProcessServer) {
+  T coCreate(U)(U clsid, ExecutionContext context = ExecutionContext.InProcessServer) {
     GUID guid;
-    static if (is(U == GUID)) {
+    static if (is(U == GUID))
       guid = clsid;
-    }
-    else static if (is(U == string)) {
+    else static if (is(U : string)) {
       try {
         guid = GUID(clsid);
       }
       catch (FormatException) {
-        int hr = CLSIDFromProgID(clsid.toUtf16z(), guid);
+        int hr = CLSIDFromProgID(clsid.toUTF16z(), guid);
         if (FAILED(hr)) {
-          static if (exceptionPolicy == ExceptionPolicy.ThrowIfNull)
+          static if (policy == ExceptionPolicy.Throw)
             throw new COMException(hr);
           else
             return null;
         }
       }
     }
-    else
-      static assert(false, "GUID or string expected.");
 
-    T obj = null;
-    int hr = CoCreateInstance(guid, null, context, T.IID, cast(void**)&obj);
-    if (SUCCEEDED(hr))
-      return obj;
+    T ret;
+    int hr = CoCreateInstance(guid, null, context, uuidof!(T), outval(ret));
 
-    static if (exceptionPolicy == ExceptionPolicy.ThrowIfNull)
-      throw new COMException(hr);
-    else
-      return null;
+    if (FAILED(hr)) {
+      static if (policy == ExceptionPolicy.Throw)
+        throw new COMException(hr);
+      else
+        return null;
+    }
+
+    return ret;
   }
 
 }
 
-public IUnknown getActiveObject(string progId) {
-  GUID clsid;
-  CLSIDFromProgID(progId.toBStr(), clsid);
-  IUnknown obj = null;
-  if (GetActiveObject(clsid, null, obj) == S_OK)
-    return obj;
-  return null;
+template coCreateEx(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
+
+  T coCreateEx(U)(U clsid, string server, ExecutionContext context = ExecutionContext.InProcessServer) {
+    GUID guid;
+    static if (is(U == GUID))
+      guid = clsid;
+    else static if (is(U : string)) {
+      try {
+        guid = GUID(clsid);
+      }
+      catch (FormatException) {
+        int hr = CLSIDFromProgID(clsid.toUTF16z(), guid);
+        if (FAILED(hr)) {
+          static if (policy == ExceptionPolicy.Throw)
+            throw new COMException(hr);
+          else
+            return null;
+        }
+      }
+    }
+
+    COSERVERINFO csi;
+    csi.pwszName = server.toUTF16z();
+
+    MULTI_QI ret;
+    ret.pIID = &uuidof!(T);
+    int hr = CoCreateInstanceEx(guid, null, context, &csi, 1, &ret);
+
+    if (FAILED(hr)) {
+      static if (policy == ExceptionPolicy.Throw)
+        throw new COMException(hr);
+      else
+        return null;
+    }
+
+    return cast(T)ret.pItf;
+  }
+
+}
+
+template Interfaces(TList...) {
+
+  deprecated {
+    static GUID CLSID(); // Use IID instead.
+  }
+
+  static T coCreate(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow)(ExecutionContext context = ExecutionContext.InProcessServer) {
+    static if (IndexOf!(T, TList) == -1)
+      static assert(false, "'" ~ typeof(this).stringof ~ "' does not support '" ~ T.stringof ~ "'.");
+    else
+      return .coCreate!(T, policy)(uuidof!(typeof(this)), context);
+  }
+
+}
+
+template QueryInterfaceImpl(TList...) {
+
+  int QueryInterface(ref GUID riid, void** ppvObject) {
+    if (ppvObject is null)
+      return E_POINTER;
+
+    *ppvObject = null;
+
+    if (riid == uuidof!(IUnknown))
+      *ppvObject = cast(void*)cast(IUnknown)this;
+    else foreach (T; TList) {
+      // Search the specified list of types to see if we support the interface we're being asked for.
+      if (riid == uuidof!(T)) {
+        // This is the one, so we need look no further.
+        *ppvObject = cast(void*)cast(T)this;
+        break;
+      }
+    }
+
+    if (*ppvObject is null)
+      return E_NOINTERFACE;
+
+    (cast(IUnknown)this).AddRef();
+    return S_OK;
+  }
+
+}
+
+// DMD prevents destructors from running on COM objects.
+private void runFinalizer(Object obj) {
+  if (obj) {
+    ClassInfo** ci = cast(ClassInfo**)cast(void*)obj;
+    if (*ci) {
+      if (auto c = **ci) {
+        do {
+          if (c.destructor) {
+            auto finalizer = cast(void function(Object))c.destructor;
+            finalizer(obj);
+          }
+          c = c.base;
+        } while (c);
+      }
+    }
+  }
+}
+
+// Implements AddRef & Release for IUnknown subclasses.
+template ReferenceCountImpl() {
+
+  private int refCount = 1;
+  private bool finalized;
+
+  uint AddRef() {
+    return InterlockedIncrement(&refCount);
+  }
+
+  uint Release() {
+    if (InterlockedDecrement(&refCount) == 0) {
+      if (!finalized) {
+        finalized = true;
+        runFinalizer(this); // calls destructor (~this) if implemented.
+      }
+
+      std.gc.removeRange(cast(void*)this);
+      std.c.stdlib.free(cast(void*)this);
+    }
+    return refCount;
+  }
+
+  extern(D):
+
+  // IUnknown subclasses must manage their memory manually.
+  new(size_t sz) {
+    void* p = std.c.stdlib.malloc(sz);
+    if (p is null)
+      throw new OutOfMemoryException;
+
+    std.gc.addRange(p, p + sz);
+    return p;
+  }
+
+}
+
+template IUnknownImpl(T...) {
+
+  mixin QueryInterfaceImpl!(T);
+  mixin ReferenceCountImpl;
+
+}
+
+template IDispatchImpl(T...) {
+
+  mixin IUnknownImpl!(T);
+
+  int GetTypeInfoCount(out uint pctinfo) {
+    pctinfo = 0;
+    return E_NOTIMPL;
+  }
+
+  int GetTypeInfo(uint iTInfo, uint lcid, out ITypeInfo ppTInfo) {
+    ppTInfo = null;
+    return E_NOTIMPL;
+  }
+
+  int GetIDsOfNames(ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId) {
+    rgDispId = null;
+    return E_NOTIMPL;
+  }
+
+  int Invoke(int dispIdMember, ref GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint* puArgError) {
+    return DISP_E_UNKNOWNNAME;
+  }
+
+}
+
+template DerivesFrom(T, TList...) {
+  const bool DerivesFrom = is(MostDerived!(T, TList) : T);
+}
+
+template AllBaseTypesOfImpl(T...) {
+  static if (T.length == 0)
+    alias TypeTuple!() AllBaseTypesOfImpl;
+  else
+    alias TypeTuple!(T[0], 
+      AllBaseTypesOfImpl!(BaseTypeTuple!(T[0])), 
+        AllBaseTypesOfImpl!(T[1 .. $])) 
+    AllBaseTypesOfImpl;
+}
+
+template AllBaseTypesOf(T) {
+  alias NoDuplicates!(AllBaseTypesOfImpl!(BaseTypeTuple!(T))) AllBaseTypesOf;
+}
+
+/**
+ * The abstract base class for COM objects that derive from IUnknown or IDispatch.
+ *
+ * The Implements class provides default implementations of methods required by those interfaces. Therefore, subclasses need only override them when they 
+ * specifically need to provide extra functionality. This class also overrides the new operator so that instances are not garbage collected.
+ * Examples:
+ * ---
+ * class MyImpl : Implements!(IUnknown) {
+ * }
+ * ---
+ */
+abstract class Implements(T...) : T {
+
+  static if (DerivesFrom!(IDispatch, T))
+    mixin IDispatchImpl!(AllBaseTypesOf!(T));
+  else
+    mixin IUnknownImpl!(AllBaseTypesOf!(T));
+
 }
 
 /**
@@ -2549,7 +2825,7 @@ public IUnknown getActiveObject(string progId) {
  * Params: obj = The object to check.
  * Returns: true if obj is a COM type; otherwise, false.
  */
-public bool isComObject(Object obj) {
+bool isCOMObject(Object obj) {
   ClassInfo** ci = cast(ClassInfo**)cast(void*)obj;
   if (*ci !is null) {
     ClassInfo c = **ci;
@@ -2559,26 +2835,19 @@ public bool isComObject(Object obj) {
   return false;
 }
 
-template CoInterfaces(T ...) {
-  public static I coCreate(I, ExceptionPolicy exceptionPolicy = ExceptionPolicy.AllowNull)(ExecutionContext context = ExecutionContext.InProcessServer) {
-    static if (IndexOf!(I, T) == -1)
-      static assert(false, "'" ~ typeof(this).stringof ~ "' does not support '" ~ typeof(I).stringof ~ "'.");
-    else
-      return .coCreate!(I, exceptionPolicy)(typeof(this).CLSID, context);
-  }
-}
-
-public void releaseAfter(IUnknown obj, void delegate() block) {
+// Deprecate? You should really use the scope(exit) pattern.
+void releaseAfter(IUnknown obj, void delegate() block) {
   try {
     block();
   }
   finally {
-    if (obj !is null)
+    if (obj)
       obj.Release();
   }
 }
 
-public void clearAfter(VARIANT var, void delegate() block) {
+// Deprecate? You should really use the scope(exit) pattern.
+void clearAfter(VARIANT var, void delegate() block) {
   try {
     block();
   }
@@ -2587,508 +2856,231 @@ public void clearAfter(VARIANT var, void delegate() block) {
   }
 }
 
-/**
- * Allocates a BSTR equivalent to s.
- * Params: s = The string with which to initialize the BSTR.
- * Returns: The BSTR equivalent to s.
- */
-public wchar* toBStr(string s) {
-  if (s == null)
-    return null;
-
-  return SysAllocString(s.toUTF16z());
-}
-
-/**
- * Converts a BSTR to a string, freeing the original BSTR.
- * Params: bstr = The BSTR to convert.
- * Returns: A string equivalent to bstr.
- */
-public string fromBStr(wchar* bstr) {
-  if (bstr == null)
-    return null;
-
-  uint len = SysStringLen(bstr);
-  if (len == 0)
-    return null;
-
-  string s = bstr[0 .. len].toUTF8();
-  SysFreeString(bstr);
-  return s;
-}
-
-/**
- * Frees the memory occuppied by the specified BSTR.
- * Params: bstr = The BSTR to free.
- */
-public void freeBStr(wchar* bstr) {
-  if (bstr != null)
-    SysFreeString(bstr);
-}
-
-deprecated {
-  alias fromBStr BSTRtoUTF8;
-  alias toBStr UTF8toBSTR;
-}
-
-/**
- * Determines the equivalent VARTYPE of a built-in type.
- * Examples:
- * ---
- * VARTYPE vt = VariantType!(string);
- * ---
- */
-template VariantType(T) {
-  static if (is(T == VARIANT_BOOL))
-    const VariantType = VARTYPE.VT_BOOL;
-  else static if (is(T == ubyte))
-    const VariantType = VARTYPE.VT_UI1;
-  else static if (is(T == byte))
-    const VariantType = VARTYPE.VT_I1;
-  else static if (is(T == ushort))
-    const VariantType = VARTYPE.VT_UI2;
-  else static if (is(T == short))
-    const VariantType = VARTYPE.VT_I2;
-  else static if (is(T == uint))
-    const VariantType = VARTYPE.VT_UI4;
-  else static if (is(T == int))
-    const VariantType = VARTYPE.VT_I4;
-  else static if (is(T == ulong))
-    const VariantType = VARTYPE.VT_UI8;
-  else static if (is(T == long))
-    const VariantType = VARTYPE.VT_I8;
-  else static if (is(T == float))
-    const VariantType = VARTYPE.VT_R4;
-  else static if (is(T == double))
-    const VariantType = VARTYPE.VT_R8;
-  else static if (is(T == bool))
-    const VariantType = VARTYPE.VT_BOOL;
-  else static if (is(T E == enum))
-    const VariantType = VariantType!(E);
-  else static if (is(T : string))
-    const VariantType = VARTYPE.VT_BSTR;
-  else static if (is(T == wchar*))
-    const VariantType = VARTYPE.VT_BSTR;
-  else static if (is(T == char*))
-    const VariantType = VARTYPE.VT_LPSTR;
-  else static if (is(T == SAFEARRAY*))
-    const VariantType = VARTYPE.VT_ARRAY;
-  else static if (is(T == VARIANT))
-    const VariantType = VARTYPE.VT_VARIANT;
-  else static if (is(T : IDispatch))
-    const VariantType = VARTYPE.VT_DISPATCH;
-  else static if (is(T : IUnknown))
-    const VariantType = VARTYPE.VT_UNKNOWN;
-  else static if (is(T : DateTime))
-    const VariantType = VARTYPE.VT_DATE;
-  else static if (is(T : Object))
-    const VariantType = VARTYPE.VT_BYREF;
-  else static if (is(T == void*))
-    const VariantType = cast(VARTYPE)(VARTYPE.VT_VOID | VARTYPE.VT_BYREF);
-  else static if (is(T : void*))
-    const VariantType = cast(VARTYPE)(VariantType!(typeof(*T)) | VARTYPE.VT_BYREF);
-  else
-    const VariantType = VARTYPE.VT_VOID;
-}
-
-// Safe Array support
-
-public class ComIterator(TEnum, TItem = void) {
-
-  private TEnum source;
-
-  static if (is(TEnum == SAFEARRAY*) && is(TItem == void))
-    static assert(false);
-
-  static if (!is(TEnum == SAFEARRAY*))
-    alias typeof(*ParameterTypeTuple!(TEnum.Next)[1]) TItem;
-
-  public this(TEnum source) {
-    this.source = source;
-  }
-
-  ~this() {
-    static if (!is(TEnum == SAFEARRAY*)) {
-      if (source !is null) {
-        source.Release();
-        source = null;
-      }
-    }
-  }
-
-  public int opApply(int delegate(ref TItem) action) {
-    int result;
-
-    uint fetched;
-    TItem item;
-
-    static if (is(TEnum == SAFEARRAY*)) {
-      int lb = 0, ub = 0;
-      SafeArrayGetLBound(source, 1, lb);
-      SafeArrayGetUBound(source, 1, ub);
-      int end = ub - lb + 1;
-
-      int hr = E_FAIL;
-      int index = 0;
-      while (index < end) {
-        hr = SafeArrayGetElement(source, &index, &item);
-        if (hr != S_OK || (result = action(item)) != 0)
-          break;
-        index++;
-      }
-    }
-    else {
-      while (source.Next(1, &item, fetched) == S_OK) {
-        if (fetched == 0 || (result = action(item)) != 0)
-          break;
-      }
-      source.Reset();
-    }
-
-    return result;
-  }
-
-  public int opApply(int delegate(ref int, ref TItem) action) {
-    int result, index;
-
-    uint fetched;
-    TItem item;
-
-    static if (is(TEnum == SAFEARRAY*)) {
-      int lb = 0, ub = 0;
-      SafeArrayGetLBound(source, 1, lb);
-      SafeArrayGetUBound(source, 1, ub);
-      int end = ub - lb + 1;
-
-      int hr = E_FAIL;
-      while (index < end) {
-        hr = SafeArrayGetElement(source, &index, &item);
-        if (hr != S_OK || (result = action(index, item)) != 0)
-          break;
-        index++;
-      }
-    }
-    else {
-      while (source.Next(1, &item, fetched) == S_OK) {
-        if (fetched == 0 || (result = action(index, item)) != 0)
-          break;
-        index++;
-      }
-      source.Reset();
-    }
-
-    return result;
-  }
-
-}
-
-public ComIterator!(TEnum, TItem) com_enum(TEnum, TItem = void)(TEnum source) {
-  return new ComIterator!(TEnum, TItem)(source);
-}
-
-public SAFEARRAY* toSafeArray(T)(T[] array) {
-  if (array == null) return null;
-
-  SAFEARRAY* safeArray = SafeArrayCreateVector(VARTYPE.VT_VARIANT, 0, array.length);
-
-  VARIANT* data;
-  SafeArrayAccessData(safeArray, cast(void**)&data);
-  foreach (index, element; array) {
-    data[index] = VARIANT(element);
-  }
-  SafeArrayUnaccessData(safeArray);
-
-  return safeArray;
-}
-
-public T[] toArray(T)(SAFEARRAY* safeArray) {
-  int upperBound, lowerBound;
-  SafeArrayGetUBound(safeArray, 1, upperBound);
-  SafeArrayGetLBound(safeArray, 1, lowerBound);
-  int count = upperBound - lowerBound + 1;
-
-  if (count == 0) return null;
-
-  T[] result = new T[count];
-
-  VARIANT* data;
-  SafeArrayAccessData(safeArray, cast(void**)&data);
-  for (int i = lowerBound; i <= upperBound; i++) {
-    result[i] = com_cast!(T)(data[i]);
-  }
-  SafeArrayUnaccessData(safeArray);
-
-  return result;
-}
-
-
-
-template ComType(T) {
-  static if (is(T : string))
-    alias wchar* ComType;
-  else
-    alias T ComType;
-}
-
-/*public SAFEARRAY* toSafeArray2(T)(T[] array) {
-  alias ComType!(T) TElement;
-
-  if (array == null) return null;
-
-  SAFEARRAY* safeArray = SafeArrayCreateVector(VariantType!(T), 0, array.length);
-
-  TElement* data;
-  SafeArrayAccessData(safeArray, cast(void**)&data);
-
-  static if (is(T : string)) {
-    foreach (index, element; array) {
-      data[index] = toBStr(element);
-    }
-  }
-  else {
-    memcpy(data, array.ptr, T.sizeof * array.length);
-  }
-
-  SafeArrayUnaccessData(safeArray);
-
-  return safeArray;
-}
-
-public T[] toArray2(T)(SAFEARRAY* safeArray) {
-  int upperBound, lowerBound;
-  SafeArrayGetUBound(safeArray, 1, upperBound);
-  SafeArrayGetLBound(safeArray, 1, lowerBound);
-  int count = upperBound - lowerBound + 1;
-
-  if (count == 0) return null;
-
-  T[] result = new T[count];
-
-  void** data;
-  SafeArrayAccessData(safeArray, cast(void**)&data);
-  for (int i = lowerBound; i <= upperBound; i++) {
-    static if (is(T : string)) {
-      result[i] = fromBStr(cast(wchar*)data[i]);
-    }
-    else static if (is(T == int)) {
-      result[i] = cast(int)data[i];
-    }
-  }
-  SafeArrayUnaccessData(safeArray);
-
-  return result;
-}*/
-
-public struct SafeArray(T/*, int dims = 1*/) {
-
-  private static class Data {
-
-    SAFEARRAY* ptr;
-
-    this(SAFEARRAY* ptr) {
-      this.ptr = ptr;
-    }
-
-    ~this() {
-      if (ptr != null) {
-        SafeArrayDestroy(ptr);
-        ptr = null;
-      }
-    }
-
-  }
-
-  private Data data_;
-
-  public static SafeArray opCall(int length) {
-    SAFEARRAYBOUND[1] bound;
-    bound[0] = SAFEARRAYBOUND(length, 0);
-
-    SAFEARRAY* psa = SafeArrayCreate(VARTYPE.VT_VARIANT, 1, bound.ptr);
-
-    SafeArray arr;
-    arr.data_ = new SafeArray.Data(psa);
-    return arr;
-  }
-
-  public static SafeArray opCall(T[] array) {
-    SAFEARRAYBOUND[1] bound;
-    bound[0] = SAFEARRAYBOUND(array.length, 0);
-
-    SAFEARRAY* psa = SafeArrayCreate(VARTYPE.VT_VARIANT, 1, bound.ptr);
-
-    SafeArray arr;
-    arr.data_ = new SafeArray.Data(psa);
-
-    foreach (index, value; array) {
-      arr.set(value, index);
-    }
-
-    return arr;
-  }
-
-  public int lowerBound(int dimension) {
-    int lb;
-    SafeArrayGetLBound(ptr, dimension + 1, lb);
-    return lb;
-  }
-
-  public int upperBound(int dimension) {
-    int ub;
-    SafeArrayGetUBound(ptr, dimension + 1, ub);
-    return ub;
-  }
-
-  public void resize(int newSize) {
-    SAFEARRAYBOUND[1] bound;
-    bound[0] = SAFEARRAYBOUND(newSize, 0);
-    SafeArrayRedim(ptr, bound.ptr);
-  }
-
-  public T get(int index) {
-    VARIANT v;
-    SafeArrayGetElement(ptr, &index, &v);
-    return v.get!(T);
-  }
-
-  public void set(T value, int index) {
-    SafeArrayPutElement(ptr, &index, &VARIANT(value));
-  }
-
-  public T opIndex(int index) {
-    return get(index);
-  }
-
-  public void opIndexAssign(T value, int index) {
-    set(value, index);
-  }
-
-  public int opApply(int delegate(ref T) action) {
-    int result = 0;
-    for (int i = 0; i < length; i++) {
-      T value = get(i);
-      if ((result = action(value)) != 0)
-        break;
-    }
-    return result;
-  }
-
-  public int opApply(int delegate(ref int, ref T) action) {
-    int result = 0;
-    for (int i = 0; i < length; i++) {
-      T value = get(i);
-      if ((result = action(i, value)) != 0)
-        break;
-    }
-    return result;
-  }
-
-  public int length() {
-    return upperBound(0) - lowerBound(0) + 1;
-  }
-
-  public SAFEARRAY* ptr() {
-    if (data_ !is null)
-      return data_.ptr;
-    return null;
-  }    
-
-}
-
-public bool tryRelease(IUnknown obj) {
-  if (obj !is null) {
+void tryRelease(IUnknown obj) {
+  if (obj) {
     try {
       obj.Release();
     }
     catch {
-      return false;
     }
-    return true;
   }
-  return false;
 }
 
-public void finalRelease(IUnknown obj) {
-  if (obj !is null) {
+void finalRelease(IUnknown obj) {
+  if (obj) {
     while (obj.Release() > 0) {
     }
   }
 }
 
-public Exception getExceptionForHR(int hr) {
-  if (hr < S_OK) {
-    switch (hr) {
-      case E_NOTIMPL:
-        return new NotImplementedException;
-      case E_NOINTERFACE:
-        return new InvalidCastException;
-      case E_POINTER:
-        return new NullReferenceException;
-      case E_ACCESSDENIED:
-        return new UnauthorizedAccessException;
-      case E_OUTOFMEMORY:
-        return new OutOfMemoryException;
-      case E_INVALIDARG:
-        return new ArgumentException;
-      default:
-    }
-    return new COMException(hr);
+/+version (D_Version2) {
+
+/**
+ * Wraps a COM interface in a smart pointer.
+ */
+struct com_ptr(T) {
+
+  private T ptr_;
+
+  this(this) {
+    addRef();
   }
-  return null;
+
+  ~this() {
+    release();
+  }
+
+  static com_ptr opCall(GUID clsid) {
+    com_ptr self;
+    self.ptr_ = coCreate!(T)(clsid);
+    return self;
+  }
+
+  static com_ptr opCall(string progId) {
+    com_ptr self;
+    //self.ptr_ = coCreate!(T)(progId);
+    return self;
+  }
+
+  static com_ptr opCall(T ptr) {
+    com_ptr self;
+    self.ptr_ = ptr;
+    return self;
+  }
+
+  com_ptr* opAssign(ref com_ptr other) {
+    ptr_ = other.ptr_;
+    addRef();
+    return this;
+  }
+
+  com_ptr* opAssign(T ptr) {
+    ptr_ = ptr;
+    addRef();
+    return this;
+  }
+
+  void addRef() {
+    if (ptr_ !is null)
+      ptr_.AddRef();
+  }
+
+  void release() {
+    if (ptr_ !is null) {
+      ptr_.Release();
+      ptr_ = null;
+    }
+  }
+
+  T ptr() {
+    return ptr_;
+  }
+
+  bool opEquals(void*) {
+    return ptr_ is null;
+  }
+
 }
 
-public class COMStream : Implements!(IStream) {
+}+/
+
+/**
+ * The exception thrown when an unrecognized HRESULT is returned from a COM operation.
+ */
+class COMException : Exception {
+
+  int errorCode_;
+
+  /**
+   * Initializes a new instance with a specified error code.
+   * Params: errorCode = The error code (HRESULT) value associated with this exception.
+   */
+  this(int errorCode) {
+    super(getErrorMessage(errorCode));
+    errorCode_ = errorCode;
+  }
+
+  /**
+   * Initializes a new instance with a specified message and error code.
+   * Params:
+   *   message = The error _message that explains this exception.
+   *   errorCode = The error code (HRESULT) value associated with this exception.
+   */
+  this(string message, int errorCode) {
+    super(message);
+    errorCode_ = errorCode;
+  }
+
+  /**
+   * Gets the HRESULT of the error.
+   * Returns: The HRESULT of the error.
+   */
+  int errorCode() {
+    return errorCode_;
+  }
+
+  private static string getErrorMessage(int errorCode) {
+    wchar[256] buffer;
+    uint result = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, errorCode, 0, buffer.ptr, buffer.length + 1, null);
+    if (result != 0) {
+      string s = .toUTF8(buffer[0 .. result]);
+
+      // Remove trailing characters
+      while (result > 0) {
+        char c = s[result - 1];
+        if (c > ' ' && c != '.')
+          break;
+        result--;
+      }
+
+      return format("%s. (Exception from HRESULT: 0x%08X)", s[0 .. result], cast(uint)errorCode);
+    }
+
+    return format("Unspecified error (0x%08X)", cast(uint)errorCode);
+  }
+
+}
+
+Exception exceptionForHR(int errorCode) {
+  switch (errorCode) {
+    case E_NOTIMPL:
+      return new NotImplementedException;
+    case E_NOINTERFACE:
+      return new InvalidCastException;
+    case E_POINTER:
+      return new NullReferenceException;
+    case E_ACCESSDENIED:
+      return new UnauthorizedAccessException;
+    case E_OUTOFMEMORY:
+      return new OutOfMemoryException;
+    case E_INVALIDARG:
+      return new ArgumentException;
+    default:
+  }
+  return new COMException(errorCode);
+}
+
+void throwExceptionForHR(int errorCode)
+in {
+  assert(FAILED(errorCode));
+}
+body {
+  if (FAILED(errorCode))
+    throw exceptionForHR(errorCode);
+}
+
+class COMStream : Implements!(IStream) {
 
   private Stream stream_;
 
-  public this(Stream stream) {
+  this(Stream stream) {
     if (stream is null)
       throw new ArgumentNullException("stream");
     stream_ = stream;
   }
 
-  int Read(void* buffer, uint size, ref uint result) {
-    uint ret = stream_.readBlock(buffer, size);
-    if (&result)
-      result = ret;
+  int Read(void* pv, uint cb, ref uint pcbRead) {
+    uint ret = stream_.readBlock(pv, cb);
+    if (&pcbRead)
+      pcbRead = ret;
     return S_OK;
   }
 
-  int Write(void* buffer, uint size, ref uint result) {
-    uint ret = stream_.writeBlock(buffer, size);
-    if (&result)
-      result = ret;
+  int Write(void* pv, uint cb, ref uint pcbWritten) {
+    uint ret = stream_.writeBlock(pv, cb);
+    if (&pcbWritten)
+      pcbWritten = ret;
     return S_OK;
   }
 
-  int Seek(long offset, uint origin, ref ulong result) {
+  int Seek(long dlibMove, uint dwOrigin, ref ulong plibNewPosition) {
     SeekPos whence;
-    if (origin == STREAM_SEEK.STREAM_SEEK_SET)
+    if (dwOrigin == STREAM_SEEK_SET)
       whence = SeekPos.Set;
-    else if (origin == STREAM_SEEK.STREAM_SEEK_CUR)
+    else if (dwOrigin == STREAM_SEEK_CUR)
       whence = SeekPos.Current;
-    else if (origin == STREAM_SEEK.STREAM_SEEK_END)
+    else if (dwOrigin == STREAM_SEEK_END)
       whence = SeekPos.End;
-    else
-      throw new ArgumentOutOfRangeException("origin");
 
-    ulong ret = stream_.seek(offset, whence);
-    if (&result)
-      result = ret;
+    ulong ret = stream_.seek(dlibMove, whence);
+    if (&plibNewPosition)
+      plibNewPosition = ret;
     return S_OK;
   }
 
-  int SetSize(ulong value) {
+  int SetSize(ulong libNewSize) {
     return E_NOTIMPL;
   }
 
-  int CopyTo(IStream stream, ulong size, ref ulong read, ref ulong written) {
-    read = 0;
-    written = 0;
+  int CopyTo(IStream stream, ulong cb, ref ulong pcbRead, ref ulong pcbWritten) {
+    if (&pcbRead)
+      pcbRead = 0;
+    if (&pcbWritten)
+      pcbWritten = 0;
     return E_NOTIMPL;
   }
 
-  int Commit(uint flags) {
+  int Commit(uint hrfCommitFlags) {
     return E_NOTIMPL;
   }
 
@@ -3096,25 +3088,249 @@ public class COMStream : Implements!(IStream) {
     return E_NOTIMPL;
   }
 
-  int LockRegion(ulong offset, ulong size, uint lockType) {
+  int LockRegion(ulong libOffset, ulong cb, uint dwLockType) {
     return E_NOTIMPL;
   }
 
-  int UnlockRegion(ulong offset, ulong size, uint lockType) {
+  int UnlockRegion(ulong libOffset, ulong cb, uint dwLockType) {
     return E_NOTIMPL;
   }
 
-  int Stat(out STATSTG statstg, uint flag) {
-    STATSTG stats;
-    stats.type = STGTY.STGTY_STREAM;
-    stats.cbSize = stream_.size;
-    statstg = stats;
+  int Stat(out STATSTG pstatstg, uint grfStatFlag) {
+    pstatstg.type = STGTY_STREAM;
+    pstatstg.cbSize = stream_.size;
     return S_OK;
   }
 
-  int Clone(out IStream result) {
-    result = null;
+  int Clone(out IStream ppstm) {
+    ppstm = null;
     return E_NOTIMPL;
   }
 
+}
+
+class StreamFromCOMStream : Stream {
+
+  private IStream stream_;
+
+  this(IStream stream) {
+    stream_ = stream;
+  }
+
+  ~this() {
+    close();
+  }
+
+  override void close() {
+    if (stream_ !is null) {
+      try {
+        stream_.Commit(0);
+      }
+      catch {
+      }
+
+      tryRelease(stream_);
+      stream_ = null;
+    }
+  }
+
+  override uint readBlock(void* buffer, size_t size) {
+    uint ret;
+    stream_.Read(buffer, size, ret);
+    return ret;
+  }
+
+  override uint writeBlock(void* buffer, size_t size) {
+    uint ret;
+    stream_.Write(buffer, size, ret);
+    return ret;
+  }
+
+  override ulong seek(long offset, SeekPos origin) {
+    uint dwOrigin;
+    if (origin == SeekPos.Set)
+      dwOrigin = STREAM_SEEK_SET;
+    else if (origin == SeekPos.Current)
+      dwOrigin = STREAM_SEEK_CUR;
+    else if (origin == SeekPos.End)
+      dwOrigin = STREAM_SEEK_END;
+
+    ulong ret;
+    stream_.Seek(offset, dwOrigin, ret);
+    return ret;
+  }
+
+  override void position(ulong value) {
+    seek(cast(long)value, SeekPos.Set);
+  }
+
+  override ulong position() {
+    return seek(0, SeekPos.Current);
+  }
+
+  override ulong size() {
+    ulong oldPos = position;
+    ulong newPos = seek(0, SeekPos.End);
+    position = oldPos;
+    return newPos - oldPos;
+  }
+
+}
+
+enum DispatchFlags : ushort {
+  InvokeMethod    = DISPATCH_METHOD,
+  GetProperty     = DISPATCH_PROPERTYGET,
+  PutProperty     = DISPATCH_PROPERTYPUT,
+  PutRefProperty  = DISPATCH_PROPERTYPUTREF
+}
+
+class MissingMemberException : Exception {
+
+  this(string message = "Member not found.") {
+    super(message);
+  }
+
+  this(string className, string memberName) {
+    super("Member '" ~ className ~ "." ~ memberName ~ "' not found.");
+  }
+
+}
+
+VARIANT invokeMemberById(int dispId, DispatchFlags flags, IDispatch target, VARIANT[] args...) {
+  args.reverse;
+
+  DISPPARAMS params;
+  if (args.length > 0) {
+    params.rgvarg = args.ptr;
+    params.cArgs = args.length;
+
+    if (flags & DispatchFlags.PutProperty) {
+      int dispIdNamed = DISPID_PROPERTYPUT;
+      params.rgdispidNamedArgs = &dispIdNamed;
+      params.cNamedArgs = 1;
+    }
+  }
+
+  VARIANT result;
+  EXCEPINFO excep;
+  int hr = target.Invoke(dispId, GUID.empty, LOCALE_SYSTEM_DEFAULT, flags, &params, &result, &excep, null);
+
+  for (uint i = 0; i < params.cArgs; i++) {
+    params.rgvarg[i].clear();
+  }
+
+  if (FAILED(hr)) {
+    throw new COMException(bstr.toString(excep.bstrDescription), hr);
+  }
+
+  return result;
+}
+
+VARIANT invokeMember(string name, DispatchFlags flags, IDispatch target, VARIANT[] args...) {
+  int dispId = DISPID_UNKNOWN;
+  wchar* bstrName = bstr.fromString(name);
+  scope(exit) bstr.free(bstrName);
+
+  if (SUCCEEDED(target.GetIDsOfNames(GUID.empty, &bstrName, 1, LOCALE_SYSTEM_DEFAULT, &dispId)) && dispId != DISPID_UNKNOWN)
+    return invokeMemberById(dispId, flags, target, args);
+
+  string typeName;
+  ITypeInfo typeInfo;
+  if (SUCCEEDED(target.GetTypeInfo(0, 0, typeInfo))) {
+    scope(exit) typeInfo.Release();
+
+    wchar* bstrTypeName;
+    typeInfo.GetDocumentation(-1, &bstrTypeName, null, null, null);
+    typeName = bstr.toString(bstrTypeName);
+  }
+
+  throw new MissingMemberException(typeName, name);
+}
+
+private VARIANT[] argsToVariants(TypeInfo[] types, va_list argptr) {
+  VARIANT[] list;
+
+  foreach (type; types) {
+    //debug writefln(type);
+    if (type == typeid(bool)) list ~= VARIANT(va_arg!(bool)(argptr));
+    else if (type == typeid(ubyte)) list ~= VARIANT(va_arg!(ubyte)(argptr));
+    else if (type == typeid(byte)) list ~= VARIANT(va_arg!(byte)(argptr));
+    else if (type == typeid(ushort)) list ~= VARIANT(va_arg!(ushort)(argptr));
+    else if (type == typeid(short)) list ~= VARIANT(va_arg!(short)(argptr));
+    else if (type == typeid(uint)) list ~= VARIANT(va_arg!(uint)(argptr));
+    else if (type == typeid(int)) list ~= VARIANT(va_arg!(int)(argptr));
+    else if (type == typeid(ulong)) list ~= VARIANT(va_arg!(ulong)(argptr));
+    else if (type == typeid(long)) list ~= VARIANT(va_arg!(long)(argptr));
+    else if (type == typeid(float)) list ~= VARIANT(va_arg!(float)(argptr));
+    else if (type == typeid(double)) list ~= VARIANT(va_arg!(double)(argptr));
+    else if (type == typeid(string)) list ~= VARIANT(va_arg!(string)(argptr));
+    else if (type == typeid(IDispatch)) list ~= VARIANT(va_arg!(IDispatch)(argptr));
+    else if (type == typeid(IUnknown)) list ~= VARIANT(va_arg!(IUnknown)(argptr));
+    else if (type == typeid(VARIANT*)) list ~= VARIANT(va_arg!(VARIANT*)(argptr));
+    else if (type == typeid(VARIANT)) list ~= va_arg!(VARIANT)(argptr);
+  }
+
+  return list;
+}
+
+private void fixArgs(ref TypeInfo[] args, ref va_list argptr) {
+  if (args[0] == typeid(TypeInfo[]) && args[1] == typeid(va_list)) {
+    args = va_arg!(TypeInfo[])(argptr);
+    argptr = *cast(va_list*)(argptr);
+  }
+}
+
+R invokeMethod(R = VARIANT)(IDispatch target, string name, ...) {
+  auto args = _arguments;
+  auto argptr = _argptr;
+  if (args.length == 2) fixArgs(args, argptr);
+
+  VARIANT ret = invokeMember(name, DispatchFlags.InvokeMethod, target, argsToVariants(args, argptr));
+  static if (is(R == VARIANT))
+    return ret;
+  else
+    return com_cast!(R)(ret);
+}
+
+R getProperty(R = VARIANT)(IDispatch target, string name, ...) {
+  auto args = _arguments;
+  auto argptr = _argptr;
+  if (args.length == 2) fixArgs(args, argptr);
+
+  VARIANT ret = invokeMember(name, DispatchFlags.GetProperty, target, argsToVariants(args, argptr));
+  static if (is(R == VARIANT))
+    return ret;
+  else
+    return com_cast!(R)(ret);
+}
+
+void setProperty(IDispatch target, string name, ...) {
+  auto args = _arguments;
+  auto argptr = _argptr;
+  if (args.length == 2) fixArgs(args, argptr);
+
+  if (args.length > 1) {
+    VARIANT v = invokeMember(name, DispatchFlags.GetProperty, target);
+    if (auto indexer = v.pdispVal) {
+      scope(exit) indexer.Release();
+      v = invokeMemberById(0, DispatchFlags.GetProperty, indexer, argsToVariants(args[0 .. 1], argptr));
+      if (auto value = v.pdispVal) {
+        scope(exit) value.Release();
+        invokeMemberById(0, DispatchFlags.PutProperty, value, argsToVariants(args[1 .. $], argptr + args[0].tsize()));
+        return;
+      }
+    }
+  }
+  else {
+    invokeMember(name, DispatchFlags.PutProperty, target, argsToVariants(args, argptr));
+  }
+}
+
+deprecated {
+  alias bstr.fromString toBStr;
+  alias bstr.toString fromBStr;
+  alias bstr.free freeBStr;
+  // 0.3
+  alias bstr.toString BSTRtoUTF8;
+  alias bstr.fromString UTF8toBSTR;
 }

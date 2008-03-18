@@ -1,387 +1,1420 @@
-/*
- * Copyright (c) 2007 John Chapman
+/**
+ * Copyright: (c) 2008 John Chapman
  *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
-
 module juno.locale.format;
 
 private import juno.base.core,
-  juno.base.math,
+  juno.base.native,
   juno.locale.constants;
-private import juno.locale.core : IFormatProvider, NumberFormat, DateTimeFormat, DayOfWeek, Calendar, DateTime, TimeSpan;
-private import juno.base.string : strlen;
 
-extern (C)
-private char* ecvt(double d, int digits, out int decpt, out int sign);
+private import juno.locale.core : 
+  IFormatProvider, Culture, getLocaleInfo, getLocaleInfoI, getCalendarInfo;
 
-private string ulongToString(ulong value, int digits) {
-  if (digits < 1)
-    digits = 1;
+private import juno.locale.time : 
+  Calendar, GregorianCalendar, DateTime;
 
-  char[100] buffer;
-  int n = 100;
-  while (--digits >= 0 || value != 0) {
-    buffer[--n] = value % 10 + '0';
-    value /= 10;
+private import std.utf : toUTF8;
+private import std.string :
+  find, rfind, wcslen, strlen;
+
+debug private import std.stdio;
+
+class NumberFormat : IFormatProvider {
+
+  private static NumberFormat current_;
+  private static NumberFormat constant_;
+
+  package bool isReadOnly_;
+
+  private int[] numberGroupSizes_;
+  private int[] currencyGroupSizes_;
+  private string positiveSign_;
+  private string negativeSign_;
+  private string numberDecimalSeparator_;
+  private string currencyDecimalSeparator_;
+  private string numberGroupSeparator_;
+  private string currencyGroupSeparator_;
+  private string currencySymbol_;
+  private string nanSymbol_;
+  private string positiveInfinitySymbol_;
+  private string negativeInfinitySymbol_;
+  private int numberDecimalDigits_;
+  private int currencyDecimalDigits_;
+  private int currencyPositivePattern_;
+  private int numberNegativePattern_;
+  private int currencyNegativePattern_;
+
+  this() {
+    this(LOCALE_INVARIANT);
   }
 
-  return buffer[n .. $].dup;
-}
-
-private string longToString(long value, int digits, string negativeSign) {
-  if (digits < 1)
-    digits = 1;
-
-  char[100] buffer;
-  ulong uv = (value >= 0) ? value : cast(ulong)-value;
-  int n = 100;
-  while (--digits >= 0 || uv != 0) {
-    buffer[--n] = uv % 10 + '0';
-    uv /= 10;
+  Object getFormat(TypeInfo formatType) {
+    if (formatType == typeid(NumberFormat))
+      return this;
+    return null;
   }
 
-  if (value < 0) {
-    n -= negativeSign.length;
-    buffer[n .. n + negativeSign.length] = negativeSign;
-  }
-
-  return buffer[n .. $].dup;
-}
-
-private string intToHexString(uint value, int digits, char format) {
-  if (digits < 1)
-    digits = 1;
-
-  char[100] buffer;
-  int n = 100;
-  while (--digits >= 0 || value != 0) {
-    uint v = value & 0xF;
-    buffer[--n] = (v < 10) ? v + '0' : v + format - ('X' - 'A' + 10);
-    value >>= 4;
-  }
-
-  return buffer[n .. $].dup;
-}
-
-private string longToHexString(ulong value, int digits, char format) {
-  if (digits < 1)
-    digits = 1;
-
-  char[100] buffer;
-  int n = 100;
-  while (--digits >= 0 || value != 0) {
-    ulong v = value & 0xF;
-    buffer[--n] = (v < 10) ? v + '0' : v + format - ('X' - 'A' + 10);
-    value >>= 4;
-  }
-
-  return buffer[n .. $].dup;
-}
-
-private char parseFormatSpecifier(string format, out int length) {
-  length = -1;
-  char specifier = 'G';
-
-  if (format != null) {
-    int pos = 0;
-    char c = format[pos];
-
-    if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
-      specifier = c;
-
-      pos++;
-      if (pos == format.length)
-        return specifier;
-      c = format[pos];
-
-      if (c >= '0' && c <= '9') {
-        length = c - '0';
-
-        pos++;
-        if (pos == format.length)
-          return specifier;
-        c = format[pos];
-
-        while (c >= '0' && c <= '9') {
-          length = length * 10 + c - '0';
-
-          pos++;
-          if (pos == format.length)
-            return specifier;
-          c = format[pos];
-        }
+  static NumberFormat get(IFormatProvider provider) {
+    if (auto culture = cast(Culture)provider) {
+      if (!culture.isInherited_) {
+        if (auto value = culture.numberFormat_)
+          return value;
+        return culture.numberFormat;
       }
     }
-    return char.init;
+
+    if (auto value = cast(NumberFormat)provider)
+      return value;
+
+    if (provider !is null) {
+      if (auto value = cast(NumberFormat)provider.getFormat(typeid(NumberFormat)))
+        return value;
+    }
+
+    return current;
   }
-  return specifier;
+
+  static NumberFormat constant() {
+    if (constant_ is null) {
+      constant_ = new NumberFormat;
+      constant_.isReadOnly_ = true;
+    }
+    return constant_;
+  }
+
+  static NumberFormat current() {
+    Culture culture = Culture.current;
+    if (!culture.isInherited_) {
+      if (auto result = culture.numberFormat_)
+        return result;
+    }
+    return cast(NumberFormat)culture.getFormat(typeid(NumberFormat));
+  }
+
+  void numberGroupSizes(int[] value) {
+    checkReadOnly();
+    numberGroupSizes_ = value;
+  }
+
+  int[] numberGroupSizes() {
+    return numberGroupSizes_;
+  }
+
+  void currencyGroupSizes(int[] value) {
+    checkReadOnly();
+    currencyGroupSizes_ = value;
+  }
+
+  int[] currencyGroupSizes() {
+    return currencyGroupSizes_;
+  }
+
+  void positiveSign(string value) {
+    checkReadOnly();
+    positiveSign_ = value;
+  }
+
+  string positiveSign() {
+    return positiveSign_;
+  }
+
+  void negativeSign(string value) {
+    checkReadOnly();
+    negativeSign_ = value;
+  }
+
+  string negativeSign() {
+    return negativeSign_;
+  }
+
+  void numberDecimalSeparator(string value) {
+    checkReadOnly();
+    numberDecimalSeparator_ = value;
+  }
+
+  string numberDecimalSeparator() {
+    return numberDecimalSeparator_;
+  }
+
+  void currencyDecimalSeparator(string value) {
+    checkReadOnly();
+    currencyDecimalSeparator_ = value;
+  }
+
+  string currencyDecimalSeparator() {
+    return currencyDecimalSeparator_;
+  }
+
+  void numberGroupSeparator(string value) {
+    checkReadOnly();
+    numberGroupSeparator_ = value;
+  }
+
+  string numberGroupSeparator() {
+    return numberGroupSeparator_;
+  }
+
+  void currencyGroupSeparator(string value) {
+    checkReadOnly();
+    currencyGroupSeparator_ = value;
+  }
+
+  string currencyGroupSeparator() {
+    return currencyGroupSeparator_;
+  }
+
+  void currencySymbol(string value) {
+    checkReadOnly();
+    currencySymbol_ = value;
+  }
+
+  string currencySymbol() {
+    return currencySymbol_;
+  }
+
+  void nanSymbol(string value) {
+    checkReadOnly();
+    nanSymbol_ = value;
+  }
+
+  string nanSymbol() {
+    return nanSymbol_;
+  }
+
+  void positiveInfinitySymbol(string value) {
+    checkReadOnly();
+    positiveInfinitySymbol_ = value;
+  }
+
+  string positiveInfinitySymbol() {
+    return positiveInfinitySymbol_;
+  }
+
+  void negativeInfinitySymbol(string value) {
+    checkReadOnly();
+    negativeInfinitySymbol_ = value;
+  }
+
+  string negativeInfinitySymbol() {
+    return negativeInfinitySymbol_;
+  }
+
+  void numberDecimalDigits(int value) {
+    checkReadOnly();
+    numberDecimalDigits_ = value;
+  }
+
+  int numberDecimalDigits() {
+    return numberDecimalDigits_;
+  }
+
+  void currencyDecimalDigits(int value) {
+    checkReadOnly();
+    currencyDecimalDigits_ = value;
+  }
+
+  int currencyDecimalDigits() {
+    return currencyDecimalDigits_;
+  }
+
+  void currencyPositivePattern(int value) {
+    checkReadOnly();
+    currencyPositivePattern_ = value;
+  }
+
+  int currencyPositivePattern() {
+    return currencyPositivePattern_;
+  }
+
+  void currencyNegativePattern(int value) {
+    checkReadOnly();
+    currencyNegativePattern_ = value;
+  }
+
+  int currencyNegativePattern() {
+    return currencyNegativePattern_;
+  }
+
+  void numberNegativePattern(int value) {
+    checkReadOnly();
+    numberNegativePattern_ = value;
+  }
+
+  int numberNegativePattern() {
+    return numberNegativePattern_;
+  }
+
+  package this(uint culture) {
+
+    int[] convertGroupString(string s) {
+      // eg 3;2;0
+      if (s.length == 0 || s[0] == '0')
+        return [ 3 ];
+      int[] group;
+      if (s[$ - 1] == '0')
+        group = new int[s.length / 2];
+      else {
+        group = new int[(s.length / 2) + 2];
+        group[$ - 1] = 0;
+      }
+      int n;
+      for (int i = 0; i < s.length && i < group.length; i++) {
+        if (s[n] < '1' || s[n] > '9')
+          return [ 3 ];
+        group[i] = s[n] - '0';
+        // skip ';'
+        n += 2;
+      }
+      return group;
+    }
+
+    numberGroupSizes_ = [ 3 ];
+    currencyGroupSizes_ = [ 3 ];
+    positiveSign_ = "+";
+    negativeSign_ = "-";
+    numberDecimalSeparator_ = ".";
+    currencyDecimalSeparator_ = ".";
+    numberGroupSeparator_ = ",";
+    currencyGroupSeparator_ = ",";
+    currencySymbol_ = "\u00a4";
+    nanSymbol_ = "NaN";
+    positiveInfinitySymbol_ = "Infinity";
+    negativeInfinitySymbol_ = "-Infinity";
+    numberDecimalDigits_ = 2;
+    currencyDecimalDigits_ = 2;
+    numberNegativePattern_ = 1;
+
+    if (culture != LOCALE_INVARIANT) {
+      numberGroupSizes_ = convertGroupString(getLocaleInfo(culture, LOCALE_SGROUPING));
+      currencyGroupSizes_ = convertGroupString(getLocaleInfo(culture, LOCALE_SMONGROUPING));
+      negativeSign_ = getLocaleInfo(culture, LOCALE_SNEGATIVESIGN);
+      numberDecimalSeparator_ = getLocaleInfo(culture, LOCALE_SDECIMAL);
+      currencyDecimalSeparator_ = getLocaleInfo(culture, LOCALE_SMONDECIMALSEP);
+      numberGroupSeparator_ = getLocaleInfo(culture, LOCALE_STHOUSAND);
+      currencyGroupSeparator_ = getLocaleInfo(culture, LOCALE_SMONTHOUSANDSEP);
+      currencySymbol_ = getLocaleInfo(culture, LOCALE_SCURRENCY);
+      nanSymbol_ = getLocaleInfo(culture, LOCALE_SNAN);
+      positiveInfinitySymbol_ = getLocaleInfo(culture, LOCALE_SPOSINFINITY);
+      negativeInfinitySymbol_ = getLocaleInfo(culture, LOCALE_SNEGINFINITY);
+      numberDecimalDigits_ = getLocaleInfoI(culture, LOCALE_IDIGITS);
+      currencyDecimalDigits_ = getLocaleInfoI(culture, LOCALE_ICURRDIGITS);
+      currencyPositivePattern_ = getLocaleInfoI(culture, LOCALE_ICURRENCY);
+      currencyNegativePattern_ = getLocaleInfoI(culture, LOCALE_INEGCURR);
+      numberNegativePattern_ = getLocaleInfoI(culture, LOCALE_INEGNUMBER);
+
+      if (positiveSign_ == null)
+        positiveSign_ = "+";
+
+      // The following will be null on XP and earlier.
+      if (nanSymbol_ == null)
+        nanSymbol_ = "NaN";
+      if (positiveInfinitySymbol_ == null)
+        positiveInfinitySymbol_ = "Infinity";
+      if (negativeInfinitySymbol_ == null)
+        negativeInfinitySymbol_ = "-Infinity";
+    }
+  }
+
+  private void checkReadOnly() {
+    if (isReadOnly_)
+      throw new InvalidOperationException("The instance is read-only.");
+  }
+
 }
 
-public string formatUInt(uint value, string format, IFormatProvider provider) {
-  auto nf = NumberFormat.get(provider);
+package const char[] allStandardFormats = [ 'd', 'D', 'f', 'F', 'g', 'G', 'r', 'R', 's', 't', 'T', 'u', 'U', 'y', 'Y' ];
 
-  int length;
-  char specifier = parseFormatSpecifier(format, length);
+class DateTimeFormat : IFormatProvider {
 
-  switch (specifier) {
-    case 'g', 'G':
-      if (length > 0)
+  private static const string RFC1123_PATTERN = "ddd, dd MMM yyyy HH':'mm':'ss 'GMT'";
+  private static const string SORTABLE_DATETIME_PATTERN = "yyyy'-'MM'-'dd'T'HH':'mm':'ss";
+  private static const string UNIVERSAL_SORTABLE_DATETIME_PATTERN = "yyyy'-'MM'-'dd HH':'mm':'ss'Z'";
+
+  private static DateTimeFormat current_;
+  private static DateTimeFormat constant_;
+
+  private uint cultureId_;
+  private Calendar calendar_;
+  private bool isDefaultCalendar_;
+  private int[] optionalCalendars_;
+  private string amDesignator_;
+  private string pmDesignator_;
+  private string dateSeparator_;
+  private string timeSeparator_;
+  private int firstDayOfWeek_ = -1;
+  private string[] dayNames_;
+  private string[] abbrevDayNames_;
+  private string[] monthNames_;
+  private string[] abbrevMonthNames_;
+  private string shortDatePattern_;
+  private string longDatePattern_;
+  private string shortTimePattern_;
+  private string longTimePattern_;
+  private string yearMonthPattern_;
+  private string fullDateTimePattern_;
+  private string[] allShortDatePatterns_;
+  private string[] allShortTimePatterns_;
+  private string[] allLongDatePatterns_;
+  private string[] allLongTimePatterns_;
+  private string[] allYearMonthPatterns_;
+  private string generalShortTimePattern_;
+  private string generalLongTimePattern_;
+
+  package bool isReadOnly_;
+
+  this() {
+    cultureId_ = LOCALE_INVARIANT;
+    isDefaultCalendar_ = true;
+    calendar_ = GregorianCalendar.defaultInstance;
+
+    initializeProperties();
+  }
+
+  Object getFormat(TypeInfo formatType) {
+    if (formatType == typeid(DateTimeFormat))
+      return this;
+    return null;
+  }
+
+  static DateTimeFormat get(IFormatProvider provider) {
+    if (auto culture = cast(Culture)provider) {
+      return culture.dateTimeFormat;
+    }
+
+    if (auto value = cast(DateTimeFormat)provider)
+      return value;
+
+    if (provider !is null) {
+      if (auto value = cast(DateTimeFormat)provider.getFormat(typeid(DateTimeFormat)))
+        return value;
+    }
+
+    return current;
+  }
+
+  final string getAbbreviatedDayName(DayOfWeek dayOfWeek) {
+    return getAbbreviatedDayNames()[dayOfWeek];
+  }
+
+  final string getDayName(DayOfWeek dayOfWeek) {
+    return getDayNames()[dayOfWeek];
+  }
+
+  final string getMonthName(int month) {
+    return getMonthNames()[month - 1];
+  }
+
+  final string getAbbreviatedMonthName(int month) {
+    return getAbbreviatedMonthNames()[month - 1];
+  }
+
+  final string[] getAllDateTimePatterns() {
+    string[] ret;
+    foreach (format; allStandardFormats)
+      ret ~= getAllDateTimePatterns(format);
+    return ret;
+  }
+
+  final string[] getAllDateTimePatterns(char format) {
+
+    string[] combinePatterns(string[] patterns1, string[] patterns2) {
+      string[] result = new string[patterns1.length * patterns2.length];
+      for (int i = 0; i < patterns1.length; i++) {
+        for (int j = 0; j < patterns2.length; j++)
+          result[i * patterns2.length + j] = patterns1[i] ~ " " ~ patterns2[j];
+      }
+      return result;
+    }
+
+    string[] ret;
+
+    switch (format) {
+      case 'd':
+        ret ~= allShortDatePatterns;
         break;
-      // fall through
-    case 'd', 'D':
-      return ulongToString(value, length);
-    case 'x', 'X':
-      return intToHexString(value, length, specifier);
-    default:
-  }
-
-  auto number = Number(cast(ulong)value);
-  if (specifier != char.init)
-    return number.toString(specifier, length, nf);
-  return number.toStringFormat(format, nf);
-}
-
-public string formatInt(int value, string format, IFormatProvider provider) {
-  auto nf = NumberFormat.get(provider);
-
-  int length;
-  char specifier = parseFormatSpecifier(format, length);
-
-  switch (specifier) {
-    case 'g', 'G':
-      if (length > 0)
+      case 'D':
+        ret ~= allLongDatePatterns;
         break;
-      // fall through
-    case 'd', 'D':
-      return longToString(cast(long)value, length, nf.negativeSign);
-    case 'x', 'X':
-      return intToHexString(cast(uint)value, length, specifier);
-    default:
-  }
-
-  auto number = Number(cast(long)value);
-  if (specifier != char.init)
-    return number.toString(specifier, length, nf);
-  return number.toStringFormat(format, nf);
-}
-
-public string formatULong(ulong value, string format, IFormatProvider provider) {
-  auto nf = NumberFormat.get(provider);
-
-  int length;
-  char specifier = parseFormatSpecifier(format, length);
-
-  switch (specifier) {
-    case 'g', 'G':
-      if (length > 0)
+      case 'f':
+        ret ~= combinePatterns(allLongDatePatterns, allShortTimePatterns);
         break;
-      // fall through
-    case 'd', 'D':
-      return ulongToString(value, length);
-    case 'x', 'X':
-      return longToHexString(value, length, specifier);
-    default:
-  }
-
-  auto number = Number(value);
-  if (specifier != char.init)
-    return number.toString(specifier, length, nf);
-  return number.toStringFormat(format, nf);
-}
-
-public string formatLong(long value, string format, IFormatProvider provider) {
-  auto nf = NumberFormat.get(provider);
-
-  int length;
-  char specifier = parseFormatSpecifier(format, length);
-
-  switch (specifier) {
-    case 'g', 'G':
-      if (length > 0)
+      case 'F':
+        ret ~= combinePatterns(allLongDatePatterns, allLongTimePatterns);
         break;
-      // fall through
-    case 'd', 'D':
-      return longToString(value, length, nf.negativeSign);
-    case 'x', 'X':
-      return longToHexString(cast(ulong)value, length, specifier);
-    default:
+      case 'g':
+        ret ~= combinePatterns(allShortDatePatterns, allShortTimePatterns);
+        break;
+      case 'G':
+        ret ~= combinePatterns(allShortDatePatterns, allLongTimePatterns);
+        break;
+      case 'r', 'R':
+        ret ~= RFC1123_PATTERN;
+        break;
+      case 's':
+        ret ~= SORTABLE_DATETIME_PATTERN;
+        break;
+      case 't':
+        ret ~= allShortTimePatterns;
+        break;
+      case 'T':
+        ret ~= allLongTimePatterns;
+        break;
+      case 'u':
+        ret ~= UNIVERSAL_SORTABLE_DATETIME_PATTERN;
+        break;
+      case 'U':
+        ret ~= combinePatterns(allLongDatePatterns, allLongTimePatterns);
+        break;
+      case 'y', 'Y':
+        ret ~= allYearMonthPatterns;
+        break;
+      default:
+        throw new ArgumentException("The specified format was not valid.", "format");
+    }
+
+    return ret;
   }
 
-  auto number = Number(value);
-  if (specifier != char.init)
-    return number.toString(specifier, length, nf);
-  return number.toStringFormat(format, nf);
-}
-
-public string formatFloat(float value, string format, IFormatProvider provider) {
-  auto nf = NumberFormat.get(provider);
-
-  int length;
-  char specifier = parseFormatSpecifier(format, length);
-  int precision = 7;
-
-  switch (specifier) {
-    case 'g', 'G':
-      if (length > 7)
-        precision = 9;
-      // fall through
-    default:
+  static DateTimeFormat constant() {
+    if (constant_ is null) {
+      constant_ = new DateTimeFormat;
+      constant_.calendar.isReadOnly_ = true;
+      constant_.isReadOnly_ = true;
+    }
+    return constant_;
   }
 
-  auto number = Number(value, precision);
-
-  if (specifier != char.init)
-    return number.toString(specifier, length, nf);
-  return number.toStringFormat(format, nf);
-}
-
-public string formatDouble(double value, string format, IFormatProvider provider) {
-  auto nf = NumberFormat.get(provider);
-
-  int length;
-  char specifier = parseFormatSpecifier(format, length);
-  int precision = 15;
-
-  switch (specifier) {
-    case 'g', 'G':
-      if (length > 15)
-        precision = 17;
-      // fall through
-    default:
+  static DateTimeFormat current() {
+    Culture culture = Culture.current;
+    if (auto value = culture.dateTimeFormat_)
+      return value;
+    return cast(DateTimeFormat)culture.getFormat(typeid(DateTimeFormat));
   }
 
-  auto number = Number(value, precision);
+  final void calendar(Calendar value) {
+    if (value !is calendar_) {
+      for (int i = 0; i < optionalCalendars.length; i++) {
+        if (optionalCalendars[i] == value.internalId) {
+          isDefaultCalendar_ = (value.internalId == CAL_GREGORIAN);
 
-  if (specifier != char.init)
-    return number.toString(specifier, length, nf);
-  return number.toStringFormat(format, nf);
-}
+          if (calendar_ !is null) {
+            // Clear current values.
+            abbrevDayNames_ = null;
+            dayNames_ = null;
+            abbrevMonthNames_ = null;
+            monthNames_ = null;
+            shortDatePattern_ = null;
+            longDatePattern_ = null;
+            yearMonthPattern_ = null;
+            fullDateTimePattern_ = null;
+            allShortDatePatterns_ = null;
+            allLongDatePatterns_ = null;
+            allYearMonthPatterns_ = null;
+            generalShortTimePattern_ = null;
+            generalLongTimePattern_ = null;
+          }
 
-public uint parseUInt(string s, NumberStyles style, NumberFormat format) {
-  auto number = Number(s, style, format);
-  long value;
-  if (!number.toLong(value) || (value < uint.min || value > uint.max))
-    throw new OverflowException("Value was either too small or too large for a uint.");
-  return cast(uint)value;
-}
+          calendar_ = value;
+          initializeProperties();
 
-public int parseInt(string s, NumberStyles style, NumberFormat format) {
-  auto number = Number(s, style, format);
-  long value;
-  if (!number.toLong(value) || (value < int.min || value > int.max))
-    throw new OverflowException("Value was either too small or too large for an int.");
-  return cast(int)value;
-}
-
-public ulong parseULong(string s, NumberStyles style, NumberFormat format) {
-  auto number = Number(s, style, format);
-  long value;
-  if (!number.toLong(value) || (value < ulong.min || value > ulong.max))
-    throw new OverflowException("Value was either too small or too large for a ulong.");
-  return cast(ulong)value;
-}
-
-public long parseLong(string s, NumberStyles style, NumberFormat format) {
-  auto number = Number(s, style, format);
-  long value;
-  if (!number.toLong(value) || (value < long.min || value > long.max))
-    throw new OverflowException("Value was either too small or too large for a long.");
-  return value;
-}
-
-public float parseFloat(string s, NumberStyles style, NumberFormat format) {
-  try {
-    auto number = Number(s, style, format);
-    double value;
-    if (!number.toDouble(value))
-      throw new OverflowException("Value was either too small or too large for a float.");
-    float result = cast(float)value;
-    if (isInfinity(result))
-      throw new OverflowException("Value was either too small or too large for a float.");
-    return result;
+          return;
+        }
+      }
+      throw new ArgumentException("Not a valid calendar for the given culture.", "value");
+    }
   }
-  catch (FormatException ex) {
-    if (s == format.positiveInfinitySymbol)
-      return float.infinity;
-    else if (s == format.negativeInfinitySymbol)
-      return -float.infinity;
-    else if (s == format.nanSymbol)
-      return float.nan;
-    throw ex;
+
+  final Calendar calendar() {
+    return calendar_;
   }
+
+  final string calendarName() {
+    return getCalendarInfo(cultureId_, calendar.internalId, CAL_SCALNAME);
+  }
+
+  /++string currentEraName() {
+    return getCalendarInfo(cultureId_, calendar.internalId, CAL_SERASTRING);
+    /*wchar[64] buffer;
+    int cch = GetDateFormat(cultureId_, DATE_USE_ALT_CALENDAR, null, "gg", buffer.ptr, buffer.length);
+    if (cch == 0)
+      return null;
+
+    return toUTF8(buffer[0 .. cch - 1]);*/
+  }++/
+
+  final void amDesignator(string value) {
+    checkReadOnly();
+    amDesignator_ = value;
+  }
+
+  final string amDesignator() {
+    return amDesignator_;
+  }
+
+  final void pmDesignator(string value) {
+    checkReadOnly();
+    pmDesignator_ = value;
+  }
+
+  final string pmDesignator() {
+    return pmDesignator_;
+  }
+
+  final void dateSeparator(string value) {
+    checkReadOnly();
+    dateSeparator_ = value;
+  }
+
+  final string dateSeparator() {
+    if (dateSeparator_ == null)
+      dateSeparator_ = getLocaleInfo(cultureId_, LOCALE_SDATE);
+    return dateSeparator_;
+  }
+
+  final void timeSeparator(string value) {
+    checkReadOnly();
+    timeSeparator_ = value;
+  }
+
+  final string timeSeparator() {
+    if (timeSeparator_ == null)
+      timeSeparator_ = getLocaleInfo(cultureId_, LOCALE_STIME);
+    return timeSeparator_;
+  }
+
+  final void firstDayOfWeek(DayOfWeek value) {
+    checkReadOnly();
+    firstDayOfWeek_ = cast(int)value;
+  }
+
+  final DayOfWeek firstDayOfWeek() {
+    return cast(DayOfWeek)firstDayOfWeek_;
+  }
+
+  final string rfc1123Pattern() {
+    return RFC1123_PATTERN;
+  }
+
+  final string sortableDateTimePattern() {
+    return SORTABLE_DATETIME_PATTERN;
+  }
+
+  final string universalSortableDateTimePattern() {
+    return UNIVERSAL_SORTABLE_DATETIME_PATTERN;
+  }
+
+  final void shortDatePattern(string value) {
+    checkReadOnly();
+    shortDatePattern_ = value;
+    generalShortTimePattern_ = null;
+    generalLongTimePattern_ = null;
+  }
+
+  final string shortDatePattern() {
+    return shortDatePattern_;
+  }
+
+  final void longDatePattern(string value) {
+    checkReadOnly();
+    longDatePattern_ = value;
+    fullDateTimePattern_ = null;
+  }
+
+  final string longDatePattern() {
+    return longDatePattern_;
+  }
+
+  final void shortTimePattern(string value) {
+    checkReadOnly();
+    shortTimePattern_ = value;
+    generalShortTimePattern_ = null;
+  }
+
+  final string shortTimePattern() {
+    if (shortTimePattern_ == null)
+      shortTimePattern_ = getShortTime(cultureId_);
+    return shortTimePattern_;
+  }
+
+  final void longTimePattern(string value) {
+    checkReadOnly();
+    longTimePattern_ = value;
+    fullDateTimePattern_ = null;
+    generalLongTimePattern_ = null;
+  }
+
+  final string longTimePattern() {
+    return longTimePattern_;
+  }
+
+  final void yearMonthPattern(string value) {
+    checkReadOnly();
+    yearMonthPattern_ = value;
+  }
+
+  final string yearMonthPattern() {
+    return yearMonthPattern_;
+  }
+
+  final string fullDateTimePattern() {
+    if (fullDateTimePattern_ == null)
+      fullDateTimePattern_ = longDatePattern ~ " " ~ longTimePattern;
+    return fullDateTimePattern_;
+  }
+
+  package string generalShortTimePattern() {
+    if (generalShortTimePattern_ == null)
+      generalShortTimePattern_ = shortDatePattern ~ " " ~ shortTimePattern;
+    return generalShortTimePattern_;
+  }
+
+  package string generalLongTimePattern() {
+    if (generalLongTimePattern_ == null)
+      generalLongTimePattern_ = shortDatePattern ~ " " ~ longTimePattern;
+    return generalLongTimePattern_;
+  }
+
+  final void dayNames(string[] value) {
+    checkReadOnly();
+    dayNames_ = value;
+  }
+
+  final string[] dayNames() {
+    return getDayNames().dup;
+  }
+
+  final void abbreviatedDayNames(string[] value) {
+    checkReadOnly();
+    abbrevDayNames_ = value;
+  }
+
+  final string[] abbreviatedDayNames() {
+    return getAbbreviatedDayNames().dup;
+  }
+
+  final void monthNames(string[] value) {
+    checkReadOnly();
+    monthNames_ = value;
+  }
+
+  final string[] monthNames() {
+    return getMonthNames().dup;
+  }
+
+  final void abbreviatedMonthNames(string[] value) {
+    checkReadOnly();
+    abbrevMonthNames_ = value;
+  }
+
+  final string[] abbreviatedMonthNames() {
+    return getAbbreviatedMonthNames().dup;
+  }
+
+  package this(uint culture, Calendar cal) {
+    cultureId_ = culture;
+    calendar = cal;
+  }
+
+  private void checkReadOnly() {
+    if (isReadOnly_)
+      throw new InvalidOperationException("The instance is read-only.");
+  }
+
+  private void initializeProperties() {
+    amDesignator_ = getLocaleInfo(cultureId_, LOCALE_S1159);
+    pmDesignator_ = getLocaleInfo(cultureId_, LOCALE_S2359);
+
+    firstDayOfWeek_ = getLocaleInfoI(cultureId_, LOCALE_IFIRSTDAYOFWEEK);
+    // 0 = Monday, 1 = Tuesday ... 6 = Sunday
+    if (firstDayOfWeek_ < 6)
+      firstDayOfWeek_++;
+    else
+      firstDayOfWeek_ = 0;
+
+    shortDatePattern_ = getShortDatePattern(calendar_.internalId);
+    longDatePattern_ = getLongDatePattern(calendar_.internalId);
+    longTimePattern_ = getLocaleInfo(cultureId_, LOCALE_STIMEFORMAT);
+    yearMonthPattern_ = getLocaleInfo(cultureId_, LOCALE_SYEARMONTH);
+  }
+
+  private string[] allShortDatePatterns() {
+    if (allShortDatePatterns_ == null) {
+      if (!isDefaultCalendar_)
+        allShortDatePatterns_ = [ getShortDatePattern(calendar_.internalId) ];
+      if (allShortDatePatterns_ == null)
+        allShortDatePatterns_ = getShortDates(cultureId_, calendar_.internalId);
+    }
+    return allShortDatePatterns_.dup;
+  }
+
+  private string[] allLongDatePatterns() {
+    if (allLongDatePatterns_ == null) {
+      if (!isDefaultCalendar_)
+        allLongDatePatterns_ = [ getLongDatePattern(calendar_.internalId) ];
+      if (allLongDatePatterns_ == null)
+        allLongDatePatterns_ = getLongDates(cultureId_, calendar_.internalId);
+    }
+    return allLongDatePatterns_.dup;
+  }
+
+  private string[] allShortTimePatterns() {
+    if (allShortTimePatterns_ == null)
+      allShortTimePatterns_ = getShortTimes(cultureId_);
+    return allShortTimePatterns_.dup;
+  }
+
+  private string[] allLongTimePatterns() {
+    if (allLongTimePatterns_ == null)
+      allLongTimePatterns_ = getLongTimes(cultureId_);
+    return allLongTimePatterns_.dup;
+  }
+
+  private string[] allYearMonthPatterns() {
+    if (allYearMonthPatterns_ == null) {
+      if (!isDefaultCalendar_)
+        allYearMonthPatterns_ = [ getCalendarInfo(cultureId_, calendar_.internalId, CAL_SYEARMONTH) ];
+      if (allYearMonthPatterns_ == null)
+        allYearMonthPatterns_ = [ getLocaleInfo(cultureId_, LOCALE_SYEARMONTH) ];
+    }
+    return allYearMonthPatterns_.dup;
+  }
+
+  private static bool enumDateFormats(uint culture, uint calendar, uint flags, out string[] formats) {
+    static string[] temp;
+    static uint cal;
+
+    extern(Windows)
+    static int enumDateFormatsProc(wchar* lpDateFormatString, uint CalendarID) {
+      if (cal == CalendarID)
+        temp ~= toUTF8(lpDateFormatString[0 .. wcslen(lpDateFormatString)]);
+      return true;
+    }
+
+    temp = null;
+    cal = calendar;
+    if (!EnumDateFormatsEx(&enumDateFormatsProc, culture, flags))
+      return false;
+
+    formats = temp.dup;
+    return true;
+  }
+
+  private static string[] getShortDates(uint culture, uint calendar) {
+    string[] formats;
+    synchronized {
+      if (!enumDateFormats(culture, calendar, DATE_SHORTDATE, formats))
+        return null;
+    }
+    if (formats == null)
+      formats = [ getCalendarInfo(culture, calendar, CAL_SSHORTDATE) ];
+    return formats;
+  }
+
+  private string getShortDatePattern(uint cal) {
+    if (!isDefaultCalendar_)
+      return getShortDates(cultureId_, cal)[0];
+    return getLocaleInfo(cultureId_, LOCALE_SSHORTDATE);
+  }
+
+  private static string getShortTime(uint culture) {
+    // There is no LOCALE_SSHORTTIME, so we simulate one based on the long time pattern.
+    string s = getLocaleInfo(culture, LOCALE_STIMEFORMAT);
+    int i = s.rfind(getLocaleInfo(culture, LOCALE_STIME));
+    if (i != -1)
+      s.length = i;
+    return s;
+  }
+
+  private static string[] getLongDates(uint culture, uint calendar) {
+    string[] formats;
+    synchronized {
+      if (!enumDateFormats(culture, calendar, DATE_LONGDATE, formats))
+        return null;
+    }
+    if (formats == null)
+      formats = [ getCalendarInfo(culture, calendar, CAL_SLONGDATE) ];
+    return formats;
+  }
+
+  private string getLongDatePattern(uint cal) {
+    if (!isDefaultCalendar_)
+      return getLongDates(cultureId_, cal)[0];
+    return getLocaleInfo(cultureId_, LOCALE_SLONGDATE);
+  }
+
+  private static bool enumTimeFormats(uint culture, uint flags, out string[] formats) {
+    static string[] temp;
+
+    extern(Windows)
+    static int enumTimeFormatsProc(wchar* lpTimeFormatString) {
+      temp ~= toUTF8(lpTimeFormatString[0 .. wcslen(lpTimeFormatString)]);
+      return true;
+    }
+
+    temp = null;
+    if (!EnumTimeFormats(&enumTimeFormatsProc, culture, flags))
+      return false;
+
+    formats = temp.dup;
+    return true;
+  }
+
+  private static string[] getShortTimes(uint culture) {
+    string[] formats;
+
+    synchronized {
+      if (!enumTimeFormats(culture, 0, formats))
+        return null;
+    }
+
+    foreach (ref s; formats) {
+      int i = s.rfind(getLocaleInfo(culture, LOCALE_STIME));
+      int j = -1;
+      if (i != -1)
+        j = s.rfind(' ');
+      if (i != -1 && j != -1) {
+        string temp = s[0 .. j];
+        temp ~= s[j .. $];
+        s = temp;
+      }
+      else if (i != -1)
+        s.length = i;
+    }
+
+    return formats;
+  }
+
+  private static string[] getLongTimes(uint culture) {
+    string[] formats;
+    synchronized {
+      if (!enumTimeFormats(culture, 0, formats))
+        return null;
+    }
+    return formats;
+  }
+
+  private string[] getDayNames() {
+    if (dayNames_ == null) {
+      dayNames_.length = 7;
+      for (uint i = LOCALE_SDAYNAME1; i <= LOCALE_SDAYNAME7; i++) {
+        uint j = (i != LOCALE_SDAYNAME7) ? i - LOCALE_SDAYNAME1 + 1 : 0;
+        dayNames_[j] = getLocaleInfo(cultureId_, i);
+      }
+    }
+    return dayNames_;
+  }
+
+  private string[] getAbbreviatedDayNames() {
+    if (abbrevDayNames_ == null) {
+      abbrevDayNames_.length = 7;
+      for (uint i = LOCALE_SABBREVDAYNAME1; i <= LOCALE_SABBREVDAYNAME7; i++) {
+        uint j = (i != LOCALE_SABBREVDAYNAME7) ? i - LOCALE_SABBREVDAYNAME1 + 1 : 0;
+        abbrevDayNames_[j] = getLocaleInfo(cultureId_, i);
+      }
+    }
+    return abbrevDayNames_;
+  }
+
+  private string[] getMonthNames() {
+    if (monthNames_ == null) {
+      monthNames_.length = 13;
+      for (uint i = LOCALE_SMONTHNAME1; i <= LOCALE_SMONTHNAME12; i++) {
+        monthNames_[i - LOCALE_SMONTHNAME1] = getLocaleInfo(cultureId_, i);
+      }
+    }
+    return monthNames_;
+  }
+
+  private string[] getAbbreviatedMonthNames() {
+    if (abbrevMonthNames_ == null) {
+      abbrevMonthNames_.length = 13;
+      for (uint i = LOCALE_SABBREVMONTHNAME1; i <= LOCALE_SABBREVMONTHNAME12; i++) {
+        abbrevMonthNames_[i - LOCALE_SABBREVMONTHNAME1] = getLocaleInfo(cultureId_, i);
+      }
+    }
+    return abbrevMonthNames_;
+  }
+
+  private int[] optionalCalendars() {
+    if (optionalCalendars_ == null)
+      optionalCalendars_ = getOptionalCalendars(cultureId_);
+    return optionalCalendars_;
+  }
+
+  private static bool enumCalendarInfo(uint culture, uint calendar, uint calType, out int[] result) {
+    static int[] temp;
+
+    extern(Windows)
+    static int enumCalendarsProc(wchar* lpCalendarInfoString, uint Calendar) {
+      temp ~= Calendar;
+      return true;
+    }
+
+    temp = null;
+    if (!EnumCalendarInfoEx(&enumCalendarsProc, culture, calendar, calType))
+      return false;
+    result = temp.dup;
+    return true;
+  }
+
+  private static int[] getOptionalCalendars(uint culture) {
+    int[] cals;
+    synchronized {
+      if (!enumCalendarInfo(culture, ENUM_ALL_CALENDARS, CAL_ICALINTVALUE, cals))
+        return null;
+    }
+    return cals;
+  }
+
 }
 
-public double parseDouble(string s, NumberStyles style, NumberFormat format) {
-  try {
-    auto number = Number(s, style, format);
-    double result;
-    if (!number.toDouble(result))
-      throw new OverflowException("Value was either too small or too large for a double.");
-    return result;
+package string formatDateTime(DateTime dateTime, string format, DateTimeFormat dtf) {
+
+  string expandKnownFormat(string format, ref DateTime dateTime, ref DateTimeFormat dtf) {
+    switch (format[0]) {
+      case 'd':
+        return dtf.shortDatePattern;
+      case 'D':
+        return dtf.longDatePattern;
+      case 'f':
+        return dtf.longDatePattern ~ " " ~ dtf.shortTimePattern;
+      case 'F':
+        return dtf.fullDateTimePattern;
+      case 'g':
+        return dtf.generalShortTimePattern;
+      case 'G':
+        return dtf.generalLongTimePattern;
+      case 'r', 'R':
+        return dtf.sortableDateTimePattern;
+      case 't':
+        return dtf.shortTimePattern;
+      case 'T':
+        return dtf.longTimePattern;
+      case 'y', 'Y':
+        return dtf.yearMonthPattern;
+      default:
+    }
+    throw new FormatException("Input string was invalid.");
   }
-  catch (FormatException ex) {
-    if (s == format.positiveInfinitySymbol)
-      return double.infinity;
-    else if (s == format.negativeInfinitySymbol)
-      return -double.infinity;
-    else if (s == format.nanSymbol)
-      return double.nan;
-    throw ex;
+
+  int parseRepeat(string format, int pos, char c) {
+    int n = pos + 1;
+    while (n < format.length && format[n] == c)
+      n++;
+    return n - pos;
   }
+
+  void formatDigits(ref string output, int value, int length) {
+    if (length > 2)
+      length = 2;
+
+    char[16] buffer;
+    char* p = buffer.ptr + 16;
+
+    int n = value;
+    do {
+      *--p = cast(char)(n % 10 + '0');
+      n /= 10;
+    } while (n != 0 && p > buffer.ptr);
+
+    int c = cast(int)(buffer.ptr + 16 - p);
+    while (c < length && p > buffer.ptr) {
+      *--p = '0';
+      c++;
+    }
+    output ~= p[0 .. c];
+  }
+
+  string formatDayOfWeek(DayOfWeek dayOfWeek, int rpt) {
+    if (rpt == 3)
+      return dtf.getAbbreviatedDayName(dayOfWeek);
+    return dtf.getDayName(dayOfWeek);
+  }
+
+  string formatMonth(int month, int rpt) {
+    if (rpt == 3)
+      return dtf.getAbbreviatedMonthName(month);
+    return dtf.getMonthName(month);
+  }
+
+  if (format == null)
+    format = "G";
+
+  if (format.length == 1)
+    format = expandKnownFormat(format, dateTime, dtf);
+
+  string result;
+  int index, len;
+
+  while (index < format.length) {
+    char c = format[index];
+    int next;
+
+    switch (c) {
+      case 'd':
+        len = parseRepeat(format, index, c);
+        if (len <= 2)
+          formatDigits(result, dateTime.day, len);
+        else
+          result ~= formatDayOfWeek(dateTime.dayOfWeek, len);
+        break;
+
+      case 'M':
+        len = parseRepeat(format, index, c);
+        int month = dateTime.month;
+        if (len <= 2)
+          formatDigits(result, month, len);
+        else
+          result ~= formatMonth(dateTime.month, len);
+        break;
+
+      case 'y':
+        len = parseRepeat(format, index, c);
+        int year = dateTime.year;
+        if (len <= 2)
+          formatDigits(result, year % 100, len);
+        else
+          formatDigits(result, year, len);
+        break;
+
+      case 'h':
+        len = parseRepeat(format, index, c);
+        int hour = dateTime.hour % 12;
+        if (hour == 0)
+          hour = 12;
+        formatDigits(result, hour, len);
+        break;
+
+      case 'H':
+        len = parseRepeat(format, index, c);
+        formatDigits(result, dateTime.hour, len);
+        break;
+
+      case 'm':
+        len = parseRepeat(format, index, c);
+        formatDigits(result, dateTime.minute, len);
+        break;
+
+      case 's':
+        len = parseRepeat(format, index, c);
+        formatDigits(result, dateTime.second, len);
+        break;
+
+      case 't':
+        len = parseRepeat(format, index, c);
+        if (len == 1) {
+          if (dateTime.hour < 12) {
+            if (dtf.amDesignator.length >= 1)
+              result ~= dtf.amDesignator[0];
+          }
+          else if (dtf.pmDesignator.length >= 1)
+            result ~= dtf.pmDesignator[0];
+        }
+        else
+          result ~= (dateTime.hour < 12) ? dtf.amDesignator : dtf.pmDesignator;
+        break;
+
+      /*case 'z':
+        len = parseRepeat(format, index, c);
+        TimeSpan offset = TimeZone.local.getUtcOffset(dateTime);
+        if (offset >= TimeSpan.zero)
+          result ~= "+";
+        else {
+          result ~= "-";
+          offset = -offset;
+        }
+        if (len <= 1)
+          result ~= .format("{0:0}", offset.hours);
+        else {
+          result ~= .format("{0:00}", offset.hours);
+          if (len >= 3)
+            result ~= .format(":{0:00}", offset.minutes);
+        }
+        break;*/
+
+      case ':':
+        len = 1;
+        result ~= dtf.timeSeparator;
+        break;
+
+      case '/':
+        len = 1;
+        result ~= dtf.dateSeparator;
+        break;
+
+      default:
+        len = 1;
+        result ~= c;
+        break;
+    }
+
+    index += len;
+  }
+
+  return result;
 }
 
-private const int NAN_FLAG      = 0x80000000;
-private const int INFINITY_FLAG = 0x7FFFFFFF;
-private const int EXP           = 0x07FF;
+private struct DateTimeParseResult {
+  int year = -1;
+  int month = -1;
+  int day = -1;
+  int hour;
+  int minute;
+  int second;
+  double fraction;
+  int timeMark;
+  Calendar calendar;
+  //TimeSpan timeZoneOffset;
+  DateTime parsedDate;
+}
 
-private struct Number {
+package DateTime parseDateTime(string s, DateTimeFormat dtf) {
+  DateTimeParseResult result;
+  if (!tryParseExactMultiple(s, dtf.getAllDateTimePatterns(), dtf, result))
+    throw new FormatException("String was not a valid DateTime.");
+  return result.parsedDate;
+}
+
+package DateTime parseDateTimeExact(string s, string format, DateTimeFormat dtf) {
+  DateTimeParseResult result;
+  if (!tryParseExact(s, format, dtf, result))
+    throw new FormatException("String was not a valid DateTime.");  
+  return result.parsedDate;
+}
+
+private bool tryParseExactMultiple(string s, string[] formats, DateTimeFormat dtf, ref DateTimeParseResult result) {
+  foreach (format; formats) {
+    if (tryParseExact(s, format, dtf, result))
+      return true;
+  }
+  return false;
+}
+
+private bool tryParseExact(string s, string pattern, DateTimeFormat dtf, ref DateTimeParseResult result) {
+
+  bool doParse() {
+
+    int parseDigits(string s, ref int pos, int max) {
+      int result = s[pos++] - '0';
+      while (max > 1 && pos < s.length && s[pos] >= '0' && s[pos] <= '9') {
+        result = result * 10 + s[pos++] - '0';
+        --max;
+      }
+      return result;
+    }
+
+    bool parseOne(string s, ref int pos, string value) {
+      if (s[pos .. pos + value.length] != value)
+        return false;
+      pos += value.length;
+      return true;
+    }
+
+    int parseMultiple(string s, ref int pos, string[] values ...) {
+      int result = -1, max;
+      foreach (i, value; values) {
+        if (value.length == 0 || s.length - pos < value.length)
+          continue;
+
+        if (s[pos .. pos + value.length] == value) {
+          if (result == 0 || value.length > max) {
+            result = i + 1;
+            max = value.length;
+          }
+        }
+      }
+      pos += max;
+      return result;
+    }
+
+    /*TimeSpan parseTimeZoneOffset(string s, ref int pos) {
+      bool sign;
+      if (pos < s.length) {
+        if (s[pos] == '-') {
+          sign = true;
+          pos++;
+        }
+        else if (s[pos] == '+')
+          pos++;
+      }
+      int hour = parseDigits(s, pos, 2);
+      int minute;
+      if (pos < s.length && s[pos] == ':') {
+        pos++;
+        minute = parseDigits(s, pos, 2);
+      }
+      TimeSpan result = TimeSpan(hour, minute, 0);
+      if (sign)
+        result = -result;
+      return result;
+    }*/
+
+    result.calendar = dtf.calendar;
+    result.year = result.month = result.day = -1;
+    result.hour = result.minute = result.second = 0;
+    result.fraction = 0.0;
+
+    int pos, i, count;
+    char c;
+
+    while (pos < pattern.length && i < s.length) {
+      c = pattern[pos++];
+
+      if (c == ' ') {
+        i++;
+        while (i < s.length && s[i] == ' ')
+          i++;
+        if (i >= s.length)
+          break;
+        continue;
+      }
+
+      count = 1;
+
+      switch (c) {
+        case 'd', 'm', 'M', 'y', 'h', 'H', 's', 't', 'z':
+          while (pos < pattern.length && pattern[pos] == c) {
+            pos++;
+            count++;
+          }
+          break;
+        case ':':
+          if (!parseOne(s, i, dtf.timeSeparator))
+            return false;
+          continue;
+        case '/':
+          if (!parseOne(s, i, dtf.dateSeparator))
+            return false;
+          continue;
+        case '\\':
+          if (pos < pattern.length) {
+            c = pattern[pos++];
+            if (s[i++] != c)
+              return false;
+          }
+          else
+            return false;
+          continue;
+        case '\'':
+          while (pos < pattern.length) {
+            c = pattern[pos++];
+            if (c == '\'')
+              break;
+            if (s[i++] != c)
+              return false;
+          }
+          continue;
+        default:
+          if (s[i++] != c)
+            return false;
+          continue;
+      }
+
+      switch (c) {
+        case 'd':
+          if (count == 1 || count == 2)
+            result.day = parseDigits(s, i, 2);
+          else if (count == 3)
+            result.day = parseMultiple(s, i, dtf.abbreviatedDayNames);
+          else
+            result.day = parseMultiple(s, i, dtf.dayNames);
+          if (result.day == -1)
+            return false;
+          break;
+        case 'M':
+          if (count == 1 || count == 2)
+            result.month = parseDigits(s, i, 2);
+          else if (count == 3)
+            result.month = parseMultiple(s, i, dtf.abbreviatedMonthNames);
+          else
+            result.month = parseMultiple(s, i, dtf.monthNames);
+          if (result.month == -1)
+            return false;
+          break;
+        case 'y':
+          if (count == 1 || count == 2)
+            result.year = parseDigits(s, i, 2);
+          else
+            result.year = parseDigits(s, i, 4);
+          if (result.year == -1)
+            return false;
+          break;
+        case 'h', 'H':
+          result.hour = parseDigits(s, i, 2);
+          break;
+        case 'm':
+          result.minute = parseDigits(s, i, 2);
+          break;
+        case 's':
+          result.second = parseDigits(s, i, 2);
+          break;
+        case 't':
+          if (count == 1)
+            result.timeMark = parseMultiple(s, i, [ dtf.amDesignator[0] ], [ dtf.pmDesignator[0] ]);
+          else
+            result.timeMark = parseMultiple(s, i, dtf.amDesignator, dtf.pmDesignator);
+          break;
+        /*case 'z':
+          result.timeZoneOffset = parseTimeZoneOffset(s, i);
+          break;*/
+        default:
+      }
+    }
+
+    if (pos < pattern.length || i < s.length)
+      return false;
+
+    if (result.timeMark == 1) { // am
+      if (result.hour == 12)
+        result.hour = 0;
+    }
+    else if (result.timeMark == 2) { // pm
+      if (result.hour < 12)
+        result.hour += 12;
+    }
+
+    if (result.year == -1 || result.month == -1 || result.day == -1) {
+      DateTime now = DateTime.localNow;
+      if (result.month == -1 && result.day == -1) {
+        if (result.year == -1) {
+          result.year = now.year;
+          result.month = now.month;
+          result.day = now.day;
+        }
+        else
+          result.month = result.day = 1;
+      }
+      else {
+        if (result.year == -1)
+          result.year = now.year;
+        if (result.month == -1)
+          result.month = 1;
+        if (result.day == -1)
+          result.day = 1;
+      }
+    }
+    return true;
+  }
+
+  if (doParse()) {
+    result.parsedDate = DateTime(result.year, result.month, result.day, result.hour, result.minute, result.second);
+    return true;
+  }
+  return false;
+}
+
+package struct Number {
 
   int precision;
   int scale;
   int sign;
   char[long.sizeof * 8] digits = void;
 
-  static Number opCall(ulong value) {
+  static Number opCall(long value, int precision) {
     Number n;
-    n.precision = 20;
-
-    char[20] buffer;
-    int i = buffer.length;
-    while (value != 0) {
-      buffer[--i] = value % 10 + '0';
-      value /= 10;
-    }
-
-    int end = n.scale = -(i - buffer.length);
-    n.digits[0 .. end] = buffer[i .. i + end];
-    n.digits[end] = '\0';
-
-    return n;
-  }
-
-  static Number opCall(long value) {
-    Number n;
-    n.precision = 20;
+    n.precision = precision;
     if (value < 0) {
       n.sign = 1;
       value = -value;
@@ -401,39 +1434,6 @@ private struct Number {
     return n;
   }
 
-  static Number opCall(double value, int precision) {
-    Number n;
-    n.precision = precision;
-
-    char* p = n.digits.ptr;
-    long bits = *cast(long*)&value;
-    long mant = bits & 0x000FFFFFFFFFFFFF;
-    int exp = cast(int)((bits >> 52) & EXP);
-
-    if (exp == EXP) {
-      n.scale = (mant != 0) ? NAN_FLAG : INFINITY_FLAG;
-      if (((bits >> 63) & 1) != 0)
-        n.sign = 1;
-    }
-    else {
-      char* chars = ecvt(value, n.precision, n.scale, n.sign);
-      if (*chars != '\0') {
-        while (*chars != '\0')
-          *p++ = *chars++;
-      }
-    }
-    *p = '\0';
-
-    return n;
-  }
-
-  static Number opCall(string s, NumberStyles styles, NumberFormat nf) {
-    Number n;
-    if (!parseNumber(n, s, styles, nf))
-      throw new FormatException("Input string was not valid.");
-    return n;
-  }
-
   void round(int pos) {
     int index;
     while (index < pos && digits[index] != '\0') index++;
@@ -449,7 +1449,8 @@ private struct Number {
         index = 1;
       }
     }
-    else while (index > 0 && digits[index - 1] == '0') index--;
+    else
+      while (index > 0 && digits[index - 1] == '0') index--;
 
     if (index == 0) {
       scale = 0;
@@ -483,209 +1484,172 @@ private struct Number {
     return true;
   }
 
-  bool toDouble(out double value) {
+  static bool tryParse(string s, NumberStyles styles, NumberFormat nf, out Number result) {
 
-    const ulong[] pow10 = [
-      0xa000000000000000UL,
-      0xc800000000000000UL,
-      0xfa00000000000000UL,
-      0x9c40000000000000UL,
-      0xc350000000000000UL,
-      0xf424000000000000UL,
-      0x9896800000000000UL,
-      0xbebc200000000000UL,
-      0xee6b280000000000UL,
-      0x9502f90000000000UL,
-      0xba43b74000000000UL,
-      0xe8d4a51000000000UL,
-      0x9184e72a00000000UL,
-      0xb5e620f480000000UL,
-      0xe35fa931a0000000UL,
-      0xcccccccccccccccdUL,
-      0xa3d70a3d70a3d70bUL,
-      0x83126e978d4fdf3cUL,
-      0xd1b71758e219652eUL,
-      0xa7c5ac471b478425UL,
-      0x8637bd05af6c69b7UL,
-      0xd6bf94d5e57a42beUL,
-      0xabcc77118461ceffUL,
-      0x89705f4136b4a599UL,
-      0xdbe6fecebdedd5c2UL,
-      0xafebff0bcb24ab02UL,
-      0x8cbccc096f5088cfUL,
-      0xe12e13424bb40e18UL,
-      0xb424dc35095cd813UL,
-      0x901d7cf73ab0acdcUL,
-      0x8e1bc9bf04000000UL,
-      0x9dc5ada82b70b59eUL,
-      0xaf298d050e4395d6UL,
-      0xc2781f49ffcfa6d4UL,
-      0xd7e77a8f87daf7faUL,
-      0xefb3ab16c59b14a0UL,
-      0x850fadc09923329cUL,
-      0x93ba47c980e98cdeUL,
-      0xa402b9c5a8d3a6e6UL,
-      0xb616a12b7fe617a8UL,
-      0xca28a291859bbf90UL,
-      0xe070f78d39275566UL,
-      0xf92e0c3537826140UL,
-      0x8a5296ffe33cc92cUL,
-      0x9991a6f3d6bf1762UL,
-      0xaa7eebfb9df9de8aUL,
-      0xbd49d14aa79dbc7eUL,
-      0xd226fc195c6a2f88UL,
-      0xe950df20247c83f8UL,
-      0x81842f29f2cce373UL,
-      0x8fcac257558ee4e2UL,
-    ];
+    enum ParseState {
+      None = 0x0,
+      Sign = 0x1,
+      Parens = 0x2,
+      Digits = 0x4,
+      NonZero = 0x8,
+      Decimal = 0x10,
+      Currency = 0x20
+    }
 
-    const uint[] pow10Exp = [ 
-      4, 7, 10, 14, 17, 20, 24, 27, 30, 34, 
-      37, 40, 44, 47, 50, 54, 107, 160, 213, 266, 
-      319, 373, 426, 479, 532, 585, 638, 691, 745, 798, 
-      851, 904, 957, 1010, 1064, 1117 ];
-
-    uint getDigits(char* p, int len) {
-      char* end = p + len;
-      uint r = *p - '0';
-      p++;
-      while (p < end) {
-        r = 10 * r + *p - '0';
-        p++;
+    int eat(string what, string within, int at) {
+      if (at >= within.length)
+        return -1;
+      int i;
+      while (at < within.length && i < what.length) {
+        if (within[at] != what[i])
+          return -1;
+        i++;
+        at++;
       }
-      return r;
+      return i;
     }
 
-    ulong mult64(uint val1, uint val2) {
-      return cast(ulong)val1 * cast(ulong)val2;
+    bool isWhitespace(char c) {
+      return c == 0x20 || (c >= '\t' && c <= '\r');
     }
 
-    ulong mult64L(ulong val1, ulong val2) {
-      ulong v = mult64(cast(uint)(val1 >> 32), cast(uint)(val2 >> 32));
-      v += mult64(cast(uint)(val1 >> 32), cast(uint)val2) >> 32;
-      v += mult64(cast(uint)val1, cast(uint)(val2 >> 32)) >> 32;
-      return v;
+    string currencySymbol = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.currencySymbol : null;
+    string decimalSeparator = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.currencyDecimalSeparator : nf.numberDecimalSeparator;
+    string groupSeparator = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.currencyGroupSeparator : nf.numberGroupSeparator;
+    string altDecimalSeparator = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.numberDecimalSeparator : null;
+    string altGroupSeparator = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.numberGroupSeparator : null;
+
+    result.scale = 0;
+    result.sign = 0;
+
+    ParseState state;
+    int count, end, pos, eaten;
+    bool isSigned;
+
+    while (true) {
+      if (pos == s.length) break;
+      char c = s[pos];
+      if ((isSigned = (((styles & NumberStyles.LeadingSign) != 0) && ((state & ParseState.Sign) == 0))) != 0 
+        && (eaten = eat(nf.positiveSign, s, pos)) != -1) {
+        state |= ParseState.Sign;
+        pos += eaten;
+      }
+      else if (isSigned && (eaten = eat(nf.negativeSign, s, pos)) != -1) {
+        state |= ParseState.Sign;
+        pos += eaten;
+        result.sign = 1;
+      }
+      else if (c == '(' &&
+        (styles & NumberStyles.Parentheses) != 0 && ((state & ParseState.Sign) == 0)) {
+        state |= ParseState.Sign | ParseState.Parens;
+        result.sign = 1;
+        pos++;
+      }
+      else if ((currencySymbol != null && (eaten = eat(currencySymbol, s, pos)) != -1)) {
+        state |= ParseState.Currency;
+        currencySymbol = null;
+        pos += eaten;
+      }
+      else if (!(isWhitespace(c) && ((styles & NumberStyles.LeadingWhite) != 0)
+        && ((state & ParseState.Sign) == 0 
+        || ((state & ParseState.Sign) != 0 && ((state & ParseState.Currency) != 0 || nf.numberNegativePattern == 2)))))
+        break;
+      else pos++;
     }
 
-    char* p = digits.ptr;
-    int count = strlen(p);
-    int left = count;
+    while (true) {
+      if (pos == s.length) break;
 
-    while (*p == '0') {
-      left--;
-      p++;
-    }
-    // If the digits consist of nothing but zeros...
-    if (left == 0) {
-      value = 0.0;
-      return true;
+      char c = s[pos];
+      if (c >= '0' && c <= '9') {
+        state |= ParseState.Digits;
+        if (c != '0' || (state & ParseState.NonZero) != 0) {
+          if (count < result.digits.length - 1) {
+            result.digits[count++] = c;
+            if (c != '0')
+              end = count;
+          }
+          if ((state & ParseState.Decimal) == 0)
+            result.scale++;
+          state |= ParseState.NonZero;
+        }
+        else if ((state & ParseState.Decimal) != 0)
+          result.scale--;
+        pos++;
+      }
+      else if ((styles & NumberStyles.DecimalPoint) != 0 && (state & ParseState.Decimal) == 0 && (eaten = eat(decimalSeparator, s, pos)) != -1 
+        || (state & ParseState.Currency) != 0 && (eaten = eat(altDecimalSeparator, s, pos)) != -1) {
+        state |= ParseState.Decimal;
+        pos += eaten;
+      }
+      else if ((styles & NumberStyles.Thousands) != 0 && (state & ParseState.Digits) != 0 && (state & ParseState.Decimal) == 0 
+        && ((eaten = eat(groupSeparator, s, pos)) != -1 || (state & ParseState.Currency) != 0 
+        && (eaten = eat(altGroupSeparator, s, pos)) != -1))
+        pos += eaten;
+      else break;
     }
 
-    // Get digits, 9 at a time.
-    int n = (left > 9) ? 9 : left;
-    left -= n;
-    ulong bits = getDigits(p, n);
-    if (left > 0) {
-      n = (left > 9) ? 9 : left;
-      left -= n;
-      bits = mult64(cast(uint)bits, cast(uint)(pow10[n - 1] >>> (64 - pow10Exp[n - 1])));
-      bits += getDigits(p + 9, n);
-    }
+    result.precision = end;
+    result.digits[end] = '\0';
 
-    int scale = this.scale - (count - left);
-    int s = (scale < 0) ? -scale : scale;
-    if (s >= 352) {
-      *cast(long*)&value = (scale > 0) ? 0x7FF0000000000000 : 0;
+    if ((state & ParseState.Digits) != 0) {
+      while (true) {
+        if (pos >= s.length) break;
+
+        char c = s[pos];
+        if ((isSigned = ((styles & NumberStyles.TrailingSign) != 0 && (state & ParseState.Sign) == 0)) != 0 
+          && (eaten = eat(nf.positiveSign, s, pos)) != -1) {
+          state |= ParseState.Sign;
+          pos += eaten;
+        }
+        else if (isSigned && (eaten = eat(nf.negativeSign, s, pos)) != -1) {
+          state |= ParseState.Sign;
+          result.sign = 1;
+          pos += eaten;
+        }
+        else if (c == ')' && (state & ParseState.Parens) != 0)
+          state &= ~ParseState.Parens;
+        else if (currencySymbol != null && (eaten = eat(currencySymbol, s, pos)) != -1) {
+          currencySymbol = null;
+          pos += eaten;
+        }
+        else if (!(isWhitespace(c) & (styles & NumberStyles.TrailingWhite) != 0))
+          break;
+        else pos++;
+      }
+
+      if ((state & ParseState.Parens) == 0) {
+        if ((state & ParseState.NonZero) == 0) {
+          result.scale = 0;
+          if ((state & ParseState.Decimal) == 0)
+            result.sign = 0;
+        }
+        return true;
+      }
       return false;
     }
-
-    // Normalise mantissa and bits.
-    int bexp = 64;
-    int nzero;
-    if ((bits >> 32) != 0)
-      nzero = 32;
-    if ((bits >> (16 + nzero)) != 0)
-      nzero += 16;
-    if ((bits >> (8 + nzero)) != 0)
-      nzero += 8;
-    if ((bits >> (4 + nzero)) != 0)
-      nzero += 4;
-    if ((bits >> (2 + nzero)) != 0)
-      nzero += 2;
-    if ((bits >> (1 + nzero)) != 0)
-      nzero++;
-    if ((bits >> nzero) != 0)
-      nzero++;
-    bits <<= 64 - nzero;
-    bexp -= 64 - nzero;
-
-    // Get decimal exponent.
-    if ((s & 15) != 0) {
-      int expMult = pow10Exp[(s & 15) - 1];
-      bexp += (scale < 0) ? (-expMult + 1) : expMult;
-      bits = mult64L(bits, pow10[(s & 15) + ((scale < 0) ? 15 : 0) - 1]);
-      if ((bits & 0x8000000000000000) == 0) {
-        bits <<= 1;
-        bexp--;
-      }
-    }
-    if ((s >> 4) != 0) {
-      int expMult = pow10Exp[15 + ((s >> 4) - 1)];
-      bexp += (scale < 0) ? (-expMult + 1) : expMult;
-      bits = mult64L(bits, pow10[30 + ((s >> 4) + ((scale < 0) ? 21 : 0) - 1)]);
-      if ((bits & 0x8000000000000000) == 0) {
-        bits <<= 1;
-        bexp--;
-      }
-    }
-    
-    // Round and scale.
-    if (cast(uint)bits & (1 << 10) != 0) {
-      bits += (1 << 10) - 1 + (bits >>> 11) & 1;
-      bits >>= 11;
-      if (bits == 0)
-        bexp++;
-    }
-    else
-      bits >>= 11;
-    bexp += 1022;
-    if (bexp <= 0) {
-      if (bexp < -53)
-        bits = 0;
-      else
-        bits >>= (-bexp + 1);
-    }
-    bits = (cast(ulong)bexp << 52) + (bits & 0x000FFFFFFFFFFFFF);
-
-    if (sign)
-      bits |= 0x8000000000000000;
-
-    value = *cast(double*)&bits;
-    return true;
+    return false;
   }
 
   string toString(char format, int length, NumberFormat nf) {
-    char[] ret = null;
+    string ret;
 
     switch (format) {
       case 'n', 'N':
-        // Number
         if (length < 0)
           length = nf.numberDecimalDigits;
         round(scale + length);
         formatNumber(*this, ret, length, nf);
         break;
       case 'g', 'G':
-        // General
         if (length < 0)
           length = precision;
-        round(length);
+        round(scale + length);
         if (sign)
           ret ~= nf.negativeSign;
         formatGeneral(*this, ret, length, (format == 'g') ? 'e' : 'E', nf);
         break;
       case 'c', 'C':
-        // Currency
         if (length < 0)
           length = nf.currencyDecimalDigits;
         round(scale + length);
@@ -694,7 +1658,7 @@ private struct Number {
       default:
     }
 
-    return ret.dup;
+    return ret;
   }
 
   string toStringFormat(string format, NumberFormat nf) {
@@ -871,21 +1835,221 @@ private struct Number {
 
 }
 
-// Must match NumberFormat.decimalPositivePattern
-private final string positiveNumberFormat = "#";
-// Must match NumberFormat.decimalNegativePattern
-private final string[] negativeNumberFormats = [ "(#)", "-#", "- #", "#-", "# -" ];
-// Must match NumberFormat.currencyPositivePattern
-private final string[] positiveCurrencyFormats = [ "$#", "#$", "$ #", "# $" ];
-// Must match NumberFormat.currencyNegativePattern
-private final string[] negativeCurrencyFormats = [ "($#)", "-$#", "$-#", "$#-", "(#$)", "-#$", "#-$", "#$-", "-# $", "-$ #", "# $-", "$ #-", "$ -#", "#- $", "($ #)", "(# $)" ];
-// Must match NumberFormat.percentPositivePattern
-private final string[] positivePercentFormats = [ "# %", "#%", "%#", "% #" ];
-// Must match NumberFormat.percentNegativePattern
-private final string[] negativePercentFormats = [ "-# %", "-#%", "-%#", "%-#", "%#-", "#-%", "#%-", "-% #", "# %-", "% #-", "% -#", "#- %" ];
+private string ulongToString(ulong value, int digits) {
+  if (digits < 1)
+    digits = 1;
 
-private void formatNumber(ref Number number, ref char[] dst, int length, NumberFormat nf) {
-  string format = number.sign ? negativeNumberFormats[nf.numberNegativePattern] : positiveNumberFormat;
+  char[100] buffer;
+  int n = 100;
+  while (--digits >= 0 || value != 0) {
+    buffer[--n] = value % 10 + '0';
+    value /= 10;
+  }
+
+  return buffer[n .. $].dup;
+}
+
+private string longToString(long value, int digits, string negativeSign) {
+  if (digits < 1)
+    digits = 1;
+
+  char[100] buffer;
+  ulong uv = (value >= 0) ? value : cast(ulong)-value;
+  int n = 100;
+  while (--digits >= 0 || uv != 0) {
+    buffer[--n] = uv % 10 + '0';
+    uv /= 10;
+  }
+
+  if (value < 0) {
+    n -= negativeSign.length;
+    buffer[n .. n + negativeSign.length] = negativeSign;
+  }
+
+  return buffer[n .. $].dup;
+}
+
+private string intToHexString(uint value, int digits, char format) {
+  if (digits < 1)
+    digits = 1;
+
+  char[100] buffer;
+  int n = 100;
+  while (--digits >= 0 || value != 0) {
+    uint v = value & 0xF;
+    buffer[--n] = (v < 10) ? v + '0' : v + format - ('X' - 'A' + 10);
+    value >>= 4;
+  }
+
+  return buffer[n .. $].dup;
+}
+
+private string longToHexString(ulong value, int digits, char format) {
+  if (digits < 1)
+    digits = 1;
+
+  char[100] buffer;
+  int n = 100;
+  while (--digits >= 0 || value != 0) {
+    ulong v = value & 0xF;
+    buffer[--n] = (v < 10) ? v + '0' : v + format - ('X' - 'A' + 10);
+    value >>= 4;
+  }
+
+  return buffer[n .. $].dup;
+}
+
+private char parseFormatSpecifier(string format, out int length) {
+  length = -1;
+  char specifier = 'G';
+
+  if (format != null) {
+    int pos = 0;
+    char c = format[pos];
+
+    if ((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')) {
+      specifier = c;
+
+      pos++;
+      if (pos == format.length)
+        return specifier;
+      c = format[pos];
+
+      if (c >= '0' && c <= '9') {
+        length = c - '0';
+
+        pos++;
+        if (pos == format.length)
+          return specifier;
+        c = format[pos];
+
+        while (c >= '0' && c <= '9') {
+          length = length * 10 + c - '0';
+
+          pos++;
+          if (pos == format.length)
+            return specifier;
+          c = format[pos];
+        }
+      }
+    }
+    return char.init;
+  }
+  return specifier;
+}
+
+package string formatUInt(uint value, string format, IFormatProvider provider) {
+  auto nf = NumberFormat.get(provider);
+
+  int length;
+  char specifier = parseFormatSpecifier(format, length);
+
+  switch (specifier) {
+    case 'g', 'G':
+      if (length > 0)
+        break;
+      // fall through
+    case 'd', 'D':
+      return ulongToString(cast(ulong)value, length);
+    case 'x', 'X':
+      return intToHexString(value, length, specifier);
+    default:
+  }
+
+  auto number = Number(cast(long)value, 10);
+  if (specifier != char.init)
+    return number.toString(specifier, length, nf);
+  return number.toStringFormat(format, nf);
+}
+
+package string formatInt(int value, string format, IFormatProvider provider) {
+  auto nf = NumberFormat.get(provider);
+
+  int length;
+  char specifier = parseFormatSpecifier(format, length);
+
+  switch (specifier) {
+    case 'g', 'G':
+      if (length > 0)
+        break;
+      // fall through
+    case 'd', 'D':
+      return longToString(cast(long)value, length, nf.negativeSign);
+    case 'x', 'X':
+      return intToHexString(cast(uint)value, length, specifier);
+    default:
+  }
+
+  auto number = Number(cast(long)value, 10);
+  if (specifier != char.init)
+    return number.toString(specifier, length, nf);
+  return number.toStringFormat(format, nf);
+}
+
+package string formatULong(ulong value, string format, IFormatProvider provider) {
+  auto nf = NumberFormat.get(provider);
+
+  int length;
+  char specifier = parseFormatSpecifier(format, length);
+
+  switch (specifier) {
+    case 'g', 'G':
+      if (length > 0)
+        break;
+      // fall through
+    case 'd', 'D':
+      return ulongToString(value, length);
+    case 'x', 'X':
+      return longToHexString(value, length, specifier);
+    default:
+  }
+
+  auto number = Number(cast(long)value, 20);
+  if (specifier != char.init)
+    return number.toString(specifier, length, nf);
+  return number.toStringFormat(format, nf);
+}
+
+package string formatLong(long value, string format, IFormatProvider provider) {
+  auto nf = NumberFormat.get(provider);
+
+  int length;
+  char specifier = parseFormatSpecifier(format, length);
+
+  switch (specifier) {
+    case 'g', 'G':
+      if (length > 0)
+        break;
+      // fall through
+    case 'd', 'D':
+      return longToString(value, length, nf.negativeSign);
+    case 'x', 'X':
+      return longToHexString(cast(ulong)value, length, specifier);
+    default:
+  }
+
+  auto number = Number(cast(long)value, 20);
+  if (specifier != char.init)
+    return number.toString(specifier, length, nf);
+  return number.toStringFormat(format, nf);
+}
+
+// Must match NumberFormat.decimalPositivePattern
+private const string positiveNumberFormat = "#";
+// Must match NumberFormat.decimalNegativePattern
+private const string[] negativeNumberFormats = [ "(#)", "-#", "- #", "#-", "# -" ];
+// Must match NumberFormat.currencyPositivePattern
+private const string[] positiveCurrencyFormats = [ "$#", "#$", "$ #", "# $" ];
+// Must match NumberFormat.currencyNegativePattern
+private const string[] negativeCurrencyFormats = [ "($#)", "-$#", "$-#", "$#-", "(#$)", "-#$", "#-$", "#$-", "-# $", "-$ #", "# $-", "$ #-", "$ -#", "#- $", "($ #)", "(# $)" ];
+// Must match NumberFormat.percentPositivePattern
+private const string[] positivePercentFormats = [ "# %", "#%", "%#", "% #" ];
+// Must match NumberFormat.percentNegativePattern
+private const string[] negativePercentFormats = [ "-# %", "-#%", "-%#", "%-#", "%#-", "#-%", "#%-", "-% #", "# %-", "% #-", "% -#", "#- %" ];
+
+
+private void formatNumber(ref Number number, ref string dst, int length, NumberFormat nf) {
+  string format = number.sign ? negativeNumberFormats[1] : positiveNumberFormat;
 
   foreach (ch; format) {
     switch (ch) {
@@ -902,7 +2066,7 @@ private void formatNumber(ref Number number, ref char[] dst, int length, NumberF
   }
 }
 
-private void formatGeneral(ref Number number, ref char[] dst, int length, char format, NumberFormat nf) {
+private void formatGeneral(ref Number number, ref string dst, int length, char format, NumberFormat nf) {
   int pos = number.scale;
 
   char* p = number.digits.ptr;
@@ -946,7 +2110,7 @@ private void formatCurrency(ref Number number, ref char[] dst, int length, Numbe
   }
 }
 
-private void formatFixed(ref Number number, ref char[] dst, int length, int[] groupSizes, string decimalSeparator, string groupSeparator) {
+private void formatFixed(ref Number number, ref string dst, int length, int[] groupSizes, string decimalSeparator, string groupSeparator) {
   int pos = number.scale;
   char* p = number.digits.ptr;
 
@@ -1013,610 +2177,46 @@ private void formatFixed(ref Number number, ref char[] dst, int length, int[] gr
   }
 }
 
-private bool parseNumber(out Number number, string s, NumberStyles styles, NumberFormat nf) {
-
-  enum ParseState {
-    None = 0x0,
-    Sign = 0x1,
-    Parens = 0x2,
-    Digits = 0x4,
-    NonZero = 0x8,
-    Decimal = 0x10,
-    Currency = 0x20
-  }
-
-  int eat(string what, string within, int at) {
-    if (at >= within.length)
-      return -1;
-    int i;
-    while (at < within.length && i < what.length) {
-      if (within[at] != what[i])
-        return -1;
-      i++;
-      at++;
-    }
-    return i;
-  }
-
-  bool isWhitespace(char c) {
-    return c == 0x20 || (c >= '\t' && c <= '\r');
-  }
-
-  string currencySymbol = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.currencySymbol : null;
-  string decimalSeparator = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.currencyDecimalSeparator : nf.numberDecimalSeparator;
-  string groupSeparator = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.currencyGroupSeparator : nf.numberGroupSeparator;
-  string altDecimalSeparator = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.numberDecimalSeparator : null;
-  string altGroupSeparator = ((styles & NumberStyles.CurrencySymbol) != 0) ? nf.numberGroupSeparator : null;
-
-  number.scale = 0;
-  number.sign = 0;
-
-  ParseState state;
-  int count, end, pos, eaten;
-  bool isSigned;
-
-  while (true) {
-    if (pos == s.length) break;
-    char c = s[pos];
-    if ((isSigned = ((styles & NumberStyles.LeadingSign) != 0 && ((state & ParseState.Sign) == 0))) != 0 
-      && (eaten = eat(nf.positiveSign, s, pos)) != -1) {
-      state |= ParseState.Sign;
-      pos += eaten;
-    }
-    else if (isSigned && (eaten = eat(nf.negativeSign, s, pos)) != -1) {
-      state |= ParseState.Sign;
-      pos += eaten;
-      number.sign = 1;
-    }
-    else if (c == '(' &&
-      (styles & NumberStyles.Parentheses) != 0 && ((state & ParseState.Sign) == 0)) {
-      state |= ParseState.Sign | ParseState.Parens;
-      number.sign = 1;
-      pos++;
-    }
-    else if ((currencySymbol != null && (eaten = eat(currencySymbol, s, pos)) != -1)) {
-      state |= ParseState.Currency;
-      currencySymbol = null;
-      pos += eaten;
-    }
-    else if (!(isWhitespace(c) && ((styles & NumberStyles.LeadingWhite) != 0)
-      && ((state & ParseState.Sign) == 0 
-      || ((state & ParseState.Sign) != 0 && ((state & ParseState.Currency) != 0 || nf.numberNegativePattern == 2)))))
-      break;
-    else pos++;
-  }
-
-  while (true) {
-    if (pos == s.length) break;
-
-    char c = s[pos];
-    if (c >= '0' && c <= '9') {
-      state |= ParseState.Digits;
-      if (c != '0' || (state & ParseState.NonZero) != 0) {
-        if (count < number.digits.length - 1) {
-          number.digits[count++] = c;
-          if (c != '0')
-            end = count;
-        }
-        if ((state & ParseState.Decimal) == 0)
-          number.scale++;
-        state |= ParseState.NonZero;
-      }
-      else if ((state & ParseState.Decimal) != 0)
-        number.scale--;
-      pos++;
-    }
-    else if ((styles & NumberStyles.DecimalPoint) != 0 && (state & ParseState.Decimal) == 0 && (eaten = eat(decimalSeparator, s, pos)) != -1 
-      || (state & ParseState.Currency) != 0 && (eaten = eat(altDecimalSeparator, s, pos)) != -1) {
-      state |= ParseState.Decimal;
-      pos += eaten;
-    }
-    else if ((styles & NumberStyles.Thousands) != 0 && (state & ParseState.Digits) != 0 && (state & ParseState.Decimal) == 0 
-      && ((eaten = eat(groupSeparator, s, pos)) != -1 || (state & ParseState.Currency) != 0 
-      && (eaten = eat(altGroupSeparator, s, pos)) != -1))
-      pos += eaten;
-    else break;
-  }
-
-  number.precision = end;
-  number.digits[end] = '\0';
-
-  if ((state & ParseState.Digits) != 0) {
-    while (true) {
-      if (pos >= s.length) break;
-
-      char c = s[pos];
-      if ((isSigned = ((styles & NumberStyles.TrailingSign) != 0 && (state & ParseState.Sign) == 0)) != 0 
-        && (eaten = eat(nf.positiveSign, s, pos)) != -1) {
-        state |= ParseState.Sign;
-        pos += eaten;
-      }
-      else if (isSigned && (eaten = eat(nf.negativeSign, s, pos)) != -1) {
-        state |= ParseState.Sign;
-        number.sign = 1;
-        pos += eaten;
-      }
-      else if (c == ')' && (state & ParseState.Parens) != 0)
-        state &= ~ParseState.Parens;
-      else if (currencySymbol != null && (eaten = eat(currencySymbol, s, pos)) != -1) {
-        currencySymbol = null;
-        pos += eaten;
-      }
-      else if (!(isWhitespace(c) & (styles & NumberStyles.TrailingWhite) != 0))
-        break;
-      else pos++;
-    }
-
-    if ((state & ParseState.Parens) == 0) {
-      if ((state & ParseState.NonZero) == 0) {
-        number.scale = 0;
-        if ((state & ParseState.Decimal) == 0)
-          number.sign = 0;
-      }
-      return true;
-    }
-    return false;
-  }
-  return false;
-}
-
-package string formatDateTime(DateTime dateTime, string format, DateTimeFormat dtf) {
-
-  string expandKnownFormat(string format, ref DateTime dateTime, ref DateTimeFormat dtf) {
-    switch (format[0]) {
-      case 'd':
-        return dtf.shortDatePattern;
-      case 'D':
-        return dtf.longDatePattern;
-      case 'f':
-        return dtf.longDatePattern ~ " " ~ dtf.shortTimePattern;
-      case 'F':
-        return dtf.fullDateTimePattern;
-      case 'g':
-        return dtf.generalShortTimePattern;
-      case 'G':
-        return dtf.generalLongTimePattern;
-      case 'r', 'R':
-        dtf = DateTimeFormat.constant;
-        return dtf.rfc1123Pattern;
-      case 's':
-        dtf = DateTimeFormat.constant;
-        return dtf.sortableDateTimePattern;
-      case 't':
-        return dtf.shortTimePattern;
-      case 'T':
-        return dtf.longTimePattern;
-      case 'y', 'Y':
-        return dtf.yearMonthPattern;
-      default:
-    }
+package uint parseUInt(string s, NumberStyles style, NumberFormat nf) {
+  Number n;
+  if (!Number.tryParse(s, style, nf, n))
     throw new FormatException("Input string was not valid.");
-  }
 
-  int parseRepeat(string format, int pos, char c) {
-    int n = pos + 1;
-    while (n < format.length && format[n] == c)
-      n++;
-    return n - pos;
-  }
-
-  int parseQuote(string format, int pos, out char[] result) {
-    int start = pos;
-    char quote = format[pos++];
-    bool found;
-    while (pos < format.length) {
-      char c = format[pos++];
-      if (c == quote) {
-        found = true;
-        break;
-      }
-      else if (c == '\\') { // escaped
-        if (pos < format.length)
-          result ~= format[pos++];
-      }
-      else
-        result ~= c;
-    }
-    return pos - start;
-  }
-
-  int parseNext(string format, int pos) {
-    if (pos < format.length - 1)
-      return cast(int)format[pos + 1];
-    return -1;
-  }
-
-  string formatDayOfWeek(DayOfWeek dayOfWeek, int rpt) {
-    if (rpt == 3)
-      return dtf.getAbbreviatedDayName(dayOfWeek);
-    return dtf.getDayName(dayOfWeek);
-  }
-
-  string formatMonth(int month, int rpt) {
-    if (rpt == 3)
-      return dtf.getAbbreviatedMonthName(month);
-    return dtf.getMonthName(month);
-  }
-
-  void formatDigits(ref char[] output, int value, int length) {
-    if (length > 2)
-      length = 2;
-
-    char[16] buffer;
-    char* p = buffer.ptr + 16;
-
-    int n = value;
-    do {
-      *--p = cast(char)(n % 10 + '0');
-      n /= 10;
-    } while (n != 0 && p > buffer.ptr);
-
-    int c = cast(int)(buffer.ptr + 16 - p);
-    while (c < length && p > buffer.ptr) {
-      *--p = '0';
-      c++;
-    }
-    output ~= p[0 .. c];
-  }
-
-  if (format == null)
-    format = "G"; // Default to generalLongTimePattern.
-
-  if (format.length == 1)
-    format = expandKnownFormat(format, dateTime, dtf);
-
-  char[] result;
-  Calendar cal = dtf.calendar;
-  bool justTime = true;
-  int index, len;
-
-  while (index < format.length) {
-    char c = format[index];
-    int next;
-
-    switch (c) {
-      case 'd': // day
-        len = parseRepeat(format, index, c);
-        if (len <= 2) {
-          int day = dateTime.day;//cal.getDayOfMonth(dateTime);
-          formatDigits(result, day, len);
-        }
-        else
-          result ~= formatDayOfWeek(dateTime.dayOfWeek, len);
-        justTime = false;
-        break;
-      case 'M': // month
-        len = parseRepeat(format, index, c);
-        int month = dateTime.month;//cal.getMonth(dateTime);
-        if (len <= 2)
-          formatDigits(result, month, len);
-        else
-          result ~= formatMonth(month, len);
-        justTime = false;
-        break;
-      case 'y': // year
-        len = parseRepeat(format, index, c);
-        int year = dateTime.year;//cal.getYear(dateTime);
-        /*if (cal.id == CAL_JAPAN || cal.id == CAL_TAIWAN)
-          formatDigits(result, year, (len <= 2) ? len : 2);
-        else */if (len <= 2)
-          formatDigits(result, year % 100, len);
-        else
-          formatDigits(result, year, len);
-        justTime = false;
-        break;
-      case 'h': // hour (12-hour clock)
-        len = parseRepeat(format, index, c);
-        int hour = dateTime.hour % 12;
-        if (hour == 0)
-          hour = 12;
-        formatDigits(result, hour, len);
-        break;
-      case 'H': // hour (24-hour clock)
-        len = parseRepeat(format, index, c);
-        formatDigits(result, dateTime.hour, len);
-        break;
-      case 'm': // minute
-        len = parseRepeat(format, index, c);
-        formatDigits(result, dateTime.minute, len);
-        break;
-      case 's': // second
-        len = parseRepeat(format, index, c);
-        formatDigits(result, dateTime.second, len);
-        break;
-      case 't': // AM/PM
-        len = parseRepeat(format, index, c);
-        if (len == 1) {
-          if (dateTime.hour < 12) {
-            if (dtf.amDesignator.length >= 1)
-              result ~= dtf.amDesignator[0];
-          }
-          else if (dtf.pmDesignator.length >= 1)
-            result ~= dtf.pmDesignator[0];
-        }
-        else
-          result ~= (dateTime.hour < 12) ? dtf.amDesignator : dtf.pmDesignator;
-        break;
-      //case 'z': // time zone
-      case ':':
-        len = 1;
-        result ~= dtf.timeSeparator;
-        break;
-      case '/':
-        len = 1;
-        result ~= dtf.dateSeparator;
-        break;
-      case '\'':
-      case '\"':
-        char[] quote;
-        len = parseQuote(format, index, quote);
-        result ~= quote;
-        break;
-      case '\\':
-        next = parseNext(format, index);
-        if (next >= 0) {
-          result ~= cast(char)next;
-          len = 2;
-        }
-        else
-          throw new FormatException("Input string was not valid.");
-        break;
-      default:
-        len = 1;
-        result ~= c;
-        break;
-    }
-    index += len;
-  }
-
-  return result.dup;
+  long value;
+  if (!n.toLong(value) || (value < uint.min || value > uint.max))
+    throw new OverflowException("Value was either too small or too large for a uint.");
+  return cast(uint)value;
 }
 
-private struct DateTimeParseResult {
-  int year = -1;
-  int month = -1;
-  int day = -1;
-  int hour;
-  int minute;
-  int second;
-  double fraction;
-  int timeMark;
-  Calendar calendar;
-  TimeSpan timeZoneOffset;
-  DateTime parsedDate;
+package int parseInt(string s, NumberStyles style, NumberFormat nf) {
+  Number n;
+  if (!Number.tryParse(s, style, nf, n))
+    throw new FormatException("Input string was not valid.");
+
+  long value;
+  if (!n.toLong(value) || (value < int.min || value > int.max))
+    throw new OverflowException("Value was either too small or too large for an int.");
+  return cast(int)value;
 }
 
-package DateTime parseDateTime(string s, DateTimeFormat dtf) {
-  DateTimeParseResult result;
-  if (!tryParseExactMultiple(s, dtf.getAllDateTimePatterns(), dtf, result))
-    throw new FormatException("String was not a valid DateTime.");
-  return result.parsedDate;
+package ulong parseULong(string s, NumberStyles style, NumberFormat nf) {
+  Number n;
+  if (!Number.tryParse(s, style, nf, n))
+    throw new FormatException("Input string was not valid.");
+
+  long value;
+  if (!n.toLong(value) || (value < ulong.min || value > ulong.max))
+    throw new OverflowException("Value was either too small or too large for a ulong.");
+  return cast(ulong)value;
 }
 
-package DateTime parseDateTimeExact(string s, string format, DateTimeFormat dtf) {
-  DateTimeParseResult result;
-  if (!tryParseExact(s, format, dtf, result))
-    throw new FormatException("String was not a valid DateTime.");  
-  return result.parsedDate;
-}
+package long parseLong(string s, NumberStyles style, NumberFormat nf) {
+  Number n;
+  if (!Number.tryParse(s, style, nf, n))
+    throw new FormatException("Input string was not valid.");
 
-private bool tryParseExactMultiple(string s, string[] formats, DateTimeFormat dtf, ref DateTimeParseResult result) {
-  foreach (format; formats) {
-    if (tryParseExact(s, format, dtf, result))
-      return true;
-  }
-  return false;
-}
-
-private bool tryParseExact(string s, string pattern, DateTimeFormat dtf, ref DateTimeParseResult result) {
-
-  bool doParse() {
-
-    int parseDigits(string s, ref int pos, int max) {
-      int result = s[pos++] - '0';
-      while (max > 1 && pos < s.length && s[pos] >= '0' && s[pos] <= '9') {
-        result = result * 10 + s[pos++] - '0';
-        --max;
-      }
-      return result;
-    }
-
-    bool parseOne(string s, ref int pos, string value) {
-      if (s[pos .. pos + value.length] != value)
-        return false;
-      pos += value.length;
-      return true;
-    }
-
-    int parseMultiple(string s, ref int pos, string[] values ...) {
-      int result = -1, max;
-      foreach (i, value; values) {
-        if (value.length == 0 || s.length - pos < value.length)
-          continue;
-
-        if (s[pos .. pos + value.length] == value) {
-          if (result == 0 || value.length > max) {
-            result = i + 1;
-            max = value.length;
-          }
-        }
-      }
-      pos += max;
-      return result;
-    }
-
-    TimeSpan parseTimeZoneOffset(string s, ref int pos) {
-      bool sign;
-      if (pos < s.length) {
-        if (s[pos] == '-') {
-          sign = true;
-          pos++;
-        }
-        else if (s[pos] == '+')
-          pos++;
-      }
-      int hour = parseDigits(s, pos, 2);
-      int minute;
-      if (pos < s.length && s[pos] == ':') {
-        pos++;
-        minute = parseDigits(s, pos, 2);
-      }
-      TimeSpan result = TimeSpan(hour, minute, 0);
-      if (sign)
-        result = -result;
-      return result;
-    }
-
-    result.calendar = dtf.calendar;
-    result.year = result.month = result.day = -1;
-    result.hour = result.minute = result.second = 0;
-    result.fraction = 0.0;
-
-    int pos, i, count;
-    char c;
-
-    while (pos < pattern.length && i < s.length) {
-      c = pattern[pos++];
-
-      if (c == ' ') {
-        i++;
-        while (i < s.length && s[i] == ' ')
-          i++;
-        if (i >= s.length)
-          break;
-        continue;
-      }
-
-      count = 1;
-
-      switch (c) {
-        case 'd', 'm', 'M', 'y', 'h', 'H', 's', 't', 'z':
-          while (pos < pattern.length && pattern[pos] == c) {
-            pos++;
-            count++;
-          }
-          break;
-        case ':':
-          if (!parseOne(s, i, dtf.timeSeparator))
-            return false;
-          continue;
-        case '/':
-          if (!parseOne(s, i, dtf.dateSeparator))
-            return false;
-          continue;
-        case '\\':
-          if (pos < pattern.length) {
-            c = pattern[pos++];
-            if (s[i++] != c)
-              return false;
-          }
-          else
-            return false;
-          continue;
-        case '\'':
-          while (pos < pattern.length) {
-            c = pattern[pos++];
-            if (c == '\'')
-              break;
-            if (s[i++] != c)
-              return false;
-          }
-          continue;
-        default:
-          if (s[i++] != c)
-            return false;
-          continue;
-      }
-
-      switch (c) {
-        case 'd':
-          if (count == 1 || count == 2)
-            result.day = parseDigits(s, i, 2);
-          else if (count == 3)
-            result.day = parseMultiple(s, i, dtf.abbreviatedDayNames);
-          else
-            result.day = parseMultiple(s, i, dtf.dayNames);
-          if (result.day == -1)
-            return false;
-          break;
-        case 'M':
-          if (count == 1 || count == 2)
-            result.month = parseDigits(s, i, 2);
-          else if (count == 3)
-            result.month = parseMultiple(s, i, dtf.abbreviatedMonthNames);
-          else
-            result.month = parseMultiple(s, i, dtf.monthNames);
-          if (result.month == -1)
-            return false;
-          break;
-        case 'y':
-          if (count == 1 || count == 2)
-            result.year = parseDigits(s, i, 2);
-          else
-            result.year = parseDigits(s, i, 4);
-          if (result.year == -1)
-            return false;
-          break;
-        case 'h', 'H':
-          result.hour = parseDigits(s, i, 2);
-          break;
-        case 'm':
-          result.minute = parseDigits(s, i, 2);
-          break;
-        case 's':
-          result.second = parseDigits(s, i, 2);
-          break;
-        case 't':
-          if (count == 1)
-            result.timeMark = parseMultiple(s, i, [ dtf.amDesignator[0] ], [ dtf.pmDesignator[0] ]);
-          else
-            result.timeMark = parseMultiple(s, i, dtf.amDesignator, dtf.pmDesignator);
-          break;
-        case 'z':
-          result.timeZoneOffset = parseTimeZoneOffset(s, i);
-          break;
-        default:
-      }
-    }
-
-    if (pos < pattern.length || i < s.length)
-      return false;
-
-    if (result.timeMark == 1) { // am
-      if (result.hour == 12)
-        result.hour = 0;
-    }
-    else if (result.timeMark == 2) { // pm
-      if (result.hour < 12)
-        result.hour += 12;
-    }
-
-    if (result.year == -1 || result.month == -1 || result.day == -1) {
-      DateTime now = DateTime.localNow;
-      if (result.month == -1 && result.day == -1) {
-        if (result.year == -1) {
-          result.year = now.year;
-          result.month = now.month;
-          result.day = now.day;
-        }
-        else
-          result.month = result.day = 1;
-      }
-      else {
-        if (result.year == -1)
-          result.year = now.year;
-        if (result.month == -1)
-          result.month = 1;
-        if (result.day == -1)
-          result.day = 1;
-      }
-    }
-    return true;
-  }
-
-  if (doParse()) {
-    result.parsedDate = DateTime(result.year, result.month, result.day, result.hour, result.minute, result.second);
-    return true;
-  }
-  return false;
+  long value;
+  if (!n.toLong(value) || (value < long.min || value > long.max))
+    throw new OverflowException("Value was either too small or too large for a long.");
+  return value;
 }

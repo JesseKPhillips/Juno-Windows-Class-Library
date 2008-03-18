@@ -1,29 +1,32 @@
+/**
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.media.native;
 
 private import juno.base.core,
-  juno.base.native,
-  juno.media.geometry,
-  juno.media.constants;
+  juno.com.core,
+  juno.media.constants,
+  juno.media.geometry;
 
-private import juno.com.core : GUID, IStream;
-private import juno.io.core : FileNotFoundException;
 private static import std.gc;
+private import std.outofmemory;
 
-pragma(lib, "gdiplus.lib");
 pragma(lib, "user32.lib");
 pragma(lib, "gdi32.lib");
+pragma(lib, "gdiplus.lib");
 
 static this() {
-  startup();
+  startupGdiplus();
 }
 
 static ~this() {
-  shutdown();
+  shutdownGdiplus();
 }
 
 extern(Windows):
 
-static if (!is(typeof(COLOR_SCROLLBAR)))
 enum {
   COLOR_SCROLLBAR               = 0,
   COLOR_BACKGROUND              = 1,
@@ -50,17 +53,21 @@ enum {
   COLOR_3DLIGHT                 = 22,
   COLOR_INFOTEXT                = 23,
   COLOR_INFOBK                  = 24,
-  COLOR_HOTLIGHT                = 26, 
+  COLOR_HOTLIGHT                = 26,
   COLOR_GRADIENTACTIVECAPTION   = 27,
   COLOR_GRADIENTINACTIVECAPTION = 28,
   COLOR_MENUHILIGHT             = 29,
-  COLOR_MENUBAR                 = 30
+  COLOR_MENUBAR                 = 30,
+  COLOR_DESKTOP                 = COLOR_BACKGROUND,
+  COLOR_3DFACE                  = COLOR_BTNFACE,
+  COLOR_3DSHADOW                = COLOR_BTNSHADOW,
+  COLOR_3DHIGHLIGHT             = COLOR_BTNHIGHLIGHT,
+  COLOR_3DHILIGHT               = COLOR_BTNHIGHLIGHT,
+  COLOR_BTNHILIGHT              = COLOR_BTNHIGHLIGHT
 }
 
-static if (!is(typeof(GetSysColor)))
 uint GetSysColor(int nIndex);
 
-static if (!is(typeof(LOGFONTW)))
 struct LOGFONTW {
   int lfHeight;
   int lfWidth;
@@ -77,29 +84,50 @@ struct LOGFONTW {
   ubyte lfPitchAndFamily;
   wchar[32] lfFaceName;
 }
-
-static if (!is(typeof(LOGFONT)))
 alias LOGFONTW LOGFONT;
 
-static if (!is(typeof(CreateFontIndirect)))
 Handle CreateFontIndirectW(ref LOGFONTW lplf);
-
-static if (!is(typeof(CreateFontIndirect)))
 alias CreateFontIndirectW CreateFontIndirect;
 
-static if (!is(typeof(GetDC)))
 Handle GetDC(Handle hWnd);
 
-static if (!is(typeof(ReleaseDC)))
 int ReleaseDC(Handle hWnd, Handle hDC);
 
-static if (!is(typeof(GetObjectW)))
-int GetObjectW(Handle h, int c, void* pv);
+Handle SelectObject(Handle hdc, Handle hObject);
 
-static if (!is(typeof(GetObject)))
+int DeleteObject(Handle hObject);
+
+int GetObjectW(Handle h, int c, void* pv);
 alias GetObjectW GetObject;
 
-const int PropertyTagFrameDelay = 0x5100;
+// GDI+
+
+alias int function(void*) GpDrawImageAbort;
+alias GpDrawImageAbort GpGetThumbnailImageAbort;
+
+enum Status {
+  OK,
+  GenericError,
+  InvalidParameter,
+  OutOfMemory,
+  ObjectBusy,
+  InsufficientBuffer,
+  NotImplemented,
+  Win32Error,
+  WrongState,
+  Aborted,
+  FileNotFound,
+  ValueOverflow,
+  AccessDenied,
+  UnknownImageFormat,
+  FontFamilyNotFound,
+  FontStyleNotFound,
+  NotTrueTypeFont,
+  UnsupportedGdiplusVersion,
+  GdiplusNotInitialized,
+  PropertyNotFound,
+  PropertyNotSupported
+}
 
 enum DebugEventLevel {
   Fatal,
@@ -108,7 +136,7 @@ enum DebugEventLevel {
 
 alias void function(DebugEventLevel level, char* message) DebugEventProc;
 
-alias int function(out uint token) NotificationHookProc;
+alias Status function(out uint token) NotificationHookProc;
 alias void function(uint token) NotificationUnhookProc;
 
 struct GdiplusStartupInput {
@@ -122,6 +150,9 @@ struct GdiplusStartupOutput {
   NotificationHookProc NotificationHook;
   NotificationUnhookProc NotificationUnhook;
 }
+
+Status GdiplusStartup(out uint token, ref GdiplusStartupInput input, out GdiplusStartupOutput output);
+void GdiplusShutdown(uint token);
 
 struct GpImageCodecInfo {
   GUID Clsid;
@@ -166,46 +197,18 @@ struct GpEncoderParameters {
 
 struct GpPropertyItem {
   int id;
-  int length;
-  short type;
+  uint len;
+  ushort type;
   void* value;
 }
 
 struct GpColorPalette {
-  int Flags;
-  int Count;
-  int[1] Entries;
+  PaletteFlags Flags;
+  uint Count;
+  uint[1] Entries;
 }
 
-alias int function(void*) GpDrawImageAbort;
-alias GpDrawImageAbort GpGetThumbnailImageAbort;
-
-enum Status {
-  OK,
-  GenericError,
-  InvalidParameter,
-  OutOfMemory,
-  ObjectBusy,
-  InsufficientBuffer,
-  NotImplemented,
-  Win32Error,
-  WrongState,
-  Aborted,
-  FileNotFound,
-  ValueOverflow,
-  AccessDenied,
-  UnknownImageFormat,
-  FontFamilyNotFound,
-  FontStyleNotFound,
-  NotTrueTypeFont,
-  UnsupportedGdiplusVersion,
-  GdiplusNotInitialized,
-  PropertyNotFound,
-  PropertyNotSupported
-}
-
-Status GdiplusStartup(out uint token, ref GdiplusStartupInput input, out GdiplusStartupOutput output);
-void GdiplusShutdown(uint token);
+Handle GdipCreateHalftonePalette();
 
 Status GdipCreateFromHDC(Handle hdc, out Handle graphics);
 Status GdipCreateFromHDC2(Handle hdc, Handle hDevice, out Handle graphics);
@@ -284,6 +287,7 @@ Status GdipDrawClosedCurve(Handle graphics, Handle pen, PointF* points, int coun
 Status GdipDrawClosedCurve2(Handle graphics, Handle pen, PointF* points, int count, float tension);
 Status GdipDrawClosedCurveI(Handle graphics, Handle pen, Point* points, int count);
 Status GdipDrawClosedCurve2I(Handle graphics, Handle pen, Point* points, int count, float tension);
+Status GdipDrawPath(Handle graphics, Handle pen, Handle path);
 Status GdipFillRectangleI(Handle graphics, Handle brush, int x, int y, int width, int height);
 Status GdipFillRectangle(Handle graphics, Handle brush, float x, float y, float width, float height);
 Status GdipFillRectanglesI(Handle graphics, Handle brush, Rect* rects, int count);
@@ -328,7 +332,7 @@ Status GdipIsClipEmpty(Handle graphics, out int result);
 Status GdipIsVisibleClipEmpty(Handle graphics, out int result);
 Status GdipGetRenderingOrigin(Handle graphics, out int x, out int y);
 Status GdipSetRenderingOrigin(Handle graphics, int x, int y);
-Status GdipGetNearestColor(Handle graphics, ref int argb);
+Status GdipGetNearestColor(Handle graphics, ref uint argb);
 Status GdipComment(Handle graphics, uint sizeData, ubyte* data);
 Status GdipTransformPoints(Handle graphics, CoordinateSpace destSpace, CoordinateSpace srcSpace, PointF* points, int count);
 Status GdipTransformPointsI(Handle graphics, CoordinateSpace destSpace, CoordinateSpace srcSpace, Point* points, int count);
@@ -352,9 +356,9 @@ Status GdipIsMatrixInvertible(Handle matrix, out int result);
 
 Status GdipDeleteBrush(Handle brush);
 
-Status GdipCreateSolidFill(int color, out Handle brush);
-Status GdipGetSolidFillColor(Handle brush, out int color);
-Status GdipSetSolidFillColor(Handle brush, int color);
+Status GdipCreateSolidFill(uint color, out Handle brush);
+Status GdipGetSolidFillColor(Handle brush, out uint color);
+Status GdipSetSolidFillColor(Handle brush, uint color);
 
 Status GdipCreateTexture(Handle image, WrapMode wrapMode, out Handle texture);
 Status GdipCreateTexture2(Handle image, WrapMode wrapMode, float x, float y, float width, float height, out Handle texture);
@@ -365,28 +369,28 @@ Status GdipSetTextureTransform(Handle brush, Handle matrix);
 Status GdipGetTextureWrapMode(Handle brush, out WrapMode wrapmode);
 Status GdipSetTextureWrapMode(Handle brush, WrapMode wrapmode);
 
-Status GdipCreateHatchBrush(HatchStyle hatchstyle, int forecol, int backcol, out Handle brush);
+Status GdipCreateHatchBrush(HatchStyle hatchstyle, uint forecol, uint backcol, out Handle brush);
 Status GdipGetHatchStyle(Handle brush, out HatchStyle hatchstyle);
-Status GdipGetHatchForegroundColor(Handle brush, out int forecol);
-Status GdipGetHatchBackgroundColor(Handle brush, out int backcol);
+Status GdipGetHatchForegroundColor(Handle brush, out uint forecol);
+Status GdipGetHatchBackgroundColor(Handle brush, out uint backcol);
 
-Status GdipCreateLineBrushI(ref Point point1, ref Point point2, int color1, int color2, WrapMode wrapMode, out Handle lineGradient);
-Status GdipCreateLineBrush(ref PointF point1, ref PointF point2, int color1, int color2, WrapMode wrapMode, out Handle lineGradient);
-Status GdipCreateLineBrushFromRectI(ref Rect rect, int color1, int color2, LinearGradientMode mode, WrapMode wrapMode, out Handle lineGradient);
-Status GdipCreateLineBrushFromRect(ref RectF rect, int color1, int color2, LinearGradientMode mode, WrapMode wrapMode, out Handle lineGradient);
-Status GdipCreateLineBrushFromRectWithAngleI(ref Rect rect, int color1, int color2, float angle, int isAngleScalable, WrapMode wrapMode, out Handle lineGradient);
-Status GdipCreateLineBrushFromRectWithAngle(ref RectF rect, int color1, int color2, float angle, int isAngleScalable, WrapMode wrapMode, out Handle lineGradient);
+Status GdipCreateLineBrushI(ref Point point1, ref Point point2, uint color1, uint color2, WrapMode wrapMode, out Handle lineGradient);
+Status GdipCreateLineBrush(ref PointF point1, ref PointF point2, uint color1, uint color2, WrapMode wrapMode, out Handle lineGradient);
+Status GdipCreateLineBrushFromRectI(ref Rect rect, uint color1, uint color2, LinearGradientMode mode, WrapMode wrapMode, out Handle lineGradient);
+Status GdipCreateLineBrushFromRect(ref RectF rect, uint color1, uint color2, LinearGradientMode mode, WrapMode wrapMode, out Handle lineGradient);
+Status GdipCreateLineBrushFromRectWithAngleI(ref Rect rect, uint color1, uint color2, float angle, int isAngleScalable, WrapMode wrapMode, out Handle lineGradient);
+Status GdipCreateLineBrushFromRectWithAngle(ref RectF rect, uint color1, uint color2, float angle, int isAngleScalable, WrapMode wrapMode, out Handle lineGradient);
 Status GdipGetLineBlendCount(Handle brush, out int count);
 Status GdipGetLineBlend(Handle brush, float* blend, float* positions, int count);
 Status GdipSetLineBlend(Handle brush, float* blend, float* positions, int count);
 Status GdipGetLinePresetBlendCount(Handle brush, out int count);
-Status GdipGetLinePresetBlend(Handle brush, int* blend, float* positions, int count);
-Status GdipSetLinePresetBlend(Handle brush, int* blend, float* positions, int count);
+Status GdipGetLinePresetBlend(Handle brush, uint* blend, float* positions, int count);
+Status GdipSetLinePresetBlend(Handle brush, uint* blend, float* positions, int count);
 Status GdipGetLineWrapMode(Handle brush, out WrapMode wrapmode);
 Status GdipSetLineWrapMode(Handle brush, WrapMode wrapmode);
 Status GdipGetLineRect(Handle brush, out RectF rect);
-Status GdipGetLineColors(Handle brush, int* colors);
-Status GdipSetLineColors(Handle brush, int color1, int color2);
+Status GdipGetLineColors(Handle brush, uint* colors);
+Status GdipSetLineColors(Handle brush, uint color1, uint color2);
 Status GdipGetLineGammaCorrection(Handle brush, out int useGammaCorrection);
 Status GdipSetLineGammaCorrection(Handle brush, int useGammaCorrection);
 Status GdipSetLineSigmaBlend(Handle brush, float focus, float scale);
@@ -423,7 +427,7 @@ Status GdipMultiplyPenTransform(Handle pen, Handle matrix, MatrixOrder order);
 Status GdipTranslatePenTransform(Handle pen, float dx, float dy, MatrixOrder order);
 Status GdipScalePenTransform(Handle pen, float sx, float sy, MatrixOrder order);
 Status GdipRotatePenTransform(Handle pen, float angle, MatrixOrder order);
-Status GdipGetPenColor(Handle pen, out int argb);
+Status GdipGetPenColor(Handle pen, out uint argb);
 Status GdipSetPenColor(Handle pen, int argb);
 Status GdipGetPenWidth(Handle pen, out float width);
 Status GdipSetPenWidth(Handle pen, float width);
@@ -477,26 +481,28 @@ Status GdipLoadImageFromStream(IStream stream, out Handle image);
 Status GdipGetImageRawFormat(Handle image, out GUID format);
 Status GdipGetImageEncodersSize(out int numEncoders, out int size);
 Status GdipGetImageEncoders(int numEncoders, int size, GpImageCodecInfo* encoders);
+Status GdipGetImageDecodersSize(out int numDecoders, out int size);
+Status GdipGetImageDecoders(int numDecoders, int size, GpImageCodecInfo* decoders);
 Status GdipSaveImageToFile(Handle image, wchar* filename, ref GUID clsidEncoder, GpEncoderParameters* encoderParams);
 Status GdipSaveImageToStream(Handle image, IStream stream, ref GUID clsidEncoder, GpEncoderParameters* encoderParams);
 Status GdipSaveAdd(Handle image, GpEncoderParameters* encoderParams);
 Status GdipSaveAddImage(Handle image, Handle newImage, GpEncoderParameters* encoderParams);
 Status GdipCloneImage(Handle image, out Handle cloneImage);
 Status GdipGetImageType(Handle image, out int type);
-Status GdipGetImageFlags(Handle image, out int flags);
+Status GdipGetImageFlags(Handle image, out uint flags);
 Status GdipGetImageWidth(Handle image, out int width);
 Status GdipGetImageHeight(Handle image, out int height);
 Status GdipGetImageHorizontalResolution(Handle image, out float resolution);
 Status GdipGetImageVerticalResolution(Handle image, out float resolution);
-Status GdipGetPropertyCount(Handle image, out int numOfProperty);
+Status GdipGetPropertyCount(Handle image, out uint numOfProperty);
 Status GdipGetPropertyIdList(Handle image, int numOfProperty, int* list);
 Status GdipGetImagePixelFormat(Handle image, out PixelFormat format);
 Status GdipGetImageDimension(Handle image, out float width, out float height);
 Status GdipGetImageThumbnail(Handle image, int thumbWidth, int thumbHeight, out Handle thumbImage, GpGetThumbnailImageAbort callback, void* callbackData);
-Status GdipImageGetFrameCount(Handle image, ref GUID dimensionID, out int count);
-Status GdipImageSelectActiveFrame(Handle image, ref GUID dimensionID, int frameCount);
-Status GdipImageGetFrameDimensionsCount(Handle image, out int count);
-Status GdipImageGetFrameDimensionsList(Handle image, GUID* dimensionIDs, int count);
+Status GdipImageGetFrameCount(Handle image, ref GUID dimensionID, out uint count);
+Status GdipImageSelectActiveFrame(Handle image, ref GUID dimensionID, uint frameCount);
+Status GdipImageGetFrameDimensionsCount(Handle image, out uint count);
+Status GdipImageGetFrameDimensionsList(Handle image, GUID* dimensionIDs, uint count);
 Status GdipImageRotateFlip(Handle image, RotateFlipType rotateFlipType);
 Status GdipGetPropertyItemSize(Handle image, int propId, out uint propSize);
 Status GdipGetPropertyItem(Handle image, int propId, uint propSize, GpPropertyItem* buffer);
@@ -528,6 +534,7 @@ Status GdipBitmapUnlockBits(Handle bitmap, ref GpBitmapData lockedBitmapData);
 Status GdipBitmapSetResolution(Handle bitmap, float xdpi, float ydpi);
 Status GdipCreateHICONFromBitmap(Handle bitmap, out Handle hbmReturn);
 Status GdipCreateHBITMAPFromBitmap(Handle bitmap, out Handle hbmReturn, int background);
+Status GdipCreateBitmapFromResource(Handle hInstance, in wchar* lpBitmapName, out Handle bitmap);
 
 Status GdipCreateImageAttributes(out Handle imageattr);
 Status GdipDisposeImageAttributes(Handle imageattr);
@@ -539,11 +546,12 @@ Status GdipSetImageAttributesColorKeys(Handle imageattr, ColorAdjustType type, i
 Status GdipSetImageAttributesOutputChannel(Handle imageattr, ColorAdjustType type, int enableFlag, ColorChannelFlag flags);
 Status GdipSetImageAttributesOutputChannelColorProfile(Handle imageattr, ColorAdjustType type, int enableFlag, wchar* colorProfileFilename);
 Status GdipSetImageAttributesWrapMode(Handle imageattr, WrapMode wrap, int argb, int clamp);
+Status GdipSetImageAttributesRemapTable(Handle imageattr, ColorAdjustType type, int enableFlag, uint mapSize, void* map);
 
 Status GdipNewInstalledFontCollection(out Handle fontCollection);
 Status GdipNewPrivateFontCollection(out Handle fontCollection);
 Status GdipDeletePrivateFontCollection(Handle fontCollection);
-Status GdipPrivateAddFontFile(Handle fontCollection, wchar* filename);
+Status GdipPrivateAddFontFile(Handle fontCollection, in wchar* filename);
 Status GdipPrivateAddMemoryFont(Handle fontCollection, void* memory, int length);
 Status GdipGetFontCollectionFamilyCount(Handle fontCollection, out int numFound);
 Status GdipGetFontCollectionFamilyList(Handle fontCollection, int numSought, Handle* gpfamilies, out int numFound);
@@ -573,7 +581,6 @@ Status GdipGetFontUnit(Handle font, out GraphicsUnit unit);
 Status GdipGetFamily(Handle font, out Handle family);
 Status GdipCreateFontFromLogfontW(Handle hdc, ref LOGFONTW logfont, out Handle font);
 Status GdipGetLogFontW(Handle font, Handle graphics, out LOGFONTW logfontW);
-alias GdipGetLogFontW GdipGetLogFont;
 
 Status GdipCreateStringFormat(StringFormatFlags formatAttributes, int language, out Handle format);
 Status GdipDeleteStringFormat(Handle format);
@@ -585,6 +592,7 @@ Status GdipGetStringFormatLineAlign(Handle format, out StringAlignment alignment
 Status GdipSetStringFormatLineAlign(Handle format, StringAlignment alignment);
 Status GdipGetStringFormatTrimming(Handle format, out StringTrimming trimming);
 Status GdipSetStringFormatTrimming(Handle format, StringTrimming trimming);
+Status GdipSetStringFormatMeasurableCharacterRanges(Handle format, int rangeCount, void* ranges);
 
 Status GdipCreatePath(FillMode brushMode, out Handle path);
 Status GdipCreatePath2(PointF*, ubyte*, int, FillMode, out Handle);
@@ -695,95 +703,82 @@ Status GdipSetPathGradientWrapMode(Handle brush, WrapMode wrapMode);
 
 extern(D):
 
-Status GdipDeleteGraphicsSafe(Handle graphics) {
+void GdipDeleteMatrixSafe(Handle matrix) {
   if (!isShutdown)
-    return GdipDeleteGraphics(graphics);
-  return Status.OK;
+    GdipDeleteMatrix(matrix);
 }
 
-Status GdipDeleteMatrixSafe(Handle matrix) {
+void GdipDeleteGraphicsSafe(Handle graphics) {
   if (!isShutdown)
-    return GdipDeleteMatrix(matrix);
-  return Status.OK;
+    GdipDeleteGraphics(graphics);
 }
 
-Status GdipDisposeImageSafe(Handle image) {
+void GdipDeletePenSafe(Handle pen) {
   if (!isShutdown)
-    return GdipDisposeImage(image);
-  return Status.OK;
+    GdipDeletePen(pen);
 }
 
-Status GdipDeleteBrushSafe(Handle brush) {
+void GdipDeleteBrushSafe(Handle brush) {
   if (!isShutdown)
-    return GdipDeleteBrush(brush);
-  return Status.OK;
+    GdipDeleteBrush(brush);
 }
 
-Status GdipDeletePenSafe(Handle pen) {
+void GdipDisposeImageSafe(Handle image) {
   if (!isShutdown)
-    return GdipDeletePen(pen);
-  return Status.OK;
+    GdipDisposeImage(image);
 }
 
-Status GdipDisposeImageAttributesSafe(Handle imageattr) {
+void GdipDisposeImageAttributesSafe(Handle imageattr) {
   if (!isShutdown)
-    return GdipDisposeImageAttributes(imageattr);
-  return Status.OK;
+    GdipDisposeImageAttributes(imageattr);
 }
 
-Status GdipDeleteFontFamilySafe(Handle fontFamily) {
+void GdipDeletePathSafe(Handle path) {
   if (!isShutdown)
-    return GdipDeleteFontFamily(fontFamily);
-  return Status.OK;
+    GdipDeletePath(path);
 }
 
-Status GdipDeletePrivateFontCollectionSafe(Handle fontCollection) {
+void GdipDeletePathIterSafe(Handle iterator) {
   if (!isShutdown)
-    return GdipDeletePrivateFontCollection(fontCollection);
-  return Status.OK;
+    GdipDeletePathIter(iterator);
 }
 
-Status GdipDeleteFontSafe(Handle font) {
+void GdipDeleteRegionSafe(Handle region) {
   if (!isShutdown)
-    return GdipDeleteFont(font);
-  return Status.OK;
+    GdipDeleteRegion(region);
 }
 
-Status GdipDeleteStringFormatSafe(Handle format) {
+void GdipDeleteFontFamilySafe(Handle family) {
   if (!isShutdown)
-    return GdipDeleteStringFormat(format);
-  return Status.OK;
+    GdipDeleteFontFamily(family);
 }
 
-Status GdipDeletePathSafe(Handle path) {
+void GdipDeletePrivateFontCollectionSafe(Handle fontCollection) {
   if (!isShutdown)
-    return GdipDeletePath(path);
-  return Status.OK;
+    GdipDeletePrivateFontCollection(fontCollection);
 }
 
-Status GdipDeletePathIterSafe(Handle iterator) {
+void GdipDeleteFontSafe(Handle font) {
   if (!isShutdown)
-    return GdipDeletePathIter(iterator);
-  return Status.OK;
+    GdipDeleteFont(font);
 }
 
-Status GdipDeleteRegionSafe(Handle region) {
+void GdipDeleteStringFormatSafe(Handle format) {
   if (!isShutdown)
-    return GdipDeleteRegion(region);
-  return Status.OK;
+    GdipDeleteStringFormat(format);
 }
 
 private uint initToken;
 private bool isShutdown;
 
-private void startup() {
+private void startupGdiplus() {
   static GdiplusStartupInput input = { 1, null, 0, 0 };
   static GdiplusStartupOutput output;
 
   GdiplusStartup(initToken, input, output);
 }
 
-private void shutdown() {
+private void shutdownGdiplus() {
   std.gc.fullCollect();
   isShutdown = true;
 
@@ -793,46 +788,42 @@ private void shutdown() {
 package Exception statusException(Status status) {
   switch (status) {
     case Status.GenericError:
-      throw new BaseException("A generic error occurred in GDI+.");
+      return new Exception("A generic error occurred in GDI+.");
     case Status.InvalidParameter:
-      throw new ArgumentException("Parameter is not valid.");
+      return new ArgumentException("Parameter is not valid.");
     case Status.OutOfMemory:
-      throw new OutOfMemoryException("Out of memory.");
+      return new OutOfMemoryException;
     case Status.ObjectBusy:
-      throw new InvalidOperationException("Object is currently in use elsewhere.");
+      return new InvalidOperationException("Object is currently in use elsewhere.");
     case Status.InsufficientBuffer:
-      throw new OutOfMemoryException("Buffer is too small.");
+      return new OutOfMemoryException;
     case Status.NotImplemented:
-      throw new NotImplementedException("Not implemented.");
+      return new NotImplementedException("Not implemented.");
     case Status.Win32Error:
-      throw new BaseException("A generic error occurred in GDI+");
+      return new Exception("A generic error occurred in GDI+.");
     case Status.WrongState:
-      throw new InvalidOperationException("Bitmap region is already locked.");
+      return new InvalidOperationException("Bitmap region is already locked.");
     case Status.Aborted:
-      throw new BaseException("Function was ended.");
-    case Status.FileNotFound:
-      throw new FileNotFoundException("File not found.");
-    case Status.ValueOverflow:
-      throw new OverflowException("Overflow error.");
+      return new Exception("Function was ended.");
     case Status.AccessDenied:
-      throw new BaseException("File access is denied.");
+      return new Exception("File access is denied.");
     case Status.UnknownImageFormat:
-      throw new ArgumentException("Image format is unknown.");
+      return new ArgumentException("Image format is unknown.");
     case Status.FontFamilyNotFound:
-      throw new ArgumentException("Font cannot be found.");
+      return new ArgumentException("Font cannot be found.");
     case Status.FontStyleNotFound:
-      throw new ArgumentException("Font does not support style.");
+      return new ArgumentException("Font does not support style.");
     case Status.NotTrueTypeFont:
-      throw new ArgumentException("Only true type fonts are supported.");
+      return new ArgumentException("Only true type fonts are supported.");
     case Status.UnsupportedGdiplusVersion:
-      throw new BaseException("Current version of GDI+ does not support this feature.");
+      return new Exception("Current version of GDI+ does not support this feature.");
     case Status.GdiplusNotInitialized:
-      throw new BaseException("GDI+ is not initialized.");
+      return new Exception("GDI+ is not initialized.");
     case Status.PropertyNotFound:
-      throw new ArgumentException("Property cannot be found.");
+      return new ArgumentException("Property cannot be found.");
     case Status.PropertyNotSupported:
-      throw new ArgumentException("Property is not supported.");
+      return new ArgumentException("Property is not supported.");
     default:
   }
-  throw new BaseException("Unknown GDI+ error occurred.");
+  return new Exception("Unknown GDI+ error occurred.");
 }

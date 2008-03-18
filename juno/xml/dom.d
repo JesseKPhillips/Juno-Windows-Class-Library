@@ -1,51 +1,50 @@
- /*
- * Copyright (c) 2007 John Chapman
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
-
 /**
  * Provides standards-based support for processing XML.
+ *
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.xml.dom;
 
 private import juno.base.core,
   juno.base.string,
   juno.com.core,
-  juno.xml.constants,
   juno.xml.core,
   juno.xml.msxml;
+private import bstr = juno.com.bstr;
+
+private import std.stream : Stream;
+private import std.utf : toUTF16z;
+
+debug private import std.stdio : writefln;
 
 /**
  * Adds namespaces to a collection and provides scope management.
+ *
+ * Examples:
+ * ---
+ * scope mgr = new XmlNamespaceManager;
+ * mgr.addNamespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
+ * mgr.addNamespace("dc", "http://purl.org/dc/elements/1.1/");
+ * mgr.addNamespace("rss", "http://purl.org/rss/1.0/");
+ *
+ * scope doc = new XmlDocument;
+ * doc.load("http://del.icio.us/rss");
+ * foreach (node; doc.documentElement.selectNodes("/rdf:RDF/rss:item", mgr)) {
+ *   if (node !is null)
+ *     writefln(node.text);
+ * }
+ * ---
  */
-public class XmlNamespaceManager {
+class XmlNamespaceManager {
 
   private IMXNamespaceManager nsmgrImpl_;
 
-  public this() {
+  this() {
     if ((nsmgrImpl_ = MXNamespaceManager60.coCreate!(IMXNamespaceManager)) is null) {
       if ((nsmgrImpl_ = MXNamespaceManager40.coCreate!(IMXNamespaceManager)) is null) {
-        nsmgrImpl_ = MXNamespaceManager.coCreate!(IMXNamespaceManager, ExceptionPolicy.ThrowIfNull);
+        nsmgrImpl_ = MXNamespaceManager.coCreate!(IMXNamespaceManager, ExceptionPolicy.Throw);
       }
     }
   }
@@ -56,8 +55,8 @@ public class XmlNamespaceManager {
    *   prefix = The _prefix to associate with the namespace being added.
    *   uri = The namespace to add.
    */
-  public void addNamespace(string prefix, string uri) {
-    nsmgrImpl_.declarePrefix(prefix.toUtf16z(), uri.toUtf16z());
+  void addNamespace(string prefix, string uri) {
+    nsmgrImpl_.declarePrefix(prefix.toUTF16z(), uri.toUTF16z());
   }
 
   /**
@@ -65,9 +64,9 @@ public class XmlNamespaceManager {
    * Params: prefix = The _prefix of the namespace to find.
    * Returns: true if a namespace is defined; otherwise, false.
    */
-  public bool hasNamespace(string prefix) {
+  bool hasNamespace(string prefix) {
     int cchUri;
-    return (nsmgrImpl_.getURI(prefix.toUtf16z(), null, null, cchUri) == S_OK);
+    return (nsmgrImpl_.getURI(prefix.toUTF16z(), null, null, cchUri) == S_OK);
   }
 
   /**
@@ -75,10 +74,10 @@ public class XmlNamespaceManager {
    * Params: uri = The namespace to resolve for the prefix.
    * Returns: The matching prefix.
    */
-  public string lookupPrefix(string uri) {
+  string lookupPrefix(string uri) {
     wchar[100] pwchPrefix;
     int cchPrefix = pwchPrefix.length;
-    if (nsmgrImpl_.getPrefix(uri.toUtf16z(), 0, pwchPrefix.ptr, cchPrefix) == S_OK)
+    if (nsmgrImpl_.getPrefix(uri.toUTF16z(), 0, pwchPrefix.ptr, cchPrefix) == S_OK)
       return toUtf8(pwchPrefix.ptr, 0, cchPrefix);
     return null;
   }
@@ -88,10 +87,10 @@ public class XmlNamespaceManager {
    * Params: prefix = The _prefix whose namespace you want to resolve.
    * Returns: The namespace for prefix.
    */
-  public string lookupNamespace(string prefix) {
+  string lookupNamespace(string prefix) {
     wchar[100] pwchUri;
     int cchUri = pwchUri.length;
-    if (nsmgrImpl_.getURI(prefix.toUtf16z(), null, pwchUri.ptr, cchUri) == S_OK)
+    if (nsmgrImpl_.getURI(prefix.toUTF16z(), null, pwchUri.ptr, cchUri) == S_OK)
       return toUtf8(pwchUri.ptr, 0, cchUri);
     return null;
   }
@@ -100,21 +99,21 @@ public class XmlNamespaceManager {
    * Pops a namespace scope off the stack.
    * Returns: true if there are namespace scopes left on the stack; otherwise, false.
    */
-  public bool popScope() {
+  bool popScope() {
     return (nsmgrImpl_.popContext() == S_OK);
   }
 
   /**
    * Pushes a namespace scope onto the stack.
    */
-  public void pushScope() {
+  void pushScope() {
     nsmgrImpl_.pushContext();
   }
 
   /**
    * Provides foreach-style iteratation through the prefixes stored.
    */
-  public int opApply(int delegate(ref string) action) {
+  int opApply(int delegate(ref string) action) {
     int result, index, hr;
     do {
       wchar[100] pwchPrefix;
@@ -131,7 +130,7 @@ public class XmlNamespaceManager {
 
   ~this() {
     if (nsmgrImpl_ !is null) {
-      nsmgrImpl_.Release();
+      tryRelease(nsmgrImpl_);
       nsmgrImpl_ = null;
     }
   }
@@ -141,9 +140,9 @@ public class XmlNamespaceManager {
 package XmlNode getNodeShim(IXMLDOMNode node) {
 
   bool isXmlDeclaration(IXMLDOMNode node) {
-    wchar* bstr;
-    if (node.get_nodeName(bstr) == S_OK)
-      return (fromBStr(bstr) == "xml");
+    wchar* bstrName;
+    if (node.get_nodeName(bstrName) == S_OK)
+      return (bstr.toString(bstrName) == "xml");
     return false; 
   }
 
@@ -153,21 +152,23 @@ package XmlNode getNodeShim(IXMLDOMNode node) {
       string value;
       IXMLDOMNode namedItem;
 
-      wchar* bstr = name.toBStr();
-      if (attrs.getNamedItem(bstr, namedItem) == S_OK) {
-        scope(exit) namedItem.Release();
+      wchar* bstrName = bstr.fromString(name);
+      if (attrs.getNamedItem(bstrName, namedItem) == S_OK) {
+        scope(exit) tryRelease(namedItem);
         VARIANT var;
-        if (namedItem.get_nodeValue(var) == S_OK)
+        if (SUCCEEDED(namedItem.get_nodeValue(var))) {
+          scope(exit) var.clear();
           value = var.toString();
+        }
       }
-      freeBStr(bstr);
+      bstr.free(bstrName);
       return value;
     }
 
     xmlversion = null, encoding = null, standalone = null;
     IXMLDOMNamedNodeMap attrs;
     if (node.get_attributes(attrs) == S_OK) {
-      scope(exit) attrs.Release();
+      scope(exit) tryRelease(attrs);
 
       xmlversion = getAttrValue(attrs, "version");
       encoding = getAttrValue(attrs, "encoding");
@@ -195,6 +196,7 @@ package XmlNode getNodeShim(IXMLDOMNode node) {
     case DOMNodeType.NODE_ELEMENT:
       return new XmlElement(node);
     case DOMNodeType.NODE_PROCESSING_INSTRUCTION:
+      // MSXML doesn't treat XML declarations as a distinct node type.
       if (isXmlDeclaration(node)) {
         string xmlversion, encoding, standalone;
         if (parseXmlDeclaration(node, xmlversion, encoding, standalone))
@@ -219,60 +221,50 @@ package XmlNode getNodeShim(IXMLDOMNode node) {
   return null;
 }
 
-public string[XmlNodeType.max + 1] XmlNodeTypeString = [
-  XmlNodeType.None : "None",
-  XmlNodeType.Element : "Element",
-  XmlNodeType.Attribute : "Attribute",
-  XmlNodeType.Text : "Text",
-  XmlNodeType.CDATA : "CDATA",
-  XmlNodeType.EntityReference : "EntityReference",
-  XmlNodeType.Entity : "Entity",
-  XmlNodeType.ProcessingInstruction : "ProcessingInstruction",
-  XmlNodeType.Comment : "Comment",
-  XmlNodeType.Document : "Document",
-  XmlNodeType.DocumentType : "DocumentType",
-  XmlNodeType.DocumentFragment : "DocumentFragment",
-  XmlNodeType.Notation : "Notation",
-  XmlNodeType.Whitespace : "Whitespace",
-  XmlNodeType.XmlDeclaration : "XmlDeclaration"
-];
+class XPathException : Exception {
+
+  this(string message = null) {
+    super(message);
+  }
+
+}
 
 /**
  * Represents an ordered collection of nodes.
  */
-public abstract class XmlNodeList {
+abstract class XmlNodeList {
 
   /**
    * Retrieves the node at the given _index.
    * Params: index = The _index into the list of nodes.
    * Returns: The node in the collection at index.
    */
-  public abstract XmlNode item(int index);
+  abstract XmlNode item(int index);
 
   /**
    * Ditto
    */
-  public XmlNode opIndex(int index) {
-    return item(index);
+  XmlNode opIndex(int i) {
+    return item(i);
   }
-
-  /**
-   * Provides foreach iteration over the collection of nodes.
-   */
-  public abstract int opApply(int delegate(ref XmlNode) action);
 
   /**
    * Gets the number of nodes in the collection.
    * Returns: The number of nodes.
    */
-  public abstract int count();
+  abstract int size();
+
+  /**
+   * Provides foreach iteration over the collection of nodes.
+   */
+  abstract int opApply(int delegate(ref XmlNode) action);
 
   protected this() {
   }
 
 }
 
-private class XmlNodes : XmlNodeList {
+private class XmlChildNodes : XmlNodeList {
 
   private IXMLDOMNodeList listImpl_;
 
@@ -282,23 +274,23 @@ private class XmlNodes : XmlNodeList {
 
   ~this() {
     if (listImpl_ !is null) {
-      listImpl_.Release();
+      tryRelease(listImpl_);
       listImpl_ = null;
     }
   }
 
-  public override XmlNode item(int index) {
+  override XmlNode item(int index) {
     IXMLDOMNode node;
-    if (listImpl_.get_item(index, node) == S_OK)
+    if (SUCCEEDED(listImpl_.get_item(index, node)))
       return getNodeShim(node);
     return null;
   }
 
-  public override int opApply(int delegate(ref XmlNode) action) {
+  override int opApply(int delegate(ref XmlNode) action) {
     int result;
     IXMLDOMNode node;
     do {
-      if (listImpl_.nextNode(node) == S_OK) {
+      if (SUCCEEDED(listImpl_.nextNode(node))) {
         XmlNode n = getNodeShim(node);
         if ((result = action(n)) != 0)
           break;
@@ -308,120 +300,159 @@ private class XmlNodes : XmlNodeList {
     return result;
   }
 
-  public override int count() {
+  override int size() {
     int length;
-    return (listImpl_.get_length(length) == S_OK) ? length : 0;
+    return SUCCEEDED(listImpl_.get_length(length)) ? length : 0;
   }
 
 }
 
-/+
-
-  scope mgr = new XmlNamespaceManager;
-  mgr.addNamespace("rdf", "http://www.w3.org/1999/02/22-rdf-syntax-ns#");
-  mgr.addNamespace("dc", "http://purl.org/dc/elements/1.1/");
-  mgr.addNamespace("rss", "http://purl.org/rss/1.0/");
-
-  scope doc = new XmlDocument;
-  doc.load("Guardian Unlimited UK Latest.xml");
-  foreach (node; doc.documentElement.selectNodes("/rdf:RDF/rss:item", mgr)) {
-   if (node !is null)
-      writefln(node.text);
-  }
-  +/
-
 private class XPathNodeList : XmlNodeList {
 
-  private IXMLDOMSelection selection_;
+  private IXMLDOMSelection iterator_;
 
-  private bool finished_;
-  private XmlNode[] list_;
-
-  public this(XmlNode container, string expression, XmlNamespaceManager nsmgr) {
-    if (nsmgr !is null) {
-      string str;
-      foreach (prefix; nsmgr) {
-        if (prefix != "xmlns")
-          str ~= "xmlns:" ~ prefix ~ "='" ~ nsmgr.lookupNamespace(prefix) ~ "' ";
-      }
-
-      VARIANT selectionNs = str;
-      container.ownerDocument.docImpl_.setProperty(cast(wchar*)"SelectionNamespaces", selectionNs);
-      selectionNs.clear();
-    }
-
-    wchar* bstrExpression = expression.toBStr();
-    IXMLDOMNodeList nodeList;
-    if (container.nodeImpl_.selectNodes(bstrExpression, nodeList) == S_OK) {
-      scope(exit) tryRelease(nodeList);
-      selection_ = com_cast!(IXMLDOMSelection)(nodeList);
-      freeBStr(bstrExpression);
-    }
-    else
-      finished_ = true;
+  this(IXMLDOMSelection iterator) {
+    iterator_ = iterator;
   }
 
   ~this() {
-    list_ = null;
-
-    if (selection_ !is null) {
-      tryRelease(selection_);
-      selection_ = null;
+    if (iterator_ !is null) {
+      tryRelease(iterator_);
+      iterator_ = null;
     }
   }
 
-  public override XmlNode item(int index) {
-    if (index >= list_.length)
-      read(index);
-    if (index >= list_.length || index < 0)
-      return null;
-    return list_[index];
+  override XmlNode item(int index) {
+    IXMLDOMNode listItem;
+    iterator_.get_item(index, listItem);
+    return getNodeShim(listItem);
   }
 
-  public override int opApply(int delegate(ref XmlNode) action) {
-    int index = -1;
+  override int size() {
+    int listLength;
+    iterator_.get_length(listLength);
+    return listLength;
+  }
 
-    bool hasNext() {
-      index++;
-      int n = read(index + 1);
-      if (index > n - 1)
-        return false;
-      return (list_[index] !is null);
-    }
-
+  override int opApply(int delegate(ref XmlNode) action) {
     int result = 0;
-    while (hasNext()) {
-      XmlNode node = list_[index];
+
+    int hr;
+    IXMLDOMNode n;
+
+    while ((hr = iterator_.nextNode(n)) == S_OK) {
+      XmlNode node = getNodeShim(n);
       if ((result = action(node)) != 0)
         break;
     }
+
+    iterator_.reset();
     return result;
   }
 
-  public override int count() {
-    if (!finished_)
-      read(int.max);
-    return list_.length;
+}
+
+/**
+ * Provides a way to navigate XML data.
+ */
+abstract class XPathNavigator {
+
+  /**
+   * Determines whether the current node _matches the specified XPath expression.
+   */
+  bool matches(string xpath) {
+    return false;
   }
 
-  private int read(int until) {
-    int n = list_.length;
-    while (!finished_ && until >= n) {
-      IXMLDOMNode node = null;
-      selection_.get_item(n, node);
-      if (node !is null) {
-        list_ ~= getNodeShim(node);
-        n++;
-      }
-      else {
-        selection_.reset();
-        tryRelease(selection_);
-        selection_ = null;
-        finished_ = true;
-        break;
+  /**
+   * Selects a node set using the specified XPath expression.
+   */
+  XmlNodeList select(string xpath) {
+    return null;
+  }
+
+  /**
+   * Selects all the ancestor nodes of the current node.
+   */
+  XmlNodeList selectAncestors() {
+    return select("./ancestor::node()");
+  }
+
+  /**
+   * Selects all the descendant nodes of the current node.
+   */
+  XmlNodeList selectDescendants() {
+    return select("./descendant::node()");
+  }
+
+  /**
+   * Selects all the child nodes of the current node.
+   */
+  XmlNodeList selectChildren() {
+    return select("./node()");
+  }
+
+}
+
+private class DocumentXPathNavigator : XPathNavigator {
+
+  private XmlDocument document_;
+  private XmlNode node_;
+
+  this(XmlDocument document, XmlNode node) {
+    document_ = document;
+    node_ = node;
+  }
+
+  override bool matches(string xpath) {
+    wchar* bstrExpression = bstr.fromString(xpath);
+    scope(exit) bstr.free(bstrExpression);
+
+    IXMLDOMNodeList nodeList;
+    int hr;
+    if (SUCCEEDED(hr = document_.nodeImpl_.selectNodes(bstrExpression, nodeList))) {
+      scope(exit) tryRelease(nodeList);
+      IXMLDOMNode n;
+      if (SUCCEEDED((cast(IXMLDOMSelection)nodeList).matches(node_.nodeImpl_, n))) {
+        scope(exit) tryRelease(n);
+        return n !is null;
       }
     }
-    return n;
+    else
+      throw xpathException(hr);
+    return false;
+  }
+
+  XmlNodeList select(string xpath) { 
+    wchar* bstrExpression = bstr.fromString(xpath);
+    scope(exit) bstr.free(bstrExpression);
+
+    IXMLDOMNodeList nodeList;
+    int hr;
+    if (SUCCEEDED(hr = document_.nodeImpl_.selectNodes(bstrExpression, nodeList)))
+      return new XPathNodeList(cast(IXMLDOMSelection)nodeList);
+    else
+      throw xpathException(hr);
+  }
+
+  private Exception xpathException(int hr) {
+    if (auto support = com_cast!(ISupportErrorInfo)(document_.nodeImpl_)) {
+      scope(exit) tryRelease(support);
+      if (SUCCEEDED(support.InterfaceSupportsErrorInfo(uuidof!(typeof(document_.nodeImpl_))))) {
+        IErrorInfo errorInfo;
+        if (SUCCEEDED(GetErrorInfo(0, errorInfo))) {
+          scope(exit) tryRelease(errorInfo);
+
+          wchar* bstrDesc;
+          errorInfo.GetDescription(bstrDesc);
+          string msg = bstr.toString(bstrDesc);
+          if (msg[$ - 1] == '\n')
+            msg = msg[0 .. $ - 2];
+          return new XPathException(msg);
+        }
+      }
+    }
+    return new COMException(hr);
   }
 
 }
@@ -429,7 +460,7 @@ private class XPathNodeList : XmlNodeList {
 /**
  * Represents a collection of nodes that can be accessed by name or index.
  */
-public class XmlNamedNodeMap {
+class XmlNamedNodeMap {
 
   private IXMLDOMNamedNodeMap mapImpl_;
 
@@ -438,12 +469,12 @@ public class XmlNamedNodeMap {
    * Params: name = The qualified _name of the node to retrieve.
    * Returns: The node with the specified _name.
    */
-  public XmlNode getNamedItem(string name) {
+  XmlNode getNamedItem(string name) {
     IXMLDOMNode node;
 
-    wchar* bstr = name.toBStr();
-    int hr = mapImpl_.getNamedItem(bstr, node);
-    freeBStr(bstr);
+    wchar* bstrName = bstr.fromString(name);
+    int hr = mapImpl_.getNamedItem(bstrName, node);
+    bstr.free(bstrName);
 
     return (hr == S_OK) ? getNodeShim(node) : null;
   }
@@ -455,16 +486,16 @@ public class XmlNamedNodeMap {
    *   namespaceURI = The namespace URI of the node to retrieve.
    * Returns: The node with the matching local name and namespace URI.
    */
-  public XmlNode getNamedItem(string localName, string namespaceURI) {
+  XmlNode getNamedItem(string localName, string namespaceURI) {
     IXMLDOMNode node;
 
-    wchar* bstrName = localName.toBStr();
-    wchar* bstrNs = namespaceURI.toBStr();
+    wchar* bstrName = bstr.fromString(localName);
+    wchar* bstrNs = bstr.fromString(namespaceURI);
 
     int hr = mapImpl_.getQualifiedItem(bstrName, bstrNs, node);
 
-    freeBStr(bstrName);
-    freeBStr(bstrNs);
+    bstr.free(bstrName);
+    bstr.free(bstrNs);
 
     return (hr == S_OK) ? getNodeShim(node) : null;
   }
@@ -474,12 +505,12 @@ public class XmlNamedNodeMap {
    * Params: name = The qualified _name of the node to remove.
    * Returns: The node removed.
    */
-  public XmlNode removeNamedItem(string name) {
+  XmlNode removeNamedItem(string name) {
     IXMLDOMNode node;
 
-    wchar* bstr = name.toBStr();
-    int hr = mapImpl_.removeNamedItem(bstr, node);
-    freeBStr(bstr);
+    wchar* bstrName = bstr.fromString(name);
+    int hr = mapImpl_.removeNamedItem(bstrName, node);
+    bstr.free(bstrName);
 
     return (hr == S_OK) ? getNodeShim(node) : null;
   }
@@ -491,16 +522,16 @@ public class XmlNamedNodeMap {
    *   namespaceURI = The namespace URI of the node to remove.
    * Returns: The node removed.
    */
-  public XmlNode removeNamedItem(string localName, string namespaceURI) {
+  XmlNode removeNamedItem(string localName, string namespaceURI) {
     IXMLDOMNode node;
 
-    wchar* bstrName = localName.toBStr();
-    wchar* bstrNs = namespaceURI.toBStr();
+    wchar* bstrName = bstr.fromString(localName);
+    wchar* bstrNs = bstr.fromString(namespaceURI);
 
     int hr = mapImpl_.removeQualifiedItem(bstrName, bstrNs, node);
 
-    freeBStr(bstrName);
-    freeBStr(bstrNs);
+    bstr.free(bstrName);
+    bstr.free(bstrNs);
 
     return (hr == S_OK) ? getNodeShim(node) : null;
   }
@@ -510,9 +541,9 @@ public class XmlNamedNodeMap {
    * Params: node = The _node to store.
    * Returns: The old _node.
    */
-  public XmlNode setNamedItem(XmlNode node) {
+  XmlNode setNamedItem(XmlNode node) {
     IXMLDOMNode namedItem;
-    if (mapImpl_.setNamedItem(node.nodeImpl_, namedItem) == S_OK)
+    if (SUCCEEDED(mapImpl_.setNamedItem(node.nodeImpl_, namedItem)))
       return getNodeShim(namedItem);
     return null;
   }
@@ -522,9 +553,9 @@ public class XmlNamedNodeMap {
    * Params: index = The position of the node to retrieve.
    * Returns: The node at the specified _index.
    */
-  public XmlNode item(int index) {
+  XmlNode item(int index) {
     IXMLDOMNode node;
-    if (mapImpl_.get_item(index, node) == S_OK)
+    if (SUCCEEDED(mapImpl_.get_item(index, node)))
       return getNodeShim(node);
     return null;
   }
@@ -533,20 +564,20 @@ public class XmlNamedNodeMap {
    * Gets the number of nodes.
    * Returns: The number of nodes.
    */
-  public int count() {
+  int size() {
     int length;
-    return (mapImpl_.get_length(length) == S_OK) ? length : 0;
+    return (SUCCEEDED(mapImpl_.get_length(length))) ? length : 0;
   }
 
   /**
    * Provides support for foreach iteration over the collection of nodes.
    */
-  public int opApply(int delegate(ref XmlNode) action) {
+  int opApply(int delegate(ref XmlNode) action) {
     int result;
     IXMLDOMNode node;
 
     do {
-      if (mapImpl_.nextNode(node) == S_OK) {
+      if (SUCCEEDED(mapImpl_.nextNode(node))) {
         if (XmlNode currentNode = getNodeShim(node)) {
           if ((result = action(currentNode)) != 0)
             break;
@@ -569,7 +600,7 @@ public class XmlNamedNodeMap {
 
   ~this() {
     if (mapImpl_ !is null) {
-      mapImpl_.Release();
+      tryRelease(mapImpl_);
       mapImpl_ = null;
     }
   }
@@ -579,14 +610,14 @@ public class XmlNamedNodeMap {
 /**
  * Represents a collection of attributes that can be accessed by name or index.
  */
-public final class XmlAttributeCollection : XmlNamedNodeMap {
+final class XmlAttributeCollection : XmlNamedNodeMap {
 
   /**
    * Gets the attribute at the specified _index.
    * Params: index = The _index of the attribute.
    * Returns: The attribute at the specified _index.
    */
-  public final XmlAttribute opIndex(int index) {
+  final XmlAttribute opIndex(int index) {
     return cast(XmlAttribute)item(index);
   }
 
@@ -595,7 +626,7 @@ public final class XmlAttributeCollection : XmlNamedNodeMap {
    * Params: name = The qualified _name of the attribute.
    * Returns: The attribute with the specified _name.
    */
-  public final XmlAttribute opIndex(string name) {
+  final XmlAttribute opIndex(string name) {
     return cast(XmlAttribute)getNamedItem(name);
   }
 
@@ -606,7 +637,7 @@ public final class XmlAttributeCollection : XmlNamedNodeMap {
    *   namespaceURI = The namespace URI of the attribute.
    * Returns: The attribute with the specified local name and namespace URI.
    */
-  public final XmlAttribute opIndex(string localName, string namespaceURI) {
+  final XmlAttribute opIndex(string localName, string namespaceURI) {
     return cast(XmlAttribute)getNamedItem(localName, namespaceURI);
   }
 
@@ -616,30 +647,68 @@ public final class XmlAttributeCollection : XmlNamedNodeMap {
 
 }
 
+string TypedNode(string type, string field = "typedNodeImpl_") {
+  return 
+    "private " ~ type ~ " " ~ field ~ ";"\n
+
+    "package this(IXMLDOMNode nodeImpl) {"\n
+    "  super(nodeImpl);"\n
+    "  " ~ field ~ " = com_cast!(" ~ type ~ ")(nodeImpl);"\n
+    "}"\n
+
+    "~this() {"\n
+    "  if (" ~ field ~ " !is null) {"\n
+    "    tryRelease(" ~ field ~ ");"\n
+    "    " ~ field ~ " = null;"\n
+    "  }"\n
+    "}";
+}
+
 /**
  * Represents a single node in the XML document.
  */
-public abstract class XmlNode {
+class XmlNode {
 
   private IXMLDOMNode nodeImpl_;
 
-  public XmlNode clone() {
+  /**
+   * Creates a duplicate of this node.
+   * Returns: The cloned node.
+   */
+  XmlNode clone() {
     return cloneNode(true);
   }
 
-  public XmlNode cloneNode(bool deep) {
+  /**
+   * Creates a duplicate of this node.
+   * Params: deep = true to recursively clone the subtree under this node; false to clone only the node itself.
+   * Returns: The cloned node.
+   */
+  XmlNode cloneNode(bool deep) {
     IXMLDOMNode cloneRoot;
     nodeImpl_.cloneNode(deep ? VARIANT_TRUE : VARIANT_FALSE, cloneRoot);
     return getNodeShim(cloneRoot);
   }
 
-  public XmlNode appendChild(XmlNode newChild) {
+  /**
+   * Adds the specified node to the end of the list of child nodes.
+   * Params: newChild = The node to add.
+   * Returns: The node added.
+   */
+  XmlNode appendChild(XmlNode newChild) {
     IXMLDOMNode newNode;
     nodeImpl_.appendChild(newChild.nodeImpl_, newNode);
     return getNodeShim(newNode);
   }
 
-  public XmlNode insertBefore(XmlNode newChild, XmlNode refChild) {
+  /**
+   * Inserts the specified node immediately before the specified reference node.
+   * Params:
+   *   newChild = The node to insert.
+   *   refChild = The reference node. The newChild is placed before this node.
+   * Returns: The inserted node.
+   */
+  XmlNode insertBefore(XmlNode newChild, XmlNode refChild) {
     if (refChild is null)
       return appendChild(newChild);
 
@@ -652,7 +721,14 @@ public abstract class XmlNode {
     return getNodeShim(newNode);
   }
 
-  public XmlNode insertAfter(XmlNode newChild, XmlNode refChild) {
+  /**
+   * Inserts the specified node immediately after the specified reference node.
+   * Params:
+   *   newChild = The node to insert.
+   *   refChild = The reference node. The newChild is placed after this node.
+   * Returns: The inserted node.
+   */
+  XmlNode insertAfter(XmlNode newChild, XmlNode refChild) {
     if (refChild is null)
       return insertBefore(newChild, this.firstChild);
 
@@ -666,20 +742,35 @@ public abstract class XmlNode {
     return appendChild(newChild);
   }
 
-  public XmlNode replaceChild(XmlNode newChild, XmlNode oldChild) {
+  /**
+   * Replaces the oldChild node with the newChild node.
+   * Params:
+   *   newChild = The new node to put in the child list.
+   *   oldChild = The node being replaced in the child list.
+   * Returns: The replaced node.
+   */
+  XmlNode replaceChild(XmlNode newChild, XmlNode oldChild) {
     XmlNode next = oldChild.nextSibling;
     removeChild(oldChild);
     insertBefore(newChild, next);
     return oldChild;
   }
 
-  public XmlNode removeChild(XmlNode oldChild) {
+  /**
+   * Removes the specified child node.
+   * Params: oldChild = The node being removed.
+   * Returns: The removed node.
+   */
+  XmlNode removeChild(XmlNode oldChild) {
     IXMLDOMNode oldNode;
     nodeImpl_.removeChild(oldChild.nodeImpl_, oldNode);
     return getNodeShim(oldNode);
   }
 
-  public void removeAll() {
+  /**
+   * Removes all the child nodes.
+   */
+  void removeAll() {
     IXMLDOMNode first, next;
     nodeImpl_.get_firstChild(first);
 
@@ -701,14 +792,10 @@ public abstract class XmlNode {
   }
 
   /**
-   * Selects a list of nodes matching the XPath expression.
-   * Params: 
-   *   xpath = The XPath expression.
-   *   nsmgr = The namespace resolver to use.
-   * Returns: An XmlNodeList containing the nodes matching the XPath query.
+   * Creates an XPathNavigator for navigating this instance.
    */
-  public final XmlNodeList selectNodes(string xpath, XmlNamespaceManager nsmgr = null) {
-    return new XPathNodeList(this, xpath, nsmgr);
+  XPathNavigator createNavigator() {
+    return ownerDocument.createNavigator(this);
   }
 
   /**
@@ -718,10 +805,49 @@ public abstract class XmlNode {
    *   nsmgr = The namespace resolver to use.
    * Returns: The first XmlNode that matches the XPath query.
    */
-  public final XmlNode selectSingleNode(string xpath, XmlNamespaceManager nsmgr = null) {
+  XmlNode selectSingleNode(string xpath, XmlNamespaceManager nsmgr = null) {
     auto list = selectNodes(xpath, nsmgr);
-    if (list !is null && list.count > 0)
+    if (list !is null && list.size > 0)
       return list[0];
+    return null;
+  }
+
+  /**
+   * Selects a list of nodes matching the XPath expression.
+   * Params: 
+   *   xpath = The XPath expression.
+   *   nsmgr = The namespace resolver to use.
+   * Returns: An XmlNodeList containing the nodes matching the XPath query.
+   */
+  XmlNodeList selectNodes(string xpath, XmlNamespaceManager nsmgr = null) {
+    if (nsmgr !is null) {
+      // Let MSXML know about any namespace declarations.
+      // http://msdn2.microsoft.com/en-us/library/ms756048.aspx
+
+      string sel;
+      foreach (prefix; nsmgr) {
+        if (prefix != "xmlns")
+          sel ~= "xmlns:" ~ prefix ~ "='" ~ nsmgr.lookupNamespace(prefix) ~ "' ";
+      }
+
+      VARIANT selectionNs = sel;
+      scope(exit) selectionNs.clear();
+
+      IXMLDOMDocument doc;
+      if (SUCCEEDED(nodeImpl_.get_ownerDocument(doc))) {
+        scope(exit) tryRelease(doc);
+
+        if (auto doc2 = com_cast!(IXMLDOMDocument2)(doc)) {
+          scope(exit) tryRelease(doc2);
+
+          doc2.setProperty("SelectionNamespaces", selectionNs);
+        }
+      }
+    }
+
+    auto nav = createNavigator();
+    if (nav !is null)
+      return nav.select(xpath);
     return null;
   }
 
@@ -729,149 +855,198 @@ public abstract class XmlNode {
    * Gets the type of the current node.
    * Returns: One of the XmlNodeType values.
    */
-  public abstract XmlNodeType nodeType();
+  abstract XmlNodeType nodeType();
 
   /**
    * Gets the namespace _prefix of this node.
    * Returns: The namespace _prefix for this node. For example, prefix is 'bk' for the element &lt;bk:book&gt;.
    */
-  public string prefix() {
+  string prefix() {
     return "";
   }
 
   /**
-   *
+   * Gets the local name of the node.
+   * Returns: The name of the node with the prefix removed.
    */
-  public abstract string localName() {
-    wchar* bstr;
-    if (nodeImpl_.get_baseName(bstr) == S_OK)
-      return fromBStr(bstr);
+  abstract string localName() {
+    wchar* bstrName;
+    if (nodeImpl_.get_baseName(bstrName) == S_OK)
+      return bstr.toString(bstrName);
     return null;
   }
 
   /**
-   *
+   * Gets the qualified _name of the node.
+   * Returns: The qualified _name of the node.
    */
-  public abstract string name() {
-    wchar* bstr;
-    if (nodeImpl_.get_nodeName(bstr) == S_OK)
-      return fromBStr(bstr);
+  abstract string name() {
+    wchar* bstrName;
+    if (nodeImpl_.get_nodeName(bstrName) == S_OK)
+      return bstr.toString(bstrName);
     return null;
   }
 
   /**
-   *
+   * Gets the namespace URI of the node.
+   * Returns: The namespace URI of the node.
    */
-  public string namespaceURI() {
+  string namespaceURI() {
     return "";
   }
 
   /**
-   *
+   * Gets or sets the values of the node and its child nodes.
+   * Returns: The values of the node and its child nodes.
    */
-  public void text(string value) {
-    wchar* bstr = value.toBStr();
-    if (bstr != null) {
-      nodeImpl_.set_text(bstr);
-      freeBStr(bstr);
+  void text(string value) {
+    wchar* bstrValue = bstr.fromString(value);
+    if (bstrValue != null) {
+      nodeImpl_.put_text(bstrValue);
+      bstr.free(bstrValue);
     }
   }
 
   /**
    * Ditto
    */
-  public string text() {
-    wchar* bstr;
-    if (nodeImpl_.get_text(bstr) == S_OK)
-      return fromBStr(bstr);
+  string text() {
+    wchar* bstrValue;
+    if (nodeImpl_.get_text(bstrValue) == S_OK)
+      return bstr.toString(bstrValue);
     return null;
   }
 
-  public void xml(string value) {
+  /**
+   * Gets or sets the markup representing the child nodes.
+   * Returns: The markup of the child nodes.
+   */
+  void xml(string value) {
     throw new InvalidOperationException;
   }
 
   /**
-   *
+   * Ditto
    */
-  public string xml() {
-    wchar* bstr;
-    if (nodeImpl_.get_xml(bstr) == S_OK)
-      return fromBStr(bstr);
-    return null;
+  string xml() {
+    wchar* bstrXml;
+    nodeImpl_.get_xml(bstrXml);
+    return bstr.toString(bstrXml).trim();
   }
 
-  public void value(string value) {
+  /**
+   * Gets or sets the _value of this node.
+   */
+  void value(string value) {
     throw new InvalidOperationException;
   }
 
-  public string value() {
+  /**
+   * Ditto
+   */
+  string value() {
     return null;
   }
 
-  public bool hasChildNodes() {
+  /**
+   * Gets a value indicating whether this node has any child nodes.
+   * Returns: true if the node has child nodes; otherwise, false.
+   */
+  bool hasChildNodes() {
     VARIANT_BOOL result;
-    if (nodeImpl_.hasChildNodes(result) == S_OK)
+    if (SUCCEEDED(nodeImpl_.hasChildNodes(result)))
       return result == VARIANT_TRUE;
     return false;
   }
 
-  public XmlNodeList childNodes() {
+  /**
+   * Gets all the child nodes of the node.
+   * Returns: An XmlNodeList containing all the child nodes of the node.
+   */
+  XmlNodeList childNodes() {
     IXMLDOMNodeList list;
-    if (nodeImpl_.get_childNodes(list) == S_OK)
-      return new XmlNodes(list);
+    if (SUCCEEDED(nodeImpl_.get_childNodes(list)))
+      return new XmlChildNodes(list);
     return null;
   }
 
-  public XmlNode firstChild() {
+  /** 
+   * Gets the first child of the node.
+   * Returns: The first child of the node. If there is no such node, null is returned.
+   */
+  XmlNode firstChild() {
     IXMLDOMNode node;
-    if (nodeImpl_.get_firstChild(node) == S_OK)
+    if (SUCCEEDED(nodeImpl_.get_firstChild(node)))
       return getNodeShim(node);
-    return null;
-  }
-
-  public XmlNode lastChild() {
-    IXMLDOMNode node;
-    if (nodeImpl_.get_lastChild(node) == S_OK)
-      return getNodeShim(node);
-    return null;
-  }
-
-  public XmlNode previousSibling() {
-    return null;
-  }
-
-  public XmlNode nextSibling() {
-    return null;
-  }
-
-  public XmlNode parentNode() {
-    IXMLDOMNode node;
-    if (nodeImpl_.get_parentNode(node) == S_OK)
-      return getNodeShim(node);
-    return null;
-  }
-
-  public XmlDocument ownerDocument() {
-    IXMLDOMDocument doc;
-    if (nodeImpl_.get_ownerDocument(doc) == S_OK)
-      return cast(XmlDocument)getNodeShim(doc);
-    return null;
-  }
-
-  public XmlAttributeCollection attributes() {
     return null;
   }
 
   /**
-   *
+   * Gets the last child of the node.
+   * Returns: The last child of the node. If there is no such node, null is returned.
    */
-  public final int opApply(int delegate(ref XmlNode) action) {
+  XmlNode lastChild() {
+    IXMLDOMNode node;
+    if (SUCCEEDED(nodeImpl_.get_lastChild(node)))
+      return getNodeShim(node);
+    return null;
+  }
+
+  /**
+   * Gets the node immediately preceding this node.
+   * Returns: The preceding XmlNode. If there is no such node, null is returned.
+   */
+  XmlNode previousSibling() {
+    return null;
+  }
+
+  /**
+   * Gets the node immediately following this node.
+   * Returns: The following XmlNode. If there is no such node, null is returned.
+   */
+  XmlNode nextSibling() {
+    return null;
+  }
+
+  /**
+   * Gets the parent node of this node.
+   * Returns: The XmlNode that is the parent of this node.
+   */
+  XmlNode parentNode() {
+    IXMLDOMNode node;
+    if (SUCCEEDED(nodeImpl_.get_parentNode(node)))
+      return getNodeShim(node);
+    return null;
+  }
+
+  /**
+   * Gets the XmlDocument to which this node belongs.
+   * Returns: The XmlDocument to which this node belongs.
+   */
+  XmlDocument ownerDocument() {
+    IXMLDOMDocument doc;
+    if (SUCCEEDED(nodeImpl_.get_ownerDocument(doc)))
+      return cast(XmlDocument)getNodeShim(doc);
+    return null;
+  }
+
+  /**
+   * Gets an XmlAttributeCollection containing the _attributes of this node.
+   * Returns: An XmlAttributeCollection containing the _attributes of this node.
+   */
+  XmlAttributeCollection attributes() {
+    return null;
+  }
+
+  /**
+   * Provides support for foreach iteration over the nodes.
+   */
+  final int opApply(int delegate(ref XmlNode) action) {
     int result = 0;
 
     IXMLDOMNodeList nodeList;
-    if (nodeImpl_.get_childNodes(nodeList) == S_OK) {
-      scope (exit) nodeList.Release();
+    if (SUCCEEDED(nodeImpl_.get_childNodes(nodeList))) {
+      scope(exit) tryRelease(nodeList);
 
       int length = 0;
       nodeList.get_length(length);
@@ -903,13 +1078,13 @@ public abstract class XmlNode {
     return nodeImpl_;
   }
 
-  package static string constructQName(string prefix, string localName) {
+  private static string constructQName(string prefix, string localName) {
     if (prefix.length == 0)
       return localName;
     return prefix ~ ":" ~ localName;
   }
 
-  package static void splitName(string name, out string prefix, out string localName) {
+  private static void splitName(string name, out string prefix, out string localName) {
     int i = name.indexOf(':');
     if (i == -1 || i == 0 || name.length - 1 == i) {
       prefix = "";
@@ -923,87 +1098,76 @@ public abstract class XmlNode {
 
 }
 
-template TypedNodeImpl(string Type, string Field = "typedNodeImpl_") {
+/**
+ * Represents an attribute.
+ */
+class XmlAttribute : XmlNode {
 
-  const string TypedNodeImpl = 
-    "private " ~ Type ~ " " ~ Field ~ ";"
+  mixin(TypedNode("IXMLDOMAttribute", "attributeImpl_"));
 
-    "package this(IXMLDOMNode nodeImpl) {"
-    "  super(nodeImpl);"
-    "  " ~ Field ~ " = com_cast!(" ~ Type ~ ")(nodeImpl);"
-    "}"
-
-    "~this() {"
-    "  if (" ~ Field ~ " !is null) {"
-    "    tryRelease(" ~ Field ~ ");"
-    "    " ~ Field ~ " = null;"
-    "  }"
-    "}";
-}
-
-public class XmlAttribute : XmlNode {
-
-  mixin(TypedNodeImpl!("IXMLDOMAttribute"));
-
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.Attribute;
   }
 
-  public override string localName() {
+  override string localName() {
     return super.localName;
   }
 
-  public override string name() {
+  override string name() {
     return super.name;
   }
 
-  public override string namespaceURI() {
-    wchar* bstr;
-    if (nodeImpl_.get_namespaceURI(bstr) == S_OK)
-      return fromBStr(bstr);
+  override string namespaceURI() {
+    wchar* bstrNs;
+    if (nodeImpl_.get_namespaceURI(bstrNs) == S_OK)
+      return bstr.toString(bstrNs);
     return string.init;
   }
 
-  public override void value(string value) {
+  override void value(string value) {
     VARIANT v = value;
-    typedNodeImpl_.set_value(v);
+    attributeImpl_.put_value(v);
     v.clear();
   }
 
-  public override string value() {
+  override string value() {
     VARIANT v;
-    typedNodeImpl_.get_value(v);
+    attributeImpl_.get_value(v);
     return v.toString();
   }
 
-  public override XmlNode parentNode() {
+  override XmlNode parentNode() {
     return null;
   }
 
-  public XmlElement ownerElement() {
+  XmlElement ownerElement() {
     return cast(XmlElement)super.parentNode;
   }
 
-  public bool specified() {
-    com_bool result;
+  /**
+   * Gets a value indicating whether the attribute was explicitly set.
+   * Returns: true if the attribute was explicitly set; otherwise, false.
+   */
+  bool specified() {
+    VARIANT_BOOL result;
     nodeImpl_.get_specified(result);
-    return result == com_true;
+    return result == VARIANT_TRUE;
   }
 
 }
 
 /**
- *
+ * Represents a node with child nodes immediately before and after this node.
  */
-public abstract class XmlLinkedNode : XmlNode {
+abstract class XmlLinkedNode : XmlNode {
 
-  public override XmlNode previousSibling() {
+  override XmlNode previousSibling() {
     IXMLDOMNode node;
     nodeImpl_.get_previousSibling(node);
     return getNodeShim(node);
   }
 
-  public override XmlNode nextSibling() {
+  override XmlNode nextSibling() {
     IXMLDOMNode node;
     nodeImpl_.get_nextSibling(node);
     return getNodeShim(node);
@@ -1015,85 +1179,125 @@ public abstract class XmlLinkedNode : XmlNode {
 
 }
 
-
 /**
- *
+ * Provides text manipulation methods.
  */
-public abstract class XmlCharacterData : XmlLinkedNode {
+abstract class XmlCharacterData : XmlLinkedNode {
 
-  mixin(TypedNodeImpl!("IXMLDOMCharacterData"));
+  mixin(TypedNode("IXMLDOMCharacterData"));
 
-  public void appendData(string strData) {
-    wchar* bstr = strData.toBStr();
-    typedNodeImpl_.appendData(bstr);
-    freeBStr(bstr);
+  /**
+   * Appends the specified string to the end of the character data.
+   * Params: strData = The string to append to the existing string.
+   */
+  void appendData(string strData) {
+    wchar* bstrValue = bstr.fromString(strData);
+    typedNodeImpl_.appendData(bstrValue);
+    bstr.free(bstrValue);
   }
 
-  public void insertData(int offset, string strData) {
-    wchar* bstr = strData.toBStr();
-    typedNodeImpl_.insertData(offset, bstr);
-    freeBStr(bstr);
+  /**
+   * Inserts the specified string at the specified offset.
+   * Params:
+   *   offset = The position within the string to insert the specified string data.
+   *   strData = The string data that is to be inserted into the existing string.
+   */
+  void insertData(int offset, string strData) {
+    wchar* bstrValue = bstr.fromString(strData);
+    typedNodeImpl_.insertData(offset, bstrValue);
+    bstr.free(bstrValue);
+  }
+  
+  /**
+   * Replaces the specified number of characters starting at the specified offset with the specified string.
+   * Params:
+   *   offset = The position within the string to start replacing.
+   *   count = The number of characters to replace.
+   *   strData = The new data that replaces the old data.
+   */
+  void replaceData(int offset, int count, string strData) {
+    wchar* bstrValue = bstr.fromString(strData);
+    typedNodeImpl_.replaceData(offset, count, bstrValue);
+    bstr.free(bstrValue);
   }
 
-  public void replaceData(int offset, int count, string strData) {
-    wchar* bstr = strData.toBStr();
-    typedNodeImpl_.replaceData(offset, count, bstr);
-    freeBStr(bstr);
-  }
-
-  public void deleteData(int offset, int count) {
+  /**
+   * Removes a range of characters from the string data.
+   * Params:
+   *   offset = The position within the string to start deleting.
+   *   count = The number of characters to delete.
+   */
+  void deleteData(int offset, int count) {
     typedNodeImpl_.deleteData(offset, count);
   }
 
-  public string substring(int offset, int count) {
-    wchar* bstr;
-    if (typedNodeImpl_.substringData(offset, count, bstr) == S_OK)
-      return fromBStr(bstr);
+  /**
+   * Retrieves a _substring of the full string from the specified range.
+   * Params:
+   *   offset = The position within the string to start retrieving.
+   *   count = The number of characters to retrieve.
+   */
+  string substring(int offset, int count) {
+    wchar* bstrValue;
+    if (typedNodeImpl_.substringData(offset, count, bstrValue) == S_OK)
+      return bstr.toString(bstrValue);
     return "";
   }
 
-  public int length() {
+  /**
+   * Gets the _length of the data.
+   * Returns: The _length of the string data.
+   */
+  int length() {
     int result;
     typedNodeImpl_.get_length(result);
     return result;
   }
 
-  public void data(string value) {
-    wchar* bstr = value.toBStr();
-    typedNodeImpl_.set_data(bstr);
-    freeBStr(bstr);
+  /**
+   * Gets or sets the _data of the node.
+   * Returns: The _data of the node.
+   */
+  void data(string value) {
+    wchar* bstrValue = bstr.fromString(value);
+    typedNodeImpl_.put_data(bstrValue);
+    bstr.free(bstrValue);
   }
 
-  public string data() {
-    wchar* bstr;
-    if (typedNodeImpl_.get_data(bstr) == S_OK)
-      return fromBStr(bstr);
+  /**
+   * Ditto
+   */
+  string data() {
+    wchar* bstrValue;
+    if (typedNodeImpl_.get_data(bstrValue) == S_OK)
+      return bstr.toString(bstrValue);
     return "";
   }
 
-  public override void value(string value) {
+  override void value(string value) {
     data = value;
   }
 
-  public override string value() {
+  override string value() {
     return data;
   }
 
 }
 
 /**
+ * Represents a CDATA section.
  */
-public class XmlCDataSection : XmlCharacterData {
+class XmlCDataSection : XmlCharacterData {
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.CDATA;
   }
 
-  public override string localName() {
+  override string localName() {
     return "#cdata-section";
   }
 
-  public override string name() {
+  override string name() {
     return localName;
   }
 
@@ -1104,18 +1308,19 @@ public class XmlCDataSection : XmlCharacterData {
 }
 
 /**
+ * Represents the content of an XML comment.
  */
-public class XmlComment : XmlCharacterData {
+class XmlComment : XmlCharacterData {
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.Comment;
   }
 
-  public override string localName() {
+  override string localName() {
     return "#comment";
   }
 
-  public override string name() {
+  override string name() {
     return localName;
   }
 
@@ -1126,24 +1331,30 @@ public class XmlComment : XmlCharacterData {
 }
 
 /**
+ * Represents the text content of an element or attribute.
  */
-public class XmlText : XmlCharacterData {
+class XmlText : XmlCharacterData {
 
-  mixin(TypedNodeImpl!("IXMLDOMText"));
+  mixin(TypedNode("IXMLDOMText"));
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.Text;
   }
 
-  public override string localName() {
+  override string localName() {
     return super.localName;
   }
 
-  public override string name() {
+  override string name() {
     return super.name;
   }
 
-  public XmlText splitText(int offset) {
+  /**
+   * Splits the node into two nodes at the specified _offset, keeping both in the tree as siblings.
+   * Params: offset = The position at which to split the node.
+   * Returns: The new node.
+   */
+  XmlText splitText(int offset) {
     IXMLDOMText node;
     if (typedNodeImpl_.splitText(offset, node) == S_OK)
       return cast(XmlText)getNodeShim(node);
@@ -1152,39 +1363,46 @@ public class XmlText : XmlCharacterData {
 
 }
 
-public class XmlEntity : XmlNode {
+/**
+ * Represents an entity declaration, such as &lt;!ENTITY...&gt;.
+ */
+class XmlEntity : XmlNode {
 
-  mixin(TypedNodeImpl!("IXMLDOMEntity"));
+  mixin(TypedNode("IXMLDOMEntity"));
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.Entity;
   }
 
-  public override string name() {
+  override string name() {
     return super.name;
   }
 
-  public override string localName() {
+  override string localName() {
     return super.localName;
   }
 
-  public override void text(string value) {
+  override void text(string value) {
     throw new InvalidOperationException;
   }
 
-  public override string text() {
+  override string text() {
     return super.text;
   }
 
-  public override void xml(string value) {
+  override void xml(string value) {
     throw new InvalidOperationException;
   }
 
-  public override string xml() {
+  override string xml() {
     return "";
   }
 
-  public final string publicId() {
+  /**
+   * Gets the value of the identifier on the entity declaration.
+   * Returns: The identifier on the entity.
+   */
+  final string publicId() {
     VARIANT var;
     if (typedNodeImpl_.get_publicId(var) == S_OK) {
       scope(exit) var.clear();
@@ -1193,7 +1411,11 @@ public class XmlEntity : XmlNode {
     return null;
   }
 
-  public final string systemId() {
+  /**
+   * Gets the value of the system identifier on the entity declaration.
+   * Returns: The system identifier on the entity.
+   */
+  final string systemId() {
     VARIANT var;
     if (typedNodeImpl_.get_systemId(var) == S_OK) {
       scope(exit) var.clear();
@@ -1202,78 +1424,106 @@ public class XmlEntity : XmlNode {
     return null;
   }
 
+  /**
+   * Gets the name of the NDATA attribute on the entity declaration.
+   * Returns: The name of the NDATA attribute.
+   */
+  final string notationName() {
+    wchar* bstrName;
+    if (typedNodeImpl_.get_notationName(bstrName) == S_OK)
+      return bstr.toString(bstrName);
+    return null;
+  }
+
 }
 
-public class XmlEntityReference : XmlLinkedNode {
+/**
+ * Represents an entity reference node.
+ */
+class XmlEntityReference : XmlLinkedNode {
 
-  mixin(TypedNodeImpl!("IXMLDOMEntityReference"));
+  mixin(TypedNode("IXMLDOMEntityReference"));
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.EntityReference;
   }
 
-  public override string name() {
+  override string name() {
     return super.name;
   }
 
-  public override string localName() {
+  override string localName() {
     return super.localName;
   }
 
-  public override void value(string value) {
+  override void value(string value) {
     throw new InvalidOperationException;
   }
 
-  public override string value() {
+  override string value() {
     return "";
   }
 
 }
 
-public class XmlNotation : XmlNode {
+/**
+ * Represents a notation declaration such as &lt;!NOTATION...&gt;.
+ */
+class XmlNotation : XmlNode {
 
-  mixin(TypedNodeImpl!("IXMLDOMNotation"));
+  mixin(TypedNode("IXMLDOMNotation"));
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.Notation;
   }
 
-  public override string name() {
+  override string name() {
     return super.name;
   }
 
-  public override string localName() {
+  override string localName() {
     return super.localName;
   }
 
 }
 
-public class XmlDocumentType : XmlLinkedNode {
+/**
+ * Represents the document type declaration.
+ */
+class XmlDocumentType : XmlLinkedNode {
 
-  mixin(TypedNodeImpl!("IXMLDOMDocumentType"));
+  mixin(TypedNode("IXMLDOMDocumentType"));
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.DocumentType;
   }
 
-  public override string name() {
-    wchar* bstr;
-    typedNodeImpl_.get_name(bstr);
-    return fromBStr(bstr);
+  override string name() {
+    wchar* bstrName;
+    typedNodeImpl_.get_name(bstrName);
+    return bstr.toString(bstrName);
   }
 
-  public override string localName() {
+  override string localName() {
     return name;
   }
 
-  public final XmlNamedNodeMap entities() {
+  /**
+   * Gets the collection of XmlEntity nodes declared in the document type declaration.
+   * Returns: An XmlNamedNodeMap containing the XmlEntity nodes.
+   */
+  final XmlNamedNodeMap entities() {
     IXMLDOMNamedNodeMap map;
     if (typedNodeImpl_.get_entities(map) == S_OK)
       return new XmlNamedNodeMap(map);
     return null;
   }
 
-  public final XmlNamedNodeMap notations() {
+  /**
+   * Gets the collection of XmlNotation nodes present in the document type declaration.
+   * Returns: An XmlNamedNodeMap containing the XmlNotation nodes.
+   */
+  final XmlNamedNodeMap notations() {
     IXMLDOMNamedNodeMap map;
     if (typedNodeImpl_.get_notations(map) == S_OK)
       return new XmlNamedNodeMap(map);
@@ -1282,133 +1532,180 @@ public class XmlDocumentType : XmlLinkedNode {
 
 }
 
-public class XmlDocumentFragment : XmlNode {
+/**
+ * Represents a lightweight object useful for tree insert operations.
+ */
+class XmlDocumentFragment : XmlNode {
 
-  mixin(TypedNodeImpl!("IXMLDOMDocumentFragment"));
+  mixin(TypedNode("IXMLDOMDocumentFragment"));
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.DocumentFragment;
   }
 
-  public override string name() {
+  override string name() {
     return "#document-fragment".dup;
   }
 
-  public override string localName() {
+  override string localName() {
     return name;
   }
 
-  public override XmlNode parentNode() {
+  override XmlNode parentNode() {
     return null;
   }
 
-  public override XmlDocument ownerDocument() {
+  override XmlDocument ownerDocument() {
     return cast(XmlDocument)super.parentNode;
   }
 
 }
 
-/**
- *
+/** 
+ * Represents an element.
  */
-public class XmlElement : XmlLinkedNode {
+class XmlElement : XmlLinkedNode {
 
-  mixin(TypedNodeImpl!("IXMLDOMElement"));
-
-  /**
-   *
-   */
-  public override XmlNodeType nodeType() {
-    return XmlNodeType.Element;
-  }
+  mixin(TypedNode("IXMLDOMElement", "elementImpl_"));
 
   /**
-   *
+   * Returns the value for the attribute with the specified _name.
+   * Params: name = The qualified _name of the attribute to retrieve.
+   * Returns: The value of the specified attribute.
    */
-  public override string localName() {
-    return super.localName;
-  }
+  string getAttribute(string name) {
+    wchar* bstrName = bstr.fromString(name);
+    scope(exit) bstr.free(bstrName);
 
-  /**
-   *
-   */
-  public override string name() {
-    return super.name;
-  }
-
-  public override string namespaceURI() {
-    wchar* bstr;
-    if (nodeImpl_.get_namespaceURI(bstr) == S_OK)
-      return fromBStr(bstr);
-    return string.init;
-  }
-
-  public string getAttribute(string name) {
-    wchar* bstr = name.toBStr();
     VARIANT value;
-    typedNodeImpl_.getAttribute(bstr, value);
+    elementImpl_.getAttribute(bstrName, value);
     return value.toString();
   }
 
-  public string getAttribute(string localName, string namespaceURI) {
+  /**
+   * Returns the value for the attribute with the specified local name and namespace URI.
+   * Params: 
+   *   localName = The local name of the attribute to retrieve.
+   *   namespaceURI = The namespace URI of the attribute to retrieve.
+   * Returns: The value of the specified attribute.
+   */
+  string getAttribute(string localName, string namespaceURI) {
     if (XmlAttribute attr = getAttributeNode(localName, namespaceURI))
       return attr.value;
     return null;
   }
 
-  public XmlAttribute getAttributeNode(string name) {
+  /**
+   * Returns the attribute with the specified _name.
+   * Params: name = The qualified _name of the attribute to retrieve.
+   * Returns: The matching XmlAttribute.
+   */
+  XmlAttribute getAttributeNode(string name) {
     if (hasAttributes)
       return attributes[name];
     return null;
   }
 
-  public XmlAttribute getAttributeNode(string localName, string namespaceURI) {
+  /**
+   * Returns the attribute with the specified local name and namespace URI.
+   * Params: 
+   *   localName = The local name of the attribute to retrieve.
+   *   namespaceURI = The namespace URI of the attribute to retrieve.
+   * Returns: The matching XmlAttribute.
+   */
+  XmlAttribute getAttributeNode(string localName, string namespaceURI) {
     if (hasAttributes)
       return attributes[localName, namespaceURI];
     return null;
   }
 
-  public bool hasAttribute(string name) {
+  /**
+   * Determines whether the node has an attribute with the specified _name.
+   * Params: name = The qualified _name of the attribute to find.
+   * Returns: true if the node has the specified attribute; otherwise, false.
+   */
+  bool hasAttribute(string name) {
     return getAttributeNode(name) !is null;
   }
 
-  public bool hasAttribute(string localName, string namespaceURI) {
+  /**
+   * Determines whether the node has an attribute with the specified local name and namespace URI.
+   * Params: 
+   *   localName = The local name of the attribute to find.
+   *   namespaceURI = The namespace URI of the attribute to find.
+   * Returns: true if the node has the specified attribute; otherwise, false.
+   */
+  bool hasAttribute(string localName, string namespaceURI) {
     return getAttributeNode(localName, namespaceURI) !is null;
   }
 
-  public void setAttribute(string name, string value) {
-    wchar* bstr = name.toBStr();
+  /**
+   * Sets the _value of the attribute with the specified _name.
+   * Params:
+   *   name = The qualified _name of the attribute to create or alter.
+   *   value = The _value to set for the attribute.
+   */
+  void setAttribute(string name, string value) {
+    wchar* bstrName = bstr.fromString(name);
+    scope(exit) bstr.free(bstrName);
+
     VARIANT v = value;
-    typedNodeImpl_.setAttribute(bstr, v);
+    elementImpl_.setAttribute(bstrName, v);
     v.clear();
-    freeBStr(bstr);
   }
 
-  public XmlAttribute setAttributeNode(XmlAttribute newAttr) {
+  /**
+   * Adds the specified attribute.
+   * Params: newAttr = The attribute to add to the attribute collection for this element.
+   * Returns: If the attribute replaces an existing attribute with the same name, the old attribute is returned; otherwise, null is returned.
+   */
+  XmlAttribute setAttributeNode(XmlAttribute newAttr) {
     IXMLDOMAttribute attr;
-    if (typedNodeImpl_.setAttributeNode(newAttr.typedNodeImpl_, attr) == S_OK)
+    if (SUCCEEDED(elementImpl_.setAttributeNode(newAttr.attributeImpl_, attr)))
       return cast(XmlAttribute)getNodeShim(attr);
     return null;
   }
 
-  public void removeAttribute(string name) {
+  /**
+   * Removes an attribute by _name.
+   * Params: name = The qualified _name of the attribute to remove.
+   */
+  void removeAttribute(string name) {
     if (hasAttributes)
       attributes.removeNamedItem(name);
   }
 
-  public void removeAttribute(string localName, string namespaceURI) {
+  /**
+   * Removes an attribute with the specified local name and namespace URI.
+   * Params: 
+   *   localName = The local name of the attribute to remove.
+   *   namespaceURI = The namespace URI of the attribute to remove.
+   */
+  void removeAttribute(string localName, string namespaceURI) {
     if (hasAttributes)
       attributes.removeNamedItem(localName, namespaceURI);
   }
 
-  public XmlAttribute removeAttributeNode(XmlAttribute oldAttr) {
+  /**
+   * Removes the specified attribute.
+   * Params: oldAttr = The attribute to remove.
+   * Returns: The removed attribute or null if oldAttr is not an attribute of the element.
+   */
+  XmlAttribute removeAttributeNode(XmlAttribute oldAttr) {
     IXMLDOMAttribute attr;
-    if (typedNodeImpl_.removeAttributeNode(oldAttr.typedNodeImpl_, attr) == S_OK)
+    if (SUCCEEDED((elementImpl_.removeAttributeNode(oldAttr.attributeImpl_, attr))))
       return cast(XmlAttribute)getNodeShim(attr);
     return null;
   }
 
-  public XmlAttribute removeAttributeNode(string localName, string namespaceURI) {
+  /**
+   * Removes the attribute specified by the local name and namespace URI.
+   * Params: 
+   *   localName = The local name of the attribute.
+   *   namespaceURI = The namespace URI of the attribute.
+   * Returns: The removed attribute.
+   */
+  XmlAttribute removeAttributeNode(string localName, string namespaceURI) {
     if (hasAttributes) {
       if (XmlAttribute attr = getAttributeNode(localName, namespaceURI)) {
         removeAttributeNode(attr);
@@ -1418,108 +1715,158 @@ public class XmlElement : XmlLinkedNode {
     return null;
   }
 
-  public void normalize() {
-    typedNodeImpl_.normalize();
+  /**
+   * Collapses all adjacent XmlText nodes in the sub-tree.
+   */
+  void normalize() {
+    elementImpl_.normalize();
   }
 
-  public XmlNodeList getElementsByTagName(string name) {
-    wchar* bstr = name.toBStr();
-    if (bstr != null) {
-      scope (exit) freeBStr(bstr);
-      IXMLDOMNodeList list;
-      if (typedNodeImpl_.getElementsByTagName(bstr, list))
-        return new XmlNodes(list);
+  /**
+   * Returns an XmlNodeList containing the descendant elements with the specified _name.
+   * Params: name = The qualified _name tag to match.
+   * Returns: An XmlNodeList containing a list of matching nodes.
+   */
+  XmlNodeList getElementsByTagName(string name) {
+    wchar* bstrName = bstr.fromString(name);
+    if (bstrName != null) {
+      scope (exit) bstr.free(bstrName);
+      IXMLDOMNodeList nodeList;
+      if (SUCCEEDED(elementImpl_.getElementsByTagName(bstrName, nodeList)))
+        return new XmlChildNodes(nodeList);
     }
     return null;
   }
 
-  public override XmlAttributeCollection attributes() {
+  override XmlAttributeCollection attributes() {
     return new XmlAttributeCollection(this);
   }
 
-  public bool hasAttributes() {
+  /**
+   * Gets a value indicating whether the node has any attributes.
+   * Returns: true if the node has attributes; otherwise, false.
+   */
+  bool hasAttributes() {
     IXMLDOMNamedNodeMap attrs;
-    if (nodeImpl_.get_attributes(attrs) == S_OK) {
+    if (SUCCEEDED(nodeImpl_.get_attributes(attrs))) {
       scope (exit) tryRelease(attrs);
 
       int length;
-      if (attrs.get_length(length) == S_OK)
+      if (SUCCEEDED(attrs.get_length(length)))
         return length > 0;
       return false;
     }
     return false;
   }
 
-}
-
-/**
- */
-public class XmlProcessingInstruction : XmlLinkedNode {
-
-  mixin(TypedNodeImpl!("IXMLDOMProcessingInstruction"));
-
-  public override XmlNodeType nodeType() {
-    return XmlNodeType.ProcessingInstruction;
+  override XmlNodeType nodeType() {
+    return XmlNodeType.Element;
   }
 
-  public override string name() {
+  override string localName() {
+    return super.localName;
+  }
+
+  override string name() {
     return super.name;
   }
 
-  public override string localName() {
+  override string namespaceURI() {
+    wchar* bstrNs;
+    if (SUCCEEDED(nodeImpl_.get_namespaceURI(bstrNs)))
+      return bstr.toString(bstrNs);
+    return string.init;
+  }
+
+}
+
+/**
+ * Represents a processing instruction.
+ */
+class XmlProcessingInstruction : XmlLinkedNode {
+
+  mixin(TypedNode("IXMLDOMProcessingInstruction"));
+
+  override XmlNodeType nodeType() {
+    return XmlNodeType.ProcessingInstruction;
+  }
+
+  override string name() {
+    return super.name;
+  }
+
+  override string localName() {
     return super.localName;
   }
 
 }
 
 /**
+ * Represents the XML declaration node.
  */
-public class XmlDeclaration : XmlLinkedNode {
+class XmlDeclaration : XmlLinkedNode {
 
   private const string VERSION = "1.0";
 
-  mixin(TypedNodeImpl!("IXMLDOMProcessingInstruction"));
+  mixin(TypedNode("IXMLDOMProcessingInstruction"));
   private string encoding_;
   private string standalone_;
 
-  public override XmlNodeType nodeType() {
+  override XmlNodeType nodeType() {
     return XmlNodeType.XmlDeclaration;
   }
 
-  public override string name() {
+  override string name() {
     return localName;
   }
 
-  public override string localName() {
+  override string localName() {
     return "xml";
   }
 
-  public final void value(string value) {
+  final void value(string value) {
     text = value;
   }
 
-  public override string value() {
+  override string value() {
     return text;
   }
 
-  public final void encoding(string value) {
+  /**
+   * Gets or sets the _encoding level of the XML document.
+   * Returns: The character _encoding name.
+   */
+  final void encoding(string value) {
     encoding_ = value;
   }
 
-  public final string encoding() {
+  /**
+   * Ditto
+   */
+  final string encoding() {
     return encoding_;
   }
 
-  public final void standalone(string value) {
+  /**
+   * Gets or sets the _value of the _standalone attribute.
+   * Returns: Valid values are "yes" if all entity declarations are contained within the document or "no" if an external DTD is required.
+   */
+  final void standalone(string value) {
     if (value == null || value == "yes" || value == "no")
       standalone_ = value;
   }
 
-  public final string standalone() {
+  /**
+   * Ditto
+   */
+  final string standalone() {
     return standalone_;
   }
 
-  public final string xmlversion() {
+  /**
+   * Gets the XML version of the document.
+   */
+  final string xmlversion() {
     return VERSION;
   }
 
@@ -1534,40 +1881,30 @@ public class XmlDeclaration : XmlLinkedNode {
 
 }
 
-/*public class ValidationEventArgs {
-
-  private XmlException ex_;
-
-  package this(XmlException ex) {
-    ex_ = ex;
-  }
-
-  public XmlException exception() {
-    return ex_;
-  }
-
-  public string message() {
-    return ex_.message;
-  }
-
-}
-
-alias void delegate(Object, ValidationEventArgs) ValidationEventHandler;*/
-
-public class XmlImplementation {
+/**
+ * Provides methods that are independent of a particular instance of the Document Object Model.
+ */
+class XmlImplementation {
 
   private IXMLDOMImplementation impl_;
 
-  public final bool hasFeature(string strFeature, string strVersion) {
-    com_bool result = com_false;
+  /**
+   * Tests if the specified feature is supported.
+   * Params: 
+   *   strFeature = The package name of the feature to test.
+   *   strVersion = The version number of the package name to test.
+   * Returns: true if the feature is implemented in the specified version; otherwise, false.
+   */
+  final bool hasFeature(string strFeature, string strVersion) {
+    VARIANT_BOOL result;
 
-    wchar* bstrFeature = strFeature.toBStr();
-    wchar* bstrVersion = strVersion.toBStr();
+    wchar* bstrFeature = bstr.fromString(strFeature);
+    wchar* bstrVersion = bstr.fromString(strVersion);
     impl_.hasFeature(bstrFeature, bstrVersion, result);
-    freeBStr(bstrFeature);
-    freeBStr(bstrVersion);
+    bstr.free(bstrFeature);
+    bstr.free(bstrVersion);
 
-    return result == com_true;
+    return result == VARIANT_TRUE;
   }
 
   private this(IXMLDOMImplementation impl) {
@@ -1586,38 +1923,44 @@ public class XmlImplementation {
 /**
  * Represents an XML document.
  */
-public class XmlDocument : XmlNode {
+class XmlDocument : XmlNode {
 
-  mixin(TypedNodeImpl!("IXMLDOMDocument2", "docImpl_"));
-  private int msxmlVersion_;
+  mixin(TypedNode("IXMLDOMDocument2", "docImpl_"));
+  private short msxmlVersion_;
 
   /**
    * Initializes a new instance.
    */
-  public this() {
-    IXMLDOMDocument2 doc = null;
-    if ((doc = cast(IXMLDOMDocument2)DOMDocument60.coCreate!(IXMLDOMDocument3)) !is null)
+  this() {
+    IXMLDOMDocument2 doc;
+    if ((doc = DOMDocument60.coCreate!(IXMLDOMDocument3)) !is null)
       msxmlVersion_ = 6;
     else if ((doc = DOMDocument40.coCreate!(IXMLDOMDocument2)) !is null)
       msxmlVersion_ = 4;
-    else if ((doc = DOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.ThrowIfNull)) !is null)
+    else if ((doc = DOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.Throw)) !is null)
       msxmlVersion_ = 3;
 
     if (msxmlVersion_ >= 4)
-      doc.setProperty(cast(wchar*)"NewParser", VARIANT(true));
+      doc.setProperty("NewParser", VARIANT(true));
     if (msxmlVersion_ >= 6)
-      doc.setProperty(cast(wchar*)"MultipleErrorMessages", VARIANT(true));
+      doc.setProperty("MultipleErrorMessages", VARIANT(true));
     if (msxmlVersion_ < 4) {
       VARIANT var = "XPath";
-      clearAfter (var, {
-        doc.setProperty(cast(wchar*)"SelectionLanguage", var);
-      });
+      scope(exit) var.clear();
+      doc.setProperty("SelectionLanguage", var);
     }
 
-    doc.set_async(VARIANT_FALSE);
-    doc.set_validateOnParse(VARIANT_FALSE);
+    doc.put_async(VARIANT_FALSE);
+    doc.put_validateOnParse(VARIANT_FALSE);
 
     this(doc);
+  }
+
+  /**
+   * Creates an XPathNavigator for navigating this instance.
+   */
+  override XPathNavigator createNavigator() {
+    return createNavigator(this);
   }
 
   /**
@@ -1628,7 +1971,7 @@ public class XmlDocument : XmlNode {
    *   namespaceURI = The namespace URI of the new node.
    * Returns: The new XmlNode.
    */
-  public XmlNode createNode(XmlNodeType type, string name, string namespaceURI) {
+  XmlNode createNode(XmlNodeType type, string name, string namespaceURI) {
     return createNode(type, null, name, namespaceURI);
   }
 
@@ -1641,7 +1984,7 @@ public class XmlDocument : XmlNode {
    *   namespaceURI = The namespace URI of the new node.
    * Returns: The new XmlNode.
    */
-  public XmlNode createNode(XmlNodeType type, string prefix, string name, string namespaceURI) {
+  XmlNode createNode(XmlNodeType type, string prefix, string name, string namespaceURI) {
     switch (type) {
       case XmlNodeType.EntityReference:
         return createEntityReference(name);
@@ -1677,7 +2020,7 @@ public class XmlDocument : XmlNode {
    * Params: name = The qualified _name of the element.
    * Returns: The new XmlElement.
    */
-  public XmlElement createElement(string name) {
+  XmlElement createElement(string name) {
     string prefix, localName;
     XmlNode.splitName(name, prefix, localName);
     return createElement(prefix, localName, "");
@@ -1690,14 +2033,14 @@ public class XmlDocument : XmlNode {
    *   namespaceURI = The namespace URI of the element.
    * Returns: The new XmlElement.
    */
-  public XmlElement createElement(string qualifiedName, string namespaceURI) {
+  XmlElement createElement(string qualifiedName, string namespaceURI) {
     IXMLDOMNode node;
 
-    wchar* bstrName = qualifiedName.toBStr();
-    wchar* bstrNs = namespaceURI.toBStr();
+    wchar* bstrName = bstr.fromString(qualifiedName);
+    wchar* bstrNs = bstr.fromString(namespaceURI);
     docImpl_.createNode(VARIANT(DOMNodeType.NODE_ELEMENT), bstrName, bstrNs, node);
-    freeBStr(bstrName);
-    freeBStr(bstrNs);
+    bstr.free(bstrName);
+    bstr.free(bstrNs);
 
     return cast(XmlElement)getNodeShim(node);
   }
@@ -1710,7 +2053,7 @@ public class XmlDocument : XmlNode {
    *   namespaceURI = The namespace URI of the element.
    * Returns: The new XmlElement.
    */
-  public XmlElement createElement(string prefix, string localName, string namespaceURI) {
+  XmlElement createElement(string prefix, string localName, string namespaceURI) {
     return createElement(XmlNode.constructQName(prefix, localName), namespaceURI);
   }
 
@@ -1719,7 +2062,7 @@ public class XmlDocument : XmlNode {
    * Params: name = The qualified _name of the attribute.
    * Returns: The new XmlAttribute.
    */
-  public XmlAttribute createAttribute(string name) {
+  XmlAttribute createAttribute(string name) {
     string prefix, localName;
     XmlNode.splitName(name, prefix, localName);
     return createAttribute(prefix, localName, "");
@@ -1732,14 +2075,14 @@ public class XmlDocument : XmlNode {
    *   namespaceURI = The namespace URI of the attribute.
    * Returns: The new XmlAttribute.
    */
-  public XmlAttribute createAttribute(string qualifiedName, string namespaceURI) {
+  XmlAttribute createAttribute(string qualifiedName, string namespaceURI) {
     IXMLDOMNode node;
 
-    wchar* bstrName = qualifiedName.toBStr();
-    wchar* bstrNs = namespaceURI.toBStr();
+    wchar* bstrName = bstr.fromString(qualifiedName);
+    wchar* bstrNs = bstr.fromString(namespaceURI);
     docImpl_.createNode(VARIANT(DOMNodeType.NODE_ATTRIBUTE), bstrName, bstrNs, node);
-    freeBStr(bstrName);
-    freeBStr(bstrNs);
+    bstr.free(bstrName);
+    bstr.free(bstrNs);
 
     return cast(XmlAttribute)getNodeShim(node);
   }
@@ -1752,7 +2095,7 @@ public class XmlDocument : XmlNode {
    *   namespaceURI = The namespace URI of the attribute.
    * Returns: The new XmlAttribute.
    */
-  public XmlAttribute createAttribute(string prefix, string localName, string namespaceURI) {
+  XmlAttribute createAttribute(string prefix, string localName, string namespaceURI) {
     return createAttribute(XmlNode.constructQName(prefix, localName), namespaceURI);
   }
 
@@ -1761,12 +2104,12 @@ public class XmlDocument : XmlNode {
    * Params: text = The _data for the node.
    * Returns: The new XmlCDataSection node.
    */
-  public XmlCDataSection createCDataSection(string data) {
+  XmlCDataSection createCDataSection(string data) {
     IXMLDOMCDATASection node;
 
-    wchar* bstr = data.toBStr();
-    docImpl_.createCDATASection(bstr, node);
-    freeBStr(bstr);
+    wchar* bstrValue = bstr.fromString(data);
+    docImpl_.createCDATASection(bstrValue, node);
+    bstr.free(bstrValue);
 
     return cast(XmlCDataSection)getNodeShim(node);
   }
@@ -1776,12 +2119,12 @@ public class XmlDocument : XmlNode {
    * Params: text = The _data for the node.
    * Returns: The new XmlComment node.
    */
-  public XmlComment createComment(string data) {
+  XmlComment createComment(string data) {
     IXMLDOMComment node;
 
-    wchar* bstr = data.toBStr();
-    docImpl_.createComment(bstr, node);
-    freeBStr(bstr);
+    wchar* bstrValue = bstr.fromString(data);
+    docImpl_.createComment(bstrValue, node);
+    bstr.free(bstrValue);
 
     return cast(XmlComment)getNodeShim(node);
   }
@@ -1791,12 +2134,12 @@ public class XmlDocument : XmlNode {
    * Params: text = The _text for the node.
    * Returns: The new XmlText node.
    */
-  public XmlText createTextNode(string text) {
+  XmlText createTextNode(string text) {
     IXMLDOMText node = null;
 
-    wchar* bstr = text.toBStr();
-    docImpl_.createTextNode(bstr, node);
-    freeBStr(bstr);
+    wchar* bstrValue = bstr.fromString(text);
+    docImpl_.createTextNode(bstrValue, node);
+    bstr.free(bstrValue);
 
     return cast(XmlText)getNodeShim(node);
   }
@@ -1808,14 +2151,14 @@ public class XmlDocument : XmlNode {
    *   data = The _data for the processing instruction.
    * Returns: The new XmlProcessingInstruction node.
    */
-  public XmlProcessingInstruction createProcessingInstruction(string target, string data) {
+  XmlProcessingInstruction createProcessingInstruction(string target, string data) {
     IXMLDOMProcessingInstruction node;
 
-    wchar* bstrTarget = target.toBStr();
-    wchar* bstrData = data.toBStr();
+    wchar* bstrTarget = bstr.fromString(target);
+    wchar* bstrData = bstr.fromString(data);
     docImpl_.createProcessingInstruction(bstrTarget, bstrData, node);
-    freeBStr(bstrTarget);
-    freeBStr(bstrData);
+    bstr.free(bstrTarget);
+    bstr.free(bstrData);
 
     return cast(XmlProcessingInstruction)getNodeShim(node);
   }
@@ -1828,7 +2171,7 @@ public class XmlDocument : XmlNode {
    *   standalone = The value must be either "yes" or "no".
    * Returns: The new XmlDeclaration node.
    */
-  public XmlDeclaration createXmlDeclaration(string xmlversion, string encoding, string standalone) {
+  XmlDeclaration createXmlDeclaration(string xmlversion, string encoding, string standalone) {
     string data = "version=\"" ~ xmlversion ~ "\"";
     if (encoding != null)
       data ~= " encoding=\"" ~ encoding ~ "\"";
@@ -1837,102 +2180,38 @@ public class XmlDocument : XmlNode {
 
     IXMLDOMProcessingInstruction node;
 
-    wchar* bstrTarget = "xml".toBStr();
-    wchar* bstrData = data.toBStr();
+    wchar* bstrTarget = bstr.fromString("xml");
+    wchar* bstrData = bstr.fromString(data);
     docImpl_.createProcessingInstruction(bstrTarget, bstrData, node);
-    freeBStr(bstrTarget);
-    freeBStr(bstrData);
+    bstr.free(bstrTarget);
+    bstr.free(bstrData);
 
     return cast(XmlDeclaration)getNodeShim(node);
   }
 
-  public XmlEntityReference createEntityReference(string name) {
+  /**
+   * Creates an XmlEntityReference with the specified _name.
+   * Params: The _name of the entity reference.
+   * Returns: The new XmlEntityReference.
+   */
+  XmlEntityReference createEntityReference(string name) {
     IXMLDOMEntityReference node;
 
-    wchar* bstr = name.toBStr();
-    docImpl_.createEntityReference(bstr, node);
-    freeBStr(bstr);
+    wchar* bstrName = bstr.fromString(name);
+    docImpl_.createEntityReference(bstrName, node);
+    bstr.free(bstrName);
 
     return cast(XmlEntityReference)getNodeShim(node);
   }
 
-  public XmlDocumentFragment createDocumentFragment() {
+  /**
+   * Creates an XmlDocumentFragment.
+   * Returns: The new XmlDocumentFragment.
+   */
+  XmlDocumentFragment createDocumentFragment() {
     IXMLDOMDocumentFragment node;
     docImpl_.createDocumentFragment(node);
     return cast(XmlDocumentFragment)getNodeShim(node);
-  }
-
-  /**
-   * Gets the type of the current node.
-   * Returns: For XmlDocument nodes, the value is XmlNodeType.Document.
-   */
-  public override XmlNodeType nodeType() {
-    return XmlNodeType.Document;
-  }
-
-  /**
-   * Gets the locale name of the node.
-   * Returns: For XmlDocument nodes, the local name is #document.
-   */
-  public override string localName() {
-    return "#document".dup;
-  }
-
-  /**
-   * Gets the qualified _name of the node.
-   * Returns: For XmlDocument nodes, the _name is #document.
-   */
-  public override string name() {
-    return localName;
-  }
-
-  /**
-   * Gets the parent node.
-   * Returns: For XmlDocument nodes, null is returned.
-   */
-  public override XmlNode parentNode() {
-    return null;
-  }
-
-  /**
-   * Gets the XmlDocument to which the current node belongs.
-   * Returns: For XmlDocument nodes, null is returned.
-   */
-  public override XmlDocument ownerDocument() {
-    return null;
-  }
-
-  public override void xml(string value) {
-    loadXml(value);
-  }
-  
-  public override string xml() {
-    return super.xml;
-  }
-
-  /** 
-   * Gets the root element for the document.
-   * Returns: The XmlElement representing the root of the XML document tree. If no root exists, null is returned.
-   */
-  public final XmlElement documentElement() {
-    IXMLDOMElement element;
-    if (docImpl_.get_documentElement(element) == S_OK)
-      return cast(XmlElement)getNodeShim(element);
-    return null;
-  }
-
-  public final XmlDocumentType documentType() {
-    IXMLDOMDocumentType doctype;
-    if (docImpl_.get_doctype(doctype) == S_OK)
-      return cast(XmlDocumentType)getNodeShim(doctype);
-    return null;
-  }
-
-  public final XmlImplementation implementation() {
-    IXMLDOMImplementation impl;
-    if (docImpl_.get_implementation(impl) == S_OK)
-      return new XmlImplementation(impl);
-    return null;
   }
 
   /**
@@ -1940,13 +2219,13 @@ public class XmlDocument : XmlNode {
    * Params: fileName = URL for the file containing the XML document to _load. The URL can be either a local file or a web address.
    * Throws: XmlException if there is a _load or parse error in the XML.
    */
-  public void load(string fileName) {
+  void load(string fileName) {
     VARIANT source = fileName;
     scope(exit) source.clear();
 
-    com_bool success;
+    VARIANT_BOOL success;
     docImpl_.load(source, success);
-    if (success != com_true)
+    if (success == VARIANT_FALSE)
       parsingException();
   }
 
@@ -1955,16 +2234,16 @@ public class XmlDocument : XmlNode {
    * Params: input = The stream containing the XML document to _load.
    * Throws: XmlException if there is a _load or parse error in the XML.
    */
-  public void load(Stream input) {
+  void load(Stream input) {
     auto s = new COMStream(input);
     scope(exit) tryRelease(s);
 
     VARIANT source = s;
     scope(exit) source.clear();
 
-    com_bool success;
+    VARIANT_BOOL success;
     docImpl_.load(source, success);
-    if (success != com_true)
+    if (success == VARIANT_FALSE)
       parsingException();
   }
 
@@ -1973,14 +2252,14 @@ public class XmlDocument : XmlNode {
    * Params: xml = The string containing the XML document to load.
    * Throws: XmlException if there is a _load or parse error in the XML.
    */
-  public void loadXml(string xml) {
-    com_bool success;
+  void loadXml(string xml) {
+    VARIANT_BOOL success;
 
-    wchar* bstr = xml.toBStr();
-    docImpl_.loadXML(bstr, success);
-    freeBStr(bstr);
+    wchar* bstrXml = bstr.fromString(xml);
+    docImpl_.loadXML(bstrXml, success);
+    bstr.free(bstrXml);
 
-    if (success != com_true)
+    if (success == VARIANT_FALSE)
       parsingException();
   }
 
@@ -1989,14 +2268,14 @@ public class XmlDocument : XmlNode {
    * Params: fileName = The location of the file where you want to _save the document.
    * Throws: XmlException if there is no document element.
    */
-  public void save(string fileName) {
+  void save(string fileName) {
     if (documentElement is null)
       throw new XmlException("Invalid XML document. The document does not have a root element.");
- 
+
     VARIANT dest = fileName;
     scope(exit) dest.clear();
 
-    if (docImpl_.save(dest) != S_OK)
+    if (FAILED(docImpl_.save(dest)))
       throw new XmlException;
   }
 
@@ -2004,142 +2283,128 @@ public class XmlDocument : XmlNode {
    * Saves the XML document to the specified stream.
    * Params: output = The stream to which you want to _save.
    */
-  public void save(Stream output) {
+  void save(Stream output) {
     auto s = new COMStream(output);
     scope(exit) tryRelease(s);
 
     VARIANT dest = s;
-    scope(exit) dest.clear();
+    scope(exit) tryRelease(s);
 
-    if (docImpl_.save(dest) != S_OK)
+    if (FAILED(docImpl_.save(dest)))
       throw new XmlException;
   }
 
-  public XmlElement getElementByTagName(string elementId) {
+  /**
+   * Gets the XmlElement with the specified ID.
+   * Params: elementId = The attribute ID to match.
+   * Returns: The XmlElement with the matching ID.
+   */
+  XmlElement getElementByTagId(string elementId) {
     IXMLDOMNode node;
 
-    wchar* bstr = elementId.toBStr();
-    docImpl_.nodeFromID(bstr, node);
-    freeBStr(bstr);
+    wchar* bstrId = bstr.fromString(elementId);
+    docImpl_.nodeFromID(bstrId, node);
+    bstr.free(bstrId);
 
     return cast(XmlElement)getNodeShim(node);
   }
 
-  public XmlNodeList getElementsByTagName(string name) {
-    IXMLDOMNodeList list;
-
-    wchar* bstr = name.toBStr();
-    docImpl_.getElementsByTagName(bstr, list);
-    freeBStr(bstr);
-
-    return new XmlNodes(list);
+  /** 
+   * Gets the root element for the document.
+   * Returns: The XmlElement representing the root of the XML document tree. If no root exists, null is returned.
+   */
+  XmlElement documentElement() {
+    IXMLDOMElement docEl;
+    docImpl_.get_documentElement(docEl);
+    return cast(XmlElement)getNodeShim(docEl);
   }
 
-  /*public final void validate(ValidationEventHandler validationHandler, XmlNode nodeToValidate = null) {
-    if (nodeToValidate is null)
-      nodeToValidate = this;
+  /**
+   * Gets the type of the current node.
+   * Returns: For XmlDocument nodes, the value is XmlNodeType.Document.
+   */
+  override XmlNodeType nodeType() {
+    return XmlNodeType.Document;
+  }
 
-    if (validationHandler == null)
-      throw new ArgumentNullException("validationHandler");
+  /**
+   * Gets the locale name of the node.
+   * Returns: For XmlDocument nodes, the local name is #document.
+   */
+  override string localName() {
+    return "#document".dup;
+  }
 
-    IXMLDOMParseError error;
-    if (msxmlVersion_ < 5)
-      docImpl_.validate(error);
-    else {
-      if (nodeToValidate.nodeType == XmlNodeType.Document)
-        nodeToValidate = (cast(XmlDocument)nodeToValidate).documentElement;
-      auto doc3 = com_cast!(IXMLDOMDocument3)(docImpl_);
-      releaseAfter (doc3, {
-        doc3.validateNode(nodeToValidate.impl, error);
-      });
+  /**
+   * Gets the qualified _name of the node.
+   * Returns: For XmlDocument nodes, the _name is #document.
+   */
+  override string name() {
+    return localName;
+  }
+
+  /**
+   * Gets the parent node.
+   * Returns: For XmlDocument nodes, null is returned.
+   */
+  override XmlNode parentNode() {
+    return null;
+  }
+
+  /**
+   * Gets the XmlDocument to which the current node belongs.
+   * Returns: For XmlDocument nodes, null is returned.
+   */
+  override XmlDocument ownerDocument() {
+    return null;
+  }
+
+  /**
+   * Gets or sets the markup representing the children of this node.
+   * Returns: The markup of the children of this node.
+   */
+  override void xml(string value) {
+    loadXml(value);
+  }
+
+  /**
+   * Ditto
+   */
+  override string xml() {
+    return super.xml;
+  }
+
+  protected XPathNavigator createNavigator(XmlNode node) {
+    switch (node.nodeType) {
+      case XmlNodeType.EntityReference,
+        XmlNodeType.Entity,
+        XmlNodeType.DocumentType,
+        XmlNodeType.Notation,
+        XmlNodeType.XmlDeclaration:
+        return null;
+        default:
     }
-
-    if (error !is null) {
-      releaseAfter (error, {
-        bool useV4Error = (msxmlVersion_ < 5);
-
-        if (msxmlVersion_ > 4) {
-          auto error2 = com_cast!(IXMLDOMParseError2)(error);
-          if (error2 is null)
-            useV4Error = true;
-          else {
-            releaseAfter (error2, {
-              IXMLDOMParseErrorCollection errors;
-              if (error2.get_allErrors(errors) != S_OK)
-                useV4Error = true;
-              else {
-                IXMLDOMParseError2 err;
-                wchar* bstrReason, bstrSourceUri;
-                int lineNumber, linePosition;
-                int errorCode;
-
-                do {
-                  errors.get_next(err);
-                  if (err is null)
-                    break;
-                  releaseAfter (err, {
-                    err.get_errorCode(errorCode);
-                    if (errorCode != S_OK) {
-                      err.get_reason(bstrReason);
-                      err.get_url(bstrSourceUri);
-                      err.get_line(lineNumber);
-                      err.get_linepos(linePosition);
-
-                      string reason = fromBStr(bstrReason);
-                      if (reason[$ - 1] == '\n')
-                        reason = reason[0 .. $ - 2];
-
-                      auto ex = new XmlException(reason, lineNumber, linePosition, fromBStr(bstrSourceUri));
-                      validationHandler(this, new ValidationEventArgs(ex));
-                    }
-                  });
-                } while (err !is null);
-              }
-            });
-          }
-        }
-        if (useV4Error) {
-          wchar* bstrReason, bstrSourceUri;
-          int lineNumber, linePosition;
-          int errorCode;
-
-          error.get_errorCode(errorCode);
-          if (errorCode != S_OK) {
-            error.get_reason(bstrReason);
-            error.get_url(bstrSourceUri);
-            error.get_line(lineNumber);
-            error.get_linepos(linePosition);
-
-            string reason = fromBStr(bstrReason);
-            if (reason[$ - 1] == '\n')
-              reason = reason[0 .. $ - 2];
-
-            auto ex = new XmlException(reason, lineNumber, linePosition, fromBStr(bstrSourceUri));
-            validationHandler(this, new ValidationEventArgs(ex));
-          }
-        }
-      });
-    }
-  }*/
+    return new DocumentXPathNavigator(this, node);
+  }
 
   private void parsingException() {
     IXMLDOMParseError errorObj;
-    if (docImpl_.get_parseError(errorObj) == S_OK) {
+    if (SUCCEEDED(docImpl_.get_parseError(errorObj))) {
+      scope(exit) tryRelease(errorObj);
+
       wchar* bstrReason, bstrUrl;
-      int line, position;
+      int lineNumber, linePosition;
 
       errorObj.get_reason(bstrReason);
       errorObj.get_url(bstrUrl);
-      errorObj.get_line(line);
-      errorObj.get_linepos(position);
+      errorObj.get_line(lineNumber);
+      errorObj.get_linepos(linePosition);
 
-      errorObj.Release();
-
-      string reason = fromBStr(bstrReason);
+      string reason = bstr.toString(bstrReason);
       if (reason[$ - 1] == '\n')
         reason = reason[0 .. $ - 2];
 
-      throw new XmlException(reason, line, position, fromBStr(bstrUrl));
+      throw new XmlException(reason, lineNumber, linePosition, bstr.toString(bstrUrl));
     }
   }
 

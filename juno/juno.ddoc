@@ -1,36 +1,78 @@
 DDOC = <html>
 <head>
-<title>Module $(TITLE)</title>
+<title>$(TITLE) Module</title>
+
 <style>
-body { font-family: Verdana, Arial; font-size: 11pt; line-height: 16pt }
-table { font-family: Verdana, Arial; font-size: 11pt }
-h1 { font-size: 17pt; font-weight: normal }
-h2 { font-family: Arial; font-size: 15pt; font-weight: normal }
-h3 { font-family: Arial; font-size: 14pt; font-weight: normal; border-bottom: 1px solid #CCCCCC; line-height: 18pt }
-.paramdesc { padding-left: 40px }
-.psymbol { color: #1F4687 }
-.d_code { font-family: Consolas, Lucida Console, Courier New; font-size: 10pt; background-color: #EEEEEE; border: 1px dashed #CCCCCC }
+body {
+  font-family: Arial, Helvetica;
+  font-size: 11pt;
+  line-height: 14pt;
+}
+h3 {
+  font-size: 14pt;
+  font-weight: normal;
+  border-bottom: 1px solid #CCCCCC;
+  line-height: 15pt;
+}
+.d_code {
+  font-family: Consolas, Lucida Console, Courier New;
+  font-size: 10pt;
+  line-height: 11pt;
+  background-color: #EEEEEE;
+  border: 1px dashed #CCCCCC;
+  padding: 5 0 5 0;
+}
+.d_string {
+  color: rgb(163,21,21);
+}
+.d_keyword {
+  color: rgb(0,0,255);
+}
+.d_comment {
+  color: rgb(0,128,0);
+}
+.psymbol {
+  color: #1F4687;
+}
+.paramdesc {
+  padding-left: 40px;
+}
+a.jump {
+  text-decoration: none;
+}
 </style>
+
 </head>
 <body>
-<h3 style="text-transform: uppercase">$(TITLE)</h3>
+<h3>$(TITLE) Module</h3>
+
 $(BODY)
+<p>Copyright $(COPYRIGHT)</p>
 </body>
 </html>
 
-DDOC_DECL			= $(DT <h3>$0</h3>)
-DDOC_DESCRIPTION	= $(B Remarks)$(BR)$0$(BR)$(BR)
-DDOC_SUMMARY		= $0$(BR)$(BR)
-DDOC_SECTION		= $0$(BR)$(BR)
-DDOC_RETURNS		= $(B Returns)$(BR)$0$(BR)$(BR)
-DDOC_EXAMPLES		= $(B Examples)$(BR)$0
-DDOC_THROWS			= $(B Exceptions)$(BR)$0$(BR)$(BR)
-DDOC_SEE_ALSO		= $(B See Also)$(BR)$0$(BR)$(BR)
-DDOC_LICENSE		= $(B Licence)$(BR)$0$(BR)$(BR)
-DDOC_PARAMS			= $(B Params)$(BR)$0$(BR)
-DDOC_PARAM_ROW		= $0
-DDOC_PARAM_ID		= $0$(BR)
-DDOC_PARAM_DESC		= <div class="paramdesc">$0</div>
-DDOC_PSYMBOL		= <span class="psymbol">$0</span>
-
-D_PSYMBOL			= $0
+DDOC_DECL = $(DT <h3>$0</h3>)
+DDOC_EXAMPLES = $(B Examples)$(BR)$0
+DDOC_SUMMARY = $0$(BR)$(BR)
+DDOC_DESCRIPTION = $0$(BR)$(BR)
+DDOC_RETURNS = $(B Returns)$(BR)$0$(BR)$(BR)
+DDOC_THROWS = $(B Throws)$(BR)$0$(BR)$(BR)
+DDOC_SEE_ALSO = $(B See Also)$(BR)$0$(BR)
+DDOC_STANDARDS = $(B Standards)$(BR)$0$(BR)
+DDOC_VERSION = $(B Version)$(BR)$0$(BR)
+DDOC_LICENSE = $(B Licence)$(BR)$0$(BR)
+DDOC_HISTORY = $(B History)$(BR)$0$(BR)
+DDOC_DATE = $(B Date)$(BR)$0$(BR)
+DDOC_AUTHORS = $(B Authors)$(BR)$0$(BR)
+DDOC_BUGS = $(B Bugs)$(BR)$0$(BR)
+DDOC_DEPRECATED = $(B Deprecated)$(BR)$0$(BR)
+DDOC_PARAMS = $(B Parameters)$(BR)$0$(BR)
+DDOC_PARAM_ROW = $0
+DDOC_PARAM_ID = $0$(BR)
+DDOC_PARAM_DESC = <div class="paramdesc">$0</div>
+DDOC_PSYMBOL = <a name="$0"></a><span class="psymbol">$0</span>
+D_STRING = <span class="d_string">$0</span>
+D_KEYWORD = <span class="d_keyword">$0</span>
+D_COMMENT = <span class="d_comment">$0</span>
+D_PARAM = $0
+D_PSYMBOL = $0

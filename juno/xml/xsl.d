@@ -1,48 +1,29 @@
-/*
- * Copyright (c) 2007 John Chapman
+/**
+ * Provides supprt for Extensible Stylesheet Transformation (XSLT) transforms.
  *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
+ * Copyright: (c) 2008 John Chapman
  *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
-
-/// Provides support for Extensible Stylesheet Transformation (XSLT) transforms.
 module juno.xml.xsl;
 
 private import juno.base.core,
-  juno.base.string,
   juno.com.core,
   juno.xml.core,
   juno.xml.dom,
   juno.xml.msxml;
-private import std.stream : Stream, FileStream = File, FileMode;
+private import bstr = juno.com.bstr;
+
+private import std.string : format;
+private import std.stream : File, FileMode;
 
 /**
  * The exception thrown when an error occurs while processing an XSLT transformation.
  */
-public class XsltException : BaseException {
+class XsltException : Exception {
 
   private int lineNumber_;
   private int linePosition_;
-  private string message_;
-  private string reason_;
   private string sourceUri_;
 
   /**
@@ -51,15 +32,18 @@ public class XsltException : BaseException {
    *   message = The description of the error.
    *   cause = The Exception that threw the XsltException.
    */
-  public this(string message = null, Exception cause = null) {
-    super(message);
+  this(string message = null, int lineNumber = 0, int linePosition = 0, string sourceUri = null) {
+    super(createMessage(message, lineNumber, linePosition));
+    lineNumber_ = lineNumber;
+    linePosition_ = linePosition_;
+    sourceUri_ = sourceUri;
   }
 
   /**
    * Gets the line number indicating where the error occurred.
    * Returns: The line number indicating where the error occurred.
    */
-  public int lineNumber() {
+  final int lineNumber() {
     return lineNumber_;
   }
 
@@ -67,7 +51,7 @@ public class XsltException : BaseException {
    * Gets the line position indicating where the error occurred.
    * Returns: The line position indicating where the error occurred.
    */
-  public int linePosition() {
+  final int linePosition() {
     return linePosition_;
   }
 
@@ -79,18 +63,10 @@ public class XsltException : BaseException {
     return sourceUri_;
   }
 
-  package this(string reason, int lineNumber, int linePosition, string sourceUri) {
-    super(createMessage(reason, sourceUri, lineNumber, linePosition));
-    reason_ = reason;
-    lineNumber_ = lineNumber;
-    linePosition_ = linePosition;
-    sourceUri_ = sourceUri;
-  }
-
-  private static string createMessage(string reason, string sourceUri, int lineNumber, int linePosition) {
-    string result = reason;
+  private static string createMessage(string s, int lineNumber, int linePosition) {
+    string result = s;
     if (lineNumber != 0)
-      result ~= format(" Line {0}, position {1}.", lineNumber, linePosition);
+      result ~= format(" Line %s, position %s.", lineNumber, linePosition);
     return result;
   }
 
@@ -99,19 +75,20 @@ public class XsltException : BaseException {
 /**
  * Specifies the XSLT features to support during execution of the style sheet.
  */
-public final class XsltSettings {
+final class XsltSettings {
 
   /// Indicates whether to enable support for the XSLT document() function.
-  public bool enableDocumentFunction;
+  bool enableDocumentFunction;
+
   /// Indicates whether to enable support for embedded script blocks.
-  public bool enableScript;
+  bool enableScript;
 
 }
 
 /**
  * Contains a variable number of arguments that are either XSLT parameters or extension objects.
  */
-public final class XsltArgumentList {
+final class XsltArgumentList {
 
   private VARIANT[XmlQualifiedName] parameters_;
   private Object[string] extensions_;
@@ -123,7 +100,7 @@ public final class XsltArgumentList {
    *   namespaceUri = The namespace URI to associate with the _parameter.
    *   parameter = The _parameter value to add to the list.
    */
-  public void addParam(T)(string name, string namespaceUri, T parameter) {
+  void addParam(T)(string name, string namespaceUri, T parameter) {
     auto qname = new XmlQualifiedName(name, namespaceUri);
     static if (is(T : XmlNode))
       parameters_[qname] = VARIANT(parameter.impl);
@@ -138,7 +115,7 @@ public final class XsltArgumentList {
    *   namespaceUri = The namespace URI associated with the parameter.
    * Returns: The parameter or $(B T.init) if one was not found.
    */
-  public T getParam(T)(string name, string namespaceUri) {
+  T getParam(T)(string name, string namespaceUri) {
     T ret = T.init;
 
     auto qname = new XmlQualifiedName(name, namespaceUri);
@@ -161,7 +138,7 @@ public final class XsltArgumentList {
    *   namespaceUri = The namespace URI of the parameter to remove.
    * Returns: The parameter or $(B T.init) if one was not found.
    */
-  public T removeParam(T)(string name, string namespaceUri) {
+  T removeParam(T)(string name, string namespaceUri) {
     T ret = T.init;
 
     auto qname = new XmlQualifiedName(name, namespaceUri);
@@ -186,7 +163,7 @@ public final class XsltArgumentList {
    *   namespaceUri = The namespace URI to associate with the object.
    *   extension = The object to add to the list.
    */
-  public void addExtensionObject(string namespaceUri, Object extension) {
+  void addExtensionObject(string namespaceUri, Object extension) {
     extensions_[namespaceUri] = extension;
   }
 
@@ -195,7 +172,7 @@ public final class XsltArgumentList {
    * Params: namespaceUri = The namespace URI of the object.
    * Returns: The object or null if one was not found.
    */
-  public Object getExtensionObject(string namespaceUri) {
+  Object getExtensionObject(string namespaceUri) {
     if (auto extension = namespaceUri in extensions_)
       return *extension;
     return null;
@@ -206,7 +183,7 @@ public final class XsltArgumentList {
    * Params: namespaceUri = The namespace URI of the object.
    * Returns: The object or null if one was not found.
    */
-  public Object removeExtensionObject(string namespaceUri) {
+  Object removeExtensionObject(string namespaceUri) {
     if (auto extension = namespaceUri in extensions_) {
       extensions_.remove(namespaceUri);
       return *extension;
@@ -217,7 +194,7 @@ public final class XsltArgumentList {
   /**
    * Removes all parameters and extension objects.
    */
-  public void clear() {
+  void clear() {
     foreach (key, value; parameters_)
       value.clear();
 
@@ -239,7 +216,7 @@ public final class XsltArgumentList {
  * stylesheet.transform("books.xml", "books.html");
  * ---
  */
-public final class XslTransform {
+final class XslTransform {
 
   private class XsltProcessor {
 
@@ -254,10 +231,10 @@ public final class XslTransform {
 
       if ((template_ = XSLTemplate60.coCreate!(IXSLTemplate)) is null) {
         if ((template_ = XSLTemplate40.coCreate!(IXSLTemplate)) is null)
-          template_ = XSLTemplate30.coCreate!(IXSLTemplate, ExceptionPolicy.ThrowIfNull);
+          template_ = XSLTemplate30.coCreate!(IXSLTemplate, ExceptionPolicy.Throw);
       }
 
-      template_.let_stylesheet(this.outer.stylesheet_);
+      template_.putref_stylesheet(this.outer.stylesheet_);
       template_.createProcessor(processor_);
     }
 
@@ -276,23 +253,23 @@ public final class XslTransform {
     private void execute(Stream stream) {
       if (args_ !is null) {
         foreach (qname, param; args_.parameters_) {
-          wchar* bstrName = qname.name().toBStr();
-          wchar* bstrNs = qname.namespace().toBStr();
+          wchar* bstrName = bstr.fromString(qname.name);
+          wchar* bstrNs = bstr.fromString(qname.namespace);
 
-          if (param.vt == VARTYPE.VT_BYREF && param.byref != null)
-            param.bstrVal = (cast(Object)param.byref).toString().toBStr();
+          if (param.vt == VT_BYREF && param.byref != null)
+            param.bstrVal = bstr.fromString((cast(Object)param.byref).toString());
 
           processor_.addParameter(bstrName, param, bstrNs);
 
-          freeBStr(bstrName);
-          freeBStr(bstrNs);
+          bstr.free(bstrName);
+          bstr.free(bstrNs);
         }
 
         foreach (name, extension; args_.extensions_) {
           if (auto disp = cast(IDispatch)extension) {
-            wchar* bstrNs = name.toBStr();
+            wchar* bstrNs = bstr.fromString(name);
             processor_.addObject(disp, bstrNs);
-            freeBStr(bstrNs);
+            bstr.free(bstrNs);
           }
         }
       }
@@ -300,12 +277,12 @@ public final class XslTransform {
       VARIANT input = document_.impl;
       scope(exit) input.clear();
 
-      if (processor_.set_input(input) == S_OK) {
+      if (processor_.put_input(input) == S_OK) {
         VARIANT output = new COMStream(stream);
         scope(exit) output.clear();
-        processor_.set_output(output);
+        processor_.put_output(output);
 
-        com_bool success;
+        VARIANT_BOOL success;
         processor_.transform(success);
       }
     }
@@ -317,14 +294,14 @@ public final class XslTransform {
   /**
    * Initializes a new instance.
    */
-  public this() {
+  this() {
     if ((stylesheet_ = FreeThreadedDOMDocument60.coCreate!(IXMLDOMDocument3)) is null) {
       if ((stylesheet_ = FreeThreadedDOMDocument40.coCreate!(IXMLDOMDocument2)) is null)
-        stylesheet_ = FreeThreadedDOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.ThrowIfNull);
+        stylesheet_ = FreeThreadedDOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.Throw);
     }
 
-    stylesheet_.set_async(com_false);
-    stylesheet_.set_validateOnParse(com_false);
+    stylesheet_.put_async(VARIANT_FALSE);
+    stylesheet_.put_validateOnParse(VARIANT_FALSE);
     stylesheet_.setProperty("NewParser", VARIANT(true));
   }
 
@@ -342,7 +319,7 @@ public final class XslTransform {
    *   settings = The features to apply to the style sheet.
    * Throws: XsltException if the style sheet contains an error.
    */
-  public void load(string stylesheetUri, XsltSettings settings = null) {
+  void load(string stylesheetUri, XsltSettings settings = null) {
     if (settings is null)
       settings = new XsltSettings;
 
@@ -352,9 +329,9 @@ public final class XslTransform {
     VARIANT source = stylesheetUri;
     scope(exit) source.clear();
 
-    com_bool success;
+    VARIANT_BOOL success;
     stylesheet_.load(source, success);
-    if (success != com_true)
+    if (success != VARIANT_TRUE)
       parsingException();
   }
 
@@ -364,8 +341,8 @@ public final class XslTransform {
    *   inputUri = The URI of the input document.
    *   resultsFile = The URI of the output document.
    */
-  public void transform(string inputUri, string resultsFile) {
-    scope fs = new FileStream(resultsFile, FileMode.OutNew);
+  void transform(string inputUri, string resultsFile) {
+    scope fs = new File(resultsFile, FileMode.OutNew);
     transform(inputUri, null, fs);
   }
 
@@ -393,7 +370,7 @@ public final class XslTransform {
    * resultDoc.load(ms);
    * ---
    */
-  public void transform(string inputUri, XsltArgumentList arguments, Stream results) {
+  void transform(string inputUri, XsltArgumentList arguments, Stream results) {
     scope doc = new XmlDocument;
     doc.load(inputUri);
     transform(doc, arguments, results);
@@ -406,7 +383,7 @@ public final class XslTransform {
    *   arguments = The namespace-qualified arguments used as input to the _transform.
    *   results = The stream to output.
    */
-  public void transform(XmlDocument input, XsltArgumentList arguments, Stream results) {
+  void transform(XmlDocument input, XsltArgumentList arguments, Stream results) {
     if (results is null)
       throw new ArgumentNullException("results");
 
@@ -427,11 +404,11 @@ public final class XslTransform {
 
       errorObj.Release();
 
-      string reason = fromBStr(bstrReason);
+      string reason = bstr.toString(bstrReason);
       if (reason[$ - 1] == '\n')
         reason = reason[0 .. $ - 2];
 
-      throw new XsltException(reason, line, position, fromBStr(bstrUrl));
+      throw new XsltException(reason, line, position, bstr.toString(bstrUrl));
     }
   }
 

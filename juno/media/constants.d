@@ -1,6 +1,11 @@
+/**
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.media.constants;
 
-public enum CombineMode {
+enum CombineMode {
   Replace,
   Intersect,
   Union,
@@ -9,17 +14,17 @@ public enum CombineMode {
   Complement
 }
 
-public enum FlushIntention {
+enum FlushIntention {
   Flush,
   Sync
 }
 
-public enum MatrixOrder {
+enum MatrixOrder {
   Prepend,
   Append
 }
 
-public enum GraphicsUnit {
+enum GraphicsUnit {
   World,
   Display,
   Pixel,
@@ -29,14 +34,14 @@ public enum GraphicsUnit {
   Millimeter
 }
 
-public enum QualityMode {
+enum QualityMode {
   Invalid = -1,
   Default,
   Low,
   High
 }
 
-public enum SmoothingMode {
+enum SmoothingMode {
   Invalid = QualityMode.Invalid,
   Default = QualityMode.Default,
   HighSpeed,
@@ -45,7 +50,7 @@ public enum SmoothingMode {
   AntiAlias
 }
 
-public enum InterpolationMode {
+enum InterpolationMode {
   Invalid = QualityMode.Invalid,
   Default = QualityMode.Default,
   Low = QualityMode.Low,
@@ -57,12 +62,12 @@ public enum InterpolationMode {
   HighQualityBicubic
 }
 
-public enum CompositingMode {
+enum CompositingMode {
   SourceOver,
   SourceCopy
 }
 
-public enum CompositingQuality {
+enum CompositingQuality {
   Invalid = QualityMode.Invalid,
   Default = QualityMode.Default,
   HighSpeed = QualityMode.Low,
@@ -71,7 +76,7 @@ public enum CompositingQuality {
   AssumeLinear
 }
 
-public enum PixelOffsetMode {
+enum PixelOffsetMode {
   Invalid = QualityMode.Invalid,
   Default = QualityMode.Default,
   HighSpeed = QualityMode.Low,
@@ -80,7 +85,7 @@ public enum PixelOffsetMode {
   Half
 }
 
-public enum PixelFormat {
+enum PixelFormat {
   Undefined = 0,
   DontCare = 0,
   Indexed = 0x00010000,
@@ -105,7 +110,7 @@ public enum PixelFormat {
   Format64bppPArgb = 14 | (64 << 8) | Alpha | PAlpha | Extended
 }
 
-public enum RotateFlipType {
+enum RotateFlipType {
   RotateNoneFlipNone = 0,
   Rotate90FlipNone = 1,
   Rotate180FlipNone = 2,
@@ -124,18 +129,18 @@ public enum RotateFlipType {
   Rotate270FlipXY = Rotate90FlipNone
 }
 
-public enum CoordinateSpace {
+enum CoordinateSpace {
   World,
   Page,
   Device
 }
 
-public enum WarpMode {
+enum WarpMode {
   Perspective,
   Bilinear
 }
 
-public enum WrapMode {
+enum WrapMode {
   Tile,
   TileFlipX,
   TileFlipY,
@@ -143,19 +148,19 @@ public enum WrapMode {
   Clamp
 }
 
-public enum FillMode {
+enum FillMode {
   Alternate,
   Winding
 }
 
-public enum LineJoin {
+enum LineJoin {
   Miter,
   Bevel,
   Round,
   MiterClipped
 }
 
-public enum LineCap {
+enum LineCap {
   Flat = 0,
   Square = 1,
   Round = 2,
@@ -169,13 +174,13 @@ public enum LineCap {
   AnchorMask = 0xf0
 }
 
-public enum DashCap {
+enum DashCap {
   Flat = 0,
   Round = 2,
   Triangle = 3
 }
 
-public enum DashStyle {
+enum DashStyle {
   Solid,
   Dash,
   Dot,
@@ -184,7 +189,7 @@ public enum DashStyle {
   Custom
 }
 
-public enum PenAlignment {
+enum PenAlignment {
   Center,
   Inset,
   Outset,
@@ -192,13 +197,13 @@ public enum PenAlignment {
   Right
 }
 
-public enum ColorMatrixFlag {
+enum ColorMatrixFlag {
   Default,
   SkipGrays,
   AltGrays
 }
 
-public enum ColorAdjustType {
+enum ColorAdjustType {
   Default,
   Bitmap,
   Brush,
@@ -208,7 +213,7 @@ public enum ColorAdjustType {
   Any
 }
 
-public enum ColorChannelFlag {
+enum ColorChannelFlag {
   ColorChannelC,
   ColorChannelM,
   ColorChannelY,
@@ -216,14 +221,14 @@ public enum ColorChannelFlag {
   ColorChannelLast
 }
 
-public enum ImageLockMode {
+enum ImageLockMode {
   Read = 0x0001,
   Write = 0x0002,
   ReadWrite = Read | Write,
   UserInputBuffer = 0x0004
 }
 
-public enum ImageCodecFlags {
+enum ImageCodecFlags {
   Encoder = 0x00000001,
   Decoder = 0x00000002,
   SupportBitmap = 0x00000004,
@@ -235,7 +240,7 @@ public enum ImageCodecFlags {
   User = 0x00040000
 }
 
-public enum EncoderParameterValueType {
+enum EncoderParameterValueType {
   ValueTypeByte = 1,
   ValueTypeAscii,
   ValueTypeShort,
@@ -245,13 +250,13 @@ public enum EncoderParameterValueType {
   ValueTypeRationalRange
 }
 
-public enum GenericFontFamilies {
+enum GenericFontFamilies {
   Serif,
   SansSerif,
   Monospace
 }
 
-public enum FontStyle {
+enum FontStyle {
   Regular = 0,
   Bold = 1,
   Italic = 2,
@@ -259,7 +264,7 @@ public enum FontStyle {
   Strikeout = 8
 }
 
-public enum StringFormatFlags {
+enum StringFormatFlags {
   DirectionRightToLeft = 0x1,
   DirectionVertical = 0x2,
   FitBlackBox = 0x4,
@@ -271,13 +276,13 @@ public enum StringFormatFlags {
   NoClip = 0x4000
 }
 
-public enum StringAlignment {
+enum StringAlignment {
   Near,
   Center,
   Far
 }
 
-public enum StringTrimming {
+enum StringTrimming {
   None,
   Character,
   Word,
@@ -286,7 +291,7 @@ public enum StringTrimming {
   EllipsisPath
 }
 
-public enum TextRenderingHint {
+enum TextRenderingHint {
   SystemDefault,
   SingleBitPerPixelGridFit,
   SingleBitPerPixel,
@@ -295,7 +300,7 @@ public enum TextRenderingHint {
   ClearTypeGridFit
 }
 
-public enum PenType {
+enum PenType {
   SolidColor,
   HatchFill,
   TextureFill,
@@ -303,7 +308,7 @@ public enum PenType {
   LinearGradient
 }
 
-public enum HatchStyle {
+enum HatchStyle {
   Horizontal,
   Vertical,
   ForwardDiagonal,
@@ -357,14 +362,42 @@ public enum HatchStyle {
   SolidDiamond
 }
 
-public enum LinearGradientMode {
+enum LinearGradientMode {
   Horizontal,
   Vertical,
   ForwardDiagonal,
   BackwardDiagonal
 }
 
-public enum KnownColor {
+enum PaletteFlags : uint {
+  HasAlpha = 0x1,
+  GrayScale = 0x2,
+  Halftone = 0x4
+}
+
+enum ColorMapType {
+  Default,
+  Brush
+}
+
+enum ImageFlags : uint {
+  None = 0x0,
+  Scalable = 0x1,
+  HasAlpha = 0x2,
+  HasTranslucent = 0x4,
+  PartiallyScalable = 0x8,
+  ColorSpaceRgb = 0x10,
+  ColorSpaceCmyk = 0x20,
+  ColorSpaceGray = 0x40,
+  ColorSpaceYcbcr = 0x80,
+  ColorSpaceYcck = 0x100,
+  HasRealDpi = 0x1000,
+  HasRealPixelSize = 0x2000,
+  ReadOnly = 0x10000,
+  Caching = 0x20000
+}
+
+enum KnownColor : uint {
   ActiveBorder = 1,
   ActiveCaption,
   ActiveCaptionText,

@@ -1,429 +1,658 @@
+/**
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.media.geometry;
 
-private import juno.base.math;
+private import juno.base.math, // min, max
+  std.math; // ceil, round
 
-public struct Point {
+/**
+ */
+struct Point {
 
-  public int x;
-  public int y;
+  int x; ///
+  int y; ///
 
-  public static const Point empty = { 0, 0 };
+  /**
+   */
+  static Point empty = { 0, 0 };
 
-  public static Point opCall(int x, int y) {
-    Point p;
-    p.x = x;
-    p.y = y;
-    return p;
+  /**
+   */
+  static Point opCall(int x, int y) {
+    Point self;
+    self.x = x, self.y = y;
+    return self;
   }
 
-  // for cast(PointF)p
-  public static Point opCall(PointF p) {
-    return Point(cast(int)p.x, cast(int)p.y);
+  bool opEquals(Point other) {
+    return x == other.x && y == other.y;
   }
 
-  public Point opAdd(Point other) {
-    return Point(x + other.x, y + other.y);
+  hash_t toHash() {
+    return x ^ y;
   }
 
-  public Point opAddAssign(Point other) {
-    x += other.x;
-    y += other.y;
-    return *this;
+  /**
+   */
+  static Point ceiling(PointF value) {
+    return Point(cast(int).ceil(value.x), cast(int).ceil(value.y));
   }
 
-  public Point opSub(Point other) {
-    return Point(x - other.x, y - other.y);
+  /**
+   */
+  static Point round(PointF value) {
+    return Point(cast(int).round(value.x), cast(int).round(value.y));
   }
 
-  public Point opSubAssign(Point other) {
-    x -= other.x;
-    y -= other.y;
-    return *this;
+  /**
+   */
+  void offset(Point p) {
+    offset(p.x, p.y);
   }
 
-  public bool isEmpty() {
+  /**
+   */
+  void offset(int x, int y) {
+    this.x += x;
+    this.y += y;
+  }
+
+  /**
+   */
+  bool isEmpty() {
     return x == 0 && y == 0;
+  }
+
+  /**
+   */
+  Point opAdd(Size sz) {
+    return Point(x + sz.width, y + sz.height);
+  }
+
+  void opAddAssign(Size sz) {
+    x += sz.width;
+    y += sz.height;
+  }
+
+  /**
+   */
+  Point opSub(Size sz) {
+    return Point(x - sz.width, y - sz.height);
+  }
+
+  void opSubAssign(Size sz) {
+    x -= sz.width;
+    y -= sz.height;
   }
 
 }
 
-public struct PointF {
+/**
+ */
+struct PointF {
 
-  public float x;
-  public float y;
+  float x = 0; ///
+  float y = 0; ///
 
-  public static PointF opCall(float x, float y) {
-    PointF p;
-    p.x = x;
-    p.y = y;
-    return p;
+  /**
+   */
+  static PointF empty = { 0f, 0f };
+
+  /**
+   */
+  static PointF opCall(float x, float y) {
+    PointF self;
+    self.x = x, self.y = y;
+    return self;
   }
 
-  // for cast(PointF)p
-  public static PointF opCall(Point p) {
+  /**
+   */
+  static PointF opCall(Point p) {
     return PointF(cast(float)p.x, cast(float)p.y);
   }
 
-  public PointF opAdd(PointF other) {
-    return PointF(x + other.x, y + other.y);
+  bool opEquals(PointF other) {
+    return x == other.x && y == other.y;
   }
 
-  public PointF opAddAssign(PointF other) {
-    x += other.x;
-    y += other.y;
-    return *this;
+  /**
+   */
+  bool isEmpty() {
+    return x == 0f && y == 0f;
   }
 
-  public PointF opSub(PointF other) {
-    return PointF(x - other.x, y - other.y);
+  /**
+   */
+  PointF opAdd(SizeF sz) {
+    return PointF(x + sz.width, y + sz.height);
   }
 
-  public PointF opSubAssign(PointF other) {
-    x -= other.x;
-    y -= other.y;
-    return *this;
+  void opAddAssign(SizeF sz) {
+    x += sz.width;
+    y += sz.height;
   }
 
-  public bool isEmpty() {
-    return x == 0 && y == 0;
+  /**
+   */
+  PointF opSub(SizeF sz) {
+    return PointF(x - sz.width, y - sz.height);
+  }
+
+  void opSubAssign(SizeF sz) {
+    x -= sz.width;
+    y -= sz.height;
   }
 
 }
 
-public struct Size {
+/**
+ */
+struct Size {
 
-  public int width;
-  public int height;
+  int width; ///
+  int height; ///
 
-  public static const Size empty = { 0, 0 };
+  /**
+   */
+  static Size empty = { 0, 0 };
 
-  public static Size opCall(int width, int height) {
-    Size sz;
-    sz.width = width;
-    sz.height = height;
-    return sz;
+  /**
+   */
+  static Size opCall(int width, int height) {
+    Size self;
+    self.width = width, self.height = height;
+    return self;
   }
 
-  // for cast(Size)szf
-  public static Size opCall(SizeF sz) {
-    return Size(cast(int)sz.width, cast(int)sz.height);
+  bool opEquals(Size other) {
+    return width == other.width && height == other.height;
   }
 
-  public Size opAdd(Size other) {
+  hash_t toHash() {
+    return width ^ height;
+  }
+
+  /**
+   */
+  static Size ceiling(SizeF value) {
+    return Size(cast(int).ceil(value.height), cast(int).ceil(value.height));
+  }
+
+  /**
+   */
+  static Size round(SizeF value) {
+    return Size(cast(int).round(value.width), cast(int).round(value.height));
+  }
+
+  /**
+   */
+  static Size truncate(SizeF value) {
+    return Size(cast(int)value.width, cast(int)value.height);
+  }
+
+  /**
+   */
+  bool isEmpty() {
+    return width == 0 && height == 0;
+  }
+
+  /**
+   */
+  Size opAdd(Size other) {
     return Size(width + other.width, height + other.height);
   }
 
-  public Size opAddAssign(Size other) {
+  void opAddAssign(Size other) {
     width += other.width;
     height += other.height;
-    return *this;
   }
 
-  public Size opSub(Size other) {
+  /**
+   */
+  Size opSub(Size other) {
     return Size(width - other.width, height - other.height);
   }
 
-  public Size opSubAssign(Size other) {
+  void opSubAssign(Size other) {
     width -= other.width;
     height -= other.height;
-    return *this;
-  }
-
-  public bool isEmpty() {
-    return width == 0 && height == 0;
   }
 
 }
 
-public struct SizeF {
+/**
+ */
+struct SizeF {
 
-  public float width;
-  public float height;
+  float width = 0; ///
+  float height = 0; ///
 
-  public static const SizeF empty = { 0, 0 };
+  /**
+   */
+  static SizeF empty = { 0f, 0f };
 
-  public static SizeF opCall(float width, float height) {
-    SizeF sz;
-    sz.width = width;
-    sz.height = height;
-    return sz;
+  /**
+   */
+  static SizeF opCall(float width, float height) {
+    SizeF self;
+    self.width = width, self.height = height;
+    return self;
   }
 
-  // for cast(SizeF)sz
-  public static SizeF opCall(Size sz) {
+  /**
+   */
+  static SizeF opCall(Size sz) {
     return SizeF(cast(float)sz.width, cast(float)sz.height);
   }
 
-  public SizeF opAdd(SizeF other) {
-    return SizeF(width + other.width, height + other.height);
+  bool opEquals(SizeF other) {
+    return width == other.width && height == other.height;
   }
 
-  public SizeF opAddAssign(SizeF other) {
-    width += other.width;
-    height += other.height;
-    return *this;
+  /**
+   */
+  SizeF opAdd(SizeF sz) {
+    return SizeF(width + sz.width, height + sz.height);
   }
 
-  public SizeF opSub(SizeF other) {
-    return SizeF(width - other.width, height - other.height);
+  void opAddAssign(SizeF sz) {
+    width += sz.width;
+    height += sz.height;
   }
 
-  public SizeF opSubAssign(SizeF other) {
-    width -= other.width;
-    height -= other.height;
-    return *this;
+  /**
+   */
+  SizeF opSub(SizeF sz) {
+    return SizeF(width - sz.width, height - sz.height);
   }
 
-  public bool isEmpty() {
-    return width == 0 && height == 0;
+  void opSubAssign(SizeF sz) {
+    width -= sz.width;
+    height -= sz.height;
+  }
+
+  /**
+   */
+  bool isEmpty() {
+    return width == 0f && height == 0f;
   }
 
 }
 
-public struct Rect {
+/**
+ */
+struct Rect {
 
-  public int x;
-  public int y;
-  public int width;
-  public int height;
+  int x; ///
+  int y; ///
+  int width; ///
+  int height; ///
 
-  public static const Rect empty = { 0, 0, 0, 0 };
+  /**
+   */
+  static Rect empty = { 0, 0, 0, 0 };
 
-  public static Rect opCall(int x, int y, int width, int height) {
-    Rect rc;
-    rc.x = x;
-    rc.y = y;
-    rc.width = width;
-    rc.height = height;
-    return rc;
+  /**
+   */
+  static Rect opCall(int x, int y, int width, int height) {
+    Rect this_;
+    this_.x = x, this_.y = y, this_.width = width, this_.height = height;
+    return this_;
   }
 
-  public static Rect opCall(Point location, Size size) {
+  /**
+   */
+  static Rect opCall(Point location, Size size) {
     return Rect(location.x, location.y, size.width, size.height);
   }
 
-  public static Rect opCall(RectF rect) {
-    return Rect(cast(int)rect.x, cast(int)rect.y, cast(int)rect.width, cast(int)rect.height);
+  bool opEquals(Rect other) {
+    return x == other.x && y == other.y && width == other.width && height == other.height;
   }
 
-  public static Rect fromLTRB(int left, int top, int right, int bottom) {
+  hash_t toHash() {
+    return x | ((y << 13) | (y >> 19)) ^ ((width << 26) | (width >> 6)) | ((height << 7) | (height >> 25));
+  }
+
+  /**
+   */
+  static Rect fromLTRB(int left, int top, int right, int bottom) {
     return Rect(left, top, right - left, bottom - top);
   }
 
-  public bool contains(Point pt) {
+  /**
+   */
+  static Rect ceiling(RectF value) {
+    return Rect(cast(int).ceil(value.x), cast(int).ceil(value.y), cast(int).ceil(value.width), cast(int).ceil(value.height));
+  }
+
+  /**
+   */
+  static Rect round(RectF value) {
+    return Rect(cast(int).round(value.x), cast(int).round(value.y), cast(int).round(value.width), cast(int).round(value.height));
+  }
+
+  /**
+   */
+  static Rect truncate(RectF value) {
+    return Rect(cast(int)value.x, cast(int)value.y, cast(int)value.width, cast(int)value.height);
+  }
+
+  /**
+   */
+  static Rect unionRects(Rect a, Rect b) {
+    int left = min(a.x, b.x);
+    int right = max(a.x + a.width, b.x + b.width);
+    int top = min(a.y, b.y);
+    int bottom = max(a.y + a.height, b.y + b.height);
+    return Rect(left, top, right - left, bottom - top);
+  }
+
+  /**
+   */
+  bool contains(Point pt) {
     return contains(pt.x, pt.y);
   }
 
-  public bool contains(int x, int y) {
-    return this.x <= x && x < this.x + this.width && this.y <= y && y < this.y + this.height;
+  /**
+   */
+  bool contains(int x, int y) {
+    return this.x <= x && x < this.right && this.y <= y && y < this.bottom;
   }
 
-  public bool contains(Rect rect) {
-    return x <= rect.x && rect. x + rect.width <= x + width && y <= rect.y && rect.y + rect.height <= y + height;
+  /**
+   */
+  bool contains(Rect rect) {
+    return x <= rect.x && rect.x + rect.width <= x + width && y <= rect.y && rect.y + rect.height <= y + height;
   }
 
-  public void offset(Point pos) {
-    offset(pos.x, pos.y);
+  /**
+   */
+  static Rect inflate(Rect rect, int x, int y) {
+    Rect r = rect;
+    r.inflate(x, y);
+    return r;
   }
 
-  public void offset(int x, int y) {
-    this.x += x;
-    this.y += y;
-  }
-
-  public void inflate(Size size) {
+  /**
+   */
+  void inflate(Size size) {
     inflate(size.width, size.height);
   }
 
-  public void inflate(int width, int height) {
-    x -= width;
-    y -= height;
+  /**
+   */
+  void inflate(int width, int height) {
+    this.x -= width;
+    this.y -= height;
     this.width += width * 2;
     this.height += height * 2;
   }
 
-  public static Rect intersect(Rect a, Rect b) {
-    int left = min(a.x, b.x);
-    int right = max(a.x + a.width, b.x + b.width);
-    int top = min(a.y, b.y);
-    int bottom = max(a.y + a.height, b.y + b.height);
-    return (right >= left && bottom >= top) 
-      ? Rect(left, top, right - left, bottom - top) 
-      : Rect.empty;
+  /**
+   */
+  void offset(Point pos) {
+    offset(pos.x, pos.y);
   }
 
-  public bool intersectsWith(Rect rect) {
+  /**
+   */
+  void offset(int x, int y) {
+    this.x += x;
+    this.y += y;
+  }
+
+  /**
+   */
+  bool intersectsWith(Rect rect) {
     return rect.x < x + width && x < rect.x + rect.width && rect.y < y + height && y < rect.y + rect.height;
   }
 
-  public static Rect unionOf(Rect a, Rect b) {
-    int left = min(a.x, b.x);
-    int right = max(a.x + a.width, b.x + b.width);
-    int top = min(a.y, b.y);
-    int bottom = max(a.y + a.height, b.y + b.height);
-    return Rect(left, top, right - left, bottom - top);
+  /**
+   */
+  static Rect intersect(Rect a, Rect b) {
+    int left = max(a.x, b.x);
+    int right = min(a.x + a.width, b.x + b.width);
+    int top = max(a.y, b.y);
+    int bottom = min(a.y + a.height, b.y + b.height);
+    if (right >= left && bottom >= top)
+      return Rect(left, top, right - left, bottom - top);
+    return Rect.empty;
   }
 
-  public int left() {
+  /**
+   */
+  void intersect(Rect rect) {
+    Rect r = intersect(rect, *this);
+    x = r.x;
+    y = r.y;
+    width = r.width;
+    height = r.height;
+  }
+
+  /**
+   */
+  int left() {
     return x;
   }
 
-  public int top() {
+  /**
+   */
+  int top() {
     return y;
   }
 
-  public int right() {
-    return x + width;
-  }
-
-  public int bottom() {
+  /**
+   */
+  int bottom() {
     return y + height;
   }
 
-  public void location(Point value) {
+  /**
+   */
+  int right() {
+    return x + width;
+  }
+
+  /**
+   */
+  void location(Point value) {
     x = value.x;
     y = value.y;
   }
 
-  public Point location() {
+  /**
+   * ditto
+   */
+  Point location() {
     return Point(x, y);
   }
 
-  public void size(Size value) {
+  /**
+   */
+  void size(Size value) {
     width = value.width;
     height = value.height;
   }
 
-  public Size size() {
+  /**
+   * ditto
+   */
+  Size size() {
     return Size(width, height);
   }
 
-  public bool isEmpty() {
+  /**
+   */
+  bool isEmpty() {
     return x == 0 && y == 0 && width == 0 && height == 0;
   }
 
 }
 
-public struct RectF {
+/**
+ */
+struct RectF {
 
-  public float x;
-  public float y;
-  public float width;
-  public float height;
+  float x = 0f; ///
+  float y = 0f; ///
+  float width = 0f; ///
+  float height = 0f; ///
 
-  public static const RectF empty = { 0, 0, 0, 0 };
+  /**
+   */
+  static RectF empty = { 0f, 0f, 0f, 0f };
 
-  public static RectF opCall(float x, float y, float width, float height) {
-    RectF rc;
-    rc.x = x;
-    rc.y = y;
-    rc.width = width;
-    rc.height = height;
-    return rc;
+  /**
+   */
+  static RectF opCall(float x, float y, float width, float height) {
+    RectF self;
+    self.x = x, self.y = y, self.width = width, self.height = height;
+    return self;
   }
 
-  public static RectF opCall(PointF location, SizeF size) {
-    return RectF(location.x, location.y, size.width, size.height);
-  }
-
-  public static RectF opCall(Rect rect) {
-    return RectF(cast(float)rect.x, cast(float)rect.y, cast(float)rect.width, cast(float)rect.height);
-  }
-
-  public static RectF fromLTRB(float left, float top, float right, float bottom) {
+  /**
+   */
+  static RectF fromLTRB(float left, float top, float right, float bottom) {
     return RectF(left, top, right - left, bottom - top);
   }
 
-  public bool contains(PointF pt) {
+  /**
+   */
+  bool contains(PointF pt) {
     return contains(pt.x, pt.y);
   }
 
-  public bool contains(float x, float y) {
+  /**
+   */
+  bool contains(float x, float y) {
     return this.x <= x && x < this.x + this.width && this.y <= y && y < this.y + this.height;
   }
 
-  public bool contains(RectF rect) {
-    return x <= rect.x && rect. x + rect.width <= x + width && y <= rect.y && rect.y + rect.height <= y + height;
+  /**
+   */
+  bool contains(RectF rect) {
+    return x <= rect.x && rect.x + rect.width <= x + width && y <= rect.y && rect.y + rect.height <= y + height;
   }
 
-  public void offset(PointF pos) {
+  /**
+   */
+  static RectF inflate(RectF rect, float x, float y) {
+    RectF r = rect;
+    r.inflate(x, y);
+    return r;
+  }
+
+  /**
+   */
+  void inflate(SizeF size) {
+    inflate(size.width, size.height);
+  }
+
+  /**
+   */
+  void inflate(float width, float height) {
+    this.x -= width;
+    this.y -= height;
+    this.width += width * 2f;
+    this.height += height * 2f;
+  }
+
+  /**
+   */
+  void offset(PointF pos) {
     offset(pos.x, pos.y);
   }
 
-  public void offset(float x, float y) {
+  /**
+   */
+  void offset(float x, float y) {
     this.x += x;
     this.y += y;
   }
 
-  public void inflate(SizeF size) {
-    inflate(size.width, size.height);
-  }
-
-  public void inflate(float width, float height) {
-    x -= width;
-    y -= height;
-    this.width += width * 2;
-    this.height += height * 2;
-  }
-
-  public static RectF intersect(RectF a, RectF b) {
-    float left = min(a.x, b.x);
-    float right = max(a.x + a.width, b.x + b.width);
-    float top = min(a.y, b.y);
-    float bottom = max(a.y + a.height, b.y + b.height);
-    return (right >= left && bottom >= top) 
-      ? RectF(left, top, right - left, bottom - top) 
-      : RectF.empty;
-  }
-
-  public bool intersectsWith(RectF rect) {
+  /**
+   */
+  bool intersectsWith(RectF rect) {
     return rect.x < x + width && x < rect.x + rect.width && rect.y < y + height && y < rect.y + rect.height;
   }
 
-  public static RectF unionOf(RectF a, RectF b) {
-    float left = min(a.x, b.x);
-    float right = max(a.x + a.width, b.x + b.width);
-    float top = min(a.y, b.y);
-    float bottom = max(a.y + a.height, b.y + b.height);
-    return RectF(left, top, right - left, bottom - top);
+  /**
+   */
+  static RectF intersect(RectF a, RectF b) {
+    float left = max(a.x, b.x);
+    float right = min(a.x + a.width, b.x + b.width);
+    float top = max(a.y, b.y);
+    float bottom = min(a.y + a.height, b.y + b.height);
+    if (right >= left && bottom >= top)
+      return RectF(left, top, right - left, bottom - top);
+    return RectF.empty;
   }
 
-  public float left() {
+  /**
+   */
+  void intersect(RectF rect) {
+    RectF r = intersect(rect, *this);
+    x = r.x;
+    y = r.y;
+    width = r.width;
+    height = r.height;
+  }
+
+  /**
+   */
+  float left() {
     return x;
   }
 
-  public float top() {
+  /**
+   */
+  float top() {
     return y;
   }
 
-  public float right() {
+  /**
+   */
+  float right() {
     return x + width;
   }
 
-  public float bottom() {
+  /**
+   */
+  float bottom() {
     return y + height;
   }
 
-  public void location(PointF value) {
+  /**
+   */
+  PointF location() {
+    return PointF(x, y);
+  }
+
+  /**
+   * ditto
+   */
+  void location(PointF value) {
     x = value.x;
     y = value.y;
   }
 
-  public PointF location() {
-    return PointF(x, y);
-  }
-
-  public void size(SizeF value) {
-    width = value.width;
-    height = value.height;
-  }
-
-  public SizeF size() {
+  /**
+   */
+  SizeF size() {
     return SizeF(width, height);
   }
 
-  public bool isEmpty() {
-    return x == 0 && y == 0 && width == 0 && height == 0;
+  /**
+   * ditto
+   */
+  void size(SizeF value) {
+    width = value.width;
+    height = value.height;
   }
 
 }

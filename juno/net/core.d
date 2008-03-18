@@ -1,77 +1,46 @@
-/*
- * Copyright (c) 2007 John Chapman
+/**
+ * Copyright: (c) 2008 John Chapman
  *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
-
 module juno.net.core;
 
 private import juno.base.string,
-  juno.base.numeric;
-private static import regex = std.regexp;
-private static import std.string;
+  juno.locale.convert;
 
-/**
- * Represents a uniform resource identifier.
- */
-public class Uri {
+debug private import std.stdio : writefln;
+
+enum UriPartial {
+  Scheme,
+  Authority,
+  Path,
+  Query
+}
+
+class Uri {
 
   private struct UriScheme {
     string schemeName;
     int defaultPort;
   }
 
-  private static const string URI_SCHEME_HTTP = "http";
-  private static const string URI_SCHEME_HTTPS = "https";
-  private static const string URI_SCHEME_FTP = "ftp";
-  private static const string URI_SCHEME_FILE = "file";
-  private static const string URI_SCHEME_MAILTO = "mailto";
-  private static const string URI_SCHEME_NEWS = "news";
+  private const string URI_SCHEME_HTTP = "http";
+  private const string URI_SCHEME_HTTPS = "https";
+  private const string URI_SCHEME_FTP = "ftp";
+  private const string URI_SCHEME_FILE = "file";
+  private const string URI_SCHEME_NEWS = "news";
+  private const string URI_SCHEME_MAILTO = "mailto";
 
-  private static final UriScheme httpScheme = { URI_SCHEME_HTTP, 80 };
-  private static final UriScheme httpsScheme = { URI_SCHEME_HTTPS, 443 };
-  private static final UriScheme ftpScheme = { URI_SCHEME_FTP, 21 };
-  private static final UriScheme fileScheme = { URI_SCHEME_FILE, -1 };
-  private static final UriScheme mailtoScheme = { URI_SCHEME_MAILTO, 25 };
-  private static final UriScheme newsScheme = { URI_SCHEME_NEWS, -1 };
-
-  private static const string URI_REGEX = "^(([^:/?#]+):)?((//([^/?#]*))?([^?#]*)(\\?([^#]*))?)?(#(.*))?";
-  private static const string AUTHORITY_REGEX = "(([^?#]*)@)?([^?#:]*)(:([0-9]*))?";
-
-  private static final int SCHEME_GROUP_INDEX = 2;
-  private static final int SCHEME_SPEC_PART_GROUP_INDEX = 3;
-  private static final int AUTHORITY_GROUP_INDEX = 5;
-  private static final int PATH_GROUP_INDEX = 6;
-  private static final int QUERY_GROUP_INDEX = 8;
-  private static final int FRAGMENT_GROUP_INDEX = 10;
-
-  private static final int AUTHORITY_USERINFO_GROUP_INDEX = 2;
-  private static final int AUTHORITY_HOST_GROUP_INDEX = 3;
-  private static final int AUTHORITY_PORT_GROUP_INDEX = 5;
+  private static UriScheme httpScheme = { URI_SCHEME_HTTP, 80 };
+  private static UriScheme httpsScheme = { URI_SCHEME_HTTPS, 443 };
+  private static UriScheme ftpScheme = { URI_SCHEME_FTP, 21 };
+  private static UriScheme fileScheme = { URI_SCHEME_FILE, -1 };
+  private static UriScheme newsScheme = { URI_SCHEME_NEWS, -1 };
+  private static UriScheme mailtoScheme = { URI_SCHEME_MAILTO, 25 };
 
   private string string_;
+  private string cache_;
   private string scheme_;
-  private string schemeSpecPart_;
-  private string authority_;
   private string path_;
   private string query_;
   private string fragment_;
@@ -79,116 +48,169 @@ public class Uri {
   private string host_;
   private int port_;
 
-  /**
-   * Creates a new instance with the specified URI.
-   * Params: s = A URI.
-   */
-  public this(string s) {
+  this(string s) {
     string_ = s;
     port_ = -1;
 
     parseUri(s);
   }
 
-  public override string toString() {
-    return (scheme_ == null ? "" : scheme_ ~ ":")
-      ~ schemeSpecPart_
-      ~ (fragment_ == null ? "" : "#" ~ fragment_);
+  override string toString() {
+    if (cache_ == null) {
+      cache_ = getLeftPart(UriPartial.Path);
+      if (fragment_ != null)
+        cache_ ~= fragment_;
+    }
+    return cache_;
   }
 
-  public final bool isAbsolute() {
+  string getLeftPart(UriPartial part) {
+    switch (part) {
+      case UriPartial.Scheme:
+        return scheme_ ~ "://";
+
+      case UriPartial.Authority:
+        string s = scheme_ ~ "://";
+        if (userInfo_.length > 0)
+          s ~= userInfo_ ~ '@';
+        s ~= host_;
+        if (port_ != -1 && port_ != getDefaultPort(scheme_))
+          s ~= ':' ~ .toString(port_);
+        return s;
+
+      case UriPartial.Path:
+        string s = scheme_ ~ "://";
+        if (userInfo_.length > 0)
+          s ~= userInfo_ ~ '@';
+        s ~= host_;
+        if (port_ != -1 && port_ != getDefaultPort(scheme_))
+          s ~= ':' ~ .toString(port_);
+        if (path_.length > 0)
+          s ~= path_;
+        return s;
+
+      default:
+    }
+    return null;
+  }
+
+  final bool isAbsolute() {
     return scheme_ != null;
   }
 
-  public final bool isOpaque() {
-    return scheme_ != null && std.string.ifind(schemeSpecPart_, '/') == -1;
-  }
-
-  /**
-   * Gets the _scheme name for this URI.
-   * Returns: A string containing the _scheme for this URI.
-   */
-  public final string scheme() {
+  final string scheme() {
     return scheme_;
   }
 
-  /**
-   * Gets the DNS host name or IP address and port number for a server.
-   * Returns: A string containing the _authority component of the URI.
-   */
-  public final string authority() {
-    return authority_;
+  final string authority() {
+    return isDefaultPort 
+      ? host_ 
+      : host_ ~ ":" ~ .toString(port_);
   }
 
-  /**
-   * Gets the path and query properties separated by a question mark.
-   * Returns: A string containing the path and the query.
-   */
-  public final string pathAndQuery() {
-    return (query_ == null) ? path_ : path_ ~ "?" ~ query_;
+  final string pathAndQuery() {
+    return path_ ~ query_;
   }
 
-  /**
-   * Gets any _query information in the URI.
-   * Returns: A string containing any _query information.
-   */
-  public final string query() {
+  final string query() {
     return query_;
   }
 
-  /**
-   * Gets any URI _fragment information.
-   * Returns: A string containing the _fragment.
-   */
-  public final string fragment() {
+  final string fragment() {
     return fragment_;
   }
 
-  /**
-   * Gets the user name, password or other user-specific information associated with the URI.
-   * Returns: A string containing the user information.
-   */
-  public final string userInfo() {
+  final string userInfo() {
     return userInfo_;
   }
 
-  /**
-   * Gets the _host component of the URI.
-   * Returns: A string containing the _host name.
-   */
-  public final string host() {
+  final string host() {
     return host_;
   }
 
-  /**
-   * Gets the _port number of the URI.
-   * Returns: An integer containing the _port number of the URI.
-   */
-  public final int port() {
+  final int port() {
     return port_;
   }
 
-  private void parseUri(string s) {
-    if (auto matches = regex.search(s, URI_REGEX)) {
-      scheme_ = matches.match(SCHEME_GROUP_INDEX);
-      schemeSpecPart_ = matches.match(SCHEME_SPEC_PART_GROUP_INDEX);
-      if (!isOpaque) {
-        authority_ = matches.match(AUTHORITY_GROUP_INDEX);
-        path_ = matches.match(PATH_GROUP_INDEX);
-        if (path_ == null) path_ = "/";
-        query_ = matches.match(QUERY_GROUP_INDEX);
-      }
-      fragment_ = matches.match(FRAGMENT_GROUP_INDEX);
-    }
+  final string original() {
+    return string_;
+  }
 
-    if (authority_ != null) {
-      if (auto matches = regex.search(s, AUTHORITY_REGEX)) {
-        userInfo_ = matches.match(AUTHORITY_USERINFO_GROUP_INDEX);
-        host_ = matches.match(AUTHORITY_HOST_GROUP_INDEX);
-        if (auto portString = matches.match(AUTHORITY_PORT_GROUP_INDEX))
-          port_ = .parse!(int)(portString);
-        else
-          port_ = getDefaultPort(scheme_);
+  final string localPath() {
+    return path_;
+  }
+
+  bool isDefaultPort() {
+    return getDefaultPort(scheme_) == port_;
+  }
+
+  private void parseUri(string s) {
+    int i = s.indexOf(':');
+    if (i < 0)
+      return;
+
+    if (i == 1) {
+      // Windows absolute path
+      scheme_ = fileScheme.schemeName;
+      port_ = fileScheme.defaultPort;
+      path_ = s.replace("\\", "/");
+    }
+    else {
+      scheme_ = s[0 .. i];
+      s = s[i + 1 .. $];
+
+      i = s.indexOf('#');
+      if (i != -1) {
+        fragment_ = s[i .. $];
+        s = s[0 .. i];
+      }
+
+      i = s.indexOf('?');
+      if (i != -1) {
+        query_ = s[i .. $];
+        s = s[0 .. i];
+      }
+
+      bool unixPath = (scheme_ == fileScheme.schemeName && s.startsWith("///"));
+
+      if (s[0 .. 2] == "//") {
+        if (s.startsWith("////"))
+          unixPath = false;
+        s = s[2 .. $];
+      }
+
+      i = s.indexOf('/');
+      if (i == -1) {
+        path_ = "/";
+      }
+      else {
+        path_ = s[i .. $];
+        s = s[0 .. i];
+      }
+
+      i = s.indexOf('@');
+      if (i != -1) {
+        userInfo_ = s[0 .. i];
+        s = s.remove(0, i + 1);
+      }
+
+      port_ = -1;
+      i = s.lastIndexOf(':');
+      if (i != -1 && i != s.length - 1) {
+        string sport = s.remove(0, i + 1);
+        if (sport.length > 1 && sport[$ - 1] != ']') {
+          port_ = cast(int)parse!(ushort)(sport);
+          s = s[0 .. i];
+        }
+      }
+      if (port_ == -1)
+        port_ = getDefaultPort(scheme_);
+
+      host_ = s;
+
+      if (unixPath) {
+        path_ = '/' ~ s;
+        host_ = null;
       }
     }
   }
@@ -202,10 +224,10 @@ public class Uri {
       return ftpScheme.defaultPort;
     else if (scheme == fileScheme.schemeName)
       return fileScheme.defaultPort;
-    else if (scheme == mailtoScheme.schemeName)
-      return mailtoScheme.defaultPort;
     else if (scheme == newsScheme.schemeName)
       return newsScheme.defaultPort;
+    else if (scheme == mailtoScheme.schemeName)
+      return mailtoScheme.defaultPort;
     return -1;
   }
 

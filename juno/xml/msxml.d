@@ -4,8 +4,6 @@
 /*[uuid("f5078f18-c551-11d3-89b9-0000f81fe221")]*/
 module juno.xml.msxml;
 
-/*[importlib("stdole2.tlb")];*/
-
 private import juno.com.core;
 
 // Enums
@@ -118,7 +116,7 @@ enum _SCHEMADERIVATIONMETHOD {
 
 // Schema Object Model Type variety values
 enum _SCHEMATYPEVARIETY {
-  SCHEMATYPEVARIETY_NONE = -1,
+  SCHEMATYPEVARIETY_NONE = 0xFFFFFFFF,
   SCHEMATYPEVARIETY_ATOMIC = 0x00000000,
   SCHEMATYPEVARIETY_LIST = 0x00000001,
   SCHEMATYPEVARIETY_UNION = 0x00000002,
@@ -126,7 +124,7 @@ enum _SCHEMATYPEVARIETY {
 
 // Schema Object Model Whitespace facet values
 enum _SCHEMAWHITESPACE {
-  SCHEMAWHITESPACE_NONE = -1,
+  SCHEMAWHITESPACE_NONE = 0xFFFFFFFF,
   SCHEMAWHITESPACE_PRESERVE = 0x00000000,
   SCHEMAWHITESPACE_REPLACE = 0x00000001,
   SCHEMAWHITESPACE_COLLAPSE = 0x00000002,
@@ -157,7 +155,7 @@ enum _SCHEMAUSE {
 
 // Options for ServerXMLHTTPRequest Option property
 enum _SERVERXMLHTTP_OPTION {
-  SXH_OPTION_URL = -1,
+  SXH_OPTION_URL = 0xFFFFFFFF,
   SXH_OPTION_URL_CODEPAGE = 0x00000000,
   SXH_OPTION_ESCAPE_PERCENT_IN_URL = 0x00000001,
   SXH_OPTION_IGNORE_SERVER_SSL_CERT_ERROR_FLAGS = 0x00000002,
@@ -219,21 +217,19 @@ alias _SXH_PROXY_SETTING SXH_PROXY_SETTING;
 // Interfaces
 
 interface IXMLDOMImplementation : IDispatch {
-  /*[uuid("2933bf8f-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf8f, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf8f-7b36-11d2-b20e-00c04f983e60"));
   /*[id(0x00000091)]*/ int hasFeature(wchar* feature, wchar* versionParam, out short hasFeature);
 }
 
 // Core DOM node interface
 interface IXMLDOMNode : IDispatch {
-  /*[uuid("2933bf80-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf80, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf80-7b36-11d2-b20e-00c04f983e60"));
   // name of the node
   /*[id(0x00000002)]*/ int get_nodeName(out wchar* name);
-  // value stored the node
+  // value stored in the node
   /*[id(0x00000003)]*/ int get_nodeValue(out VARIANT value);
-  // value stored the node
-  /*[id(0x00000003)]*/ int set_nodeValue(VARIANT value);
+  // value stored in the node
+  /*[id(0x00000003)]*/ int put_nodeValue(VARIANT value);
   // the node's type
   /*[id(0x00000004)]*/ int get_nodeType(out DOMNodeType type);
   // parent of the node
@@ -262,24 +258,24 @@ interface IXMLDOMNode : IDispatch {
   // document that contains the node
   /*[id(0x00000012)]*/ int get_ownerDocument(out IXMLDOMDocument DOMDocument);
   /*[id(0x00000013)]*/ int cloneNode(short deep, out IXMLDOMNode cloneRoot);
-  // the type of node string form
+  // the type of node in string form
   /*[id(0x00000015)]*/ int get_nodeTypeString(out wchar* nodeType);
   // text content of the node and subtree
   /*[id(0x00000018)]*/ int get_text(out wchar* text);
   // text content of the node and subtree
-  /*[id(0x00000018)]*/ int set_text(wchar* text);
+  /*[id(0x00000018)]*/ int put_text(wchar* text);
   // indicates whether node is a default value
   /*[id(0x00000016)]*/ int get_specified(out short isSpecified);
-  // pointer to the definition of the node the DTD or schema
+  // pointer to the definition of the node in the DTD or schema
   /*[id(0x00000017)]*/ int get_definition(out IXMLDOMNode definitionNode);
   // get the strongly typed value of the node
   /*[id(0x00000019)]*/ int get_nodeTypedValue(out VARIANT typedValue);
   // get the strongly typed value of the node
-  /*[id(0x00000019)]*/ int set_nodeTypedValue(VARIANT typedValue);
+  /*[id(0x00000019)]*/ int put_nodeTypedValue(VARIANT typedValue);
   // the data type of the node
   /*[id(0x0000001A)]*/ int get_dataType(out VARIANT dataTypeName);
   // the data type of the node
-  /*[id(0x0000001A)]*/ int set_dataType(wchar* dataTypeName);
+  /*[id(0x0000001A)]*/ int put_dataType(wchar* dataTypeName);
   // return the XML source for the node and each of its descendants
   /*[id(0x0000001B)]*/ int get_xml(out wchar* xmlString);
   // apply the stylesheet to the subtree
@@ -301,11 +297,10 @@ interface IXMLDOMNode : IDispatch {
 }
 
 interface IXMLDOMNodeList : IDispatch {
-  /*[uuid("2933bf82-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf82, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf82-7b36-11d2-b20e-00c04f983e60"));
   // collection of nodes
   /*[id(0x00000000)]*/ int get_item(int index, out IXMLDOMNode listItem);
-  // number of nodes the collection
+  // number of nodes in the collection
   /*[id(0x0000004A)]*/ int get_length(out int listLength);
   // get next node from iterator
   /*[id(0x0000004C)]*/ int nextNode(out IXMLDOMNode nextItem);
@@ -315,8 +310,7 @@ interface IXMLDOMNodeList : IDispatch {
 }
 
 interface IXMLDOMNamedNodeMap : IDispatch {
-  /*[uuid("2933bf83-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf83, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf83-7b36-11d2-b20e-00c04f983e60"));
   // lookup item by name
   /*[id(0x00000053)]*/ int getNamedItem(wchar* name, out IXMLDOMNode namedItem);
   // set item by name
@@ -325,7 +319,7 @@ interface IXMLDOMNamedNodeMap : IDispatch {
   /*[id(0x00000055)]*/ int removeNamedItem(wchar* name, out IXMLDOMNode namedItem);
   // collection of nodes
   /*[id(0x00000000)]*/ int get_item(int index, out IXMLDOMNode listItem);
-  // number of nodes the collection
+  // number of nodes in the collection
   /*[id(0x0000004A)]*/ int get_length(out int listLength);
   // lookup the item by name and namespace
   /*[id(0x00000057)]*/ int getQualifiedItem(wchar* baseName, wchar* namespaceURI, out IXMLDOMNode qualifiedItem);
@@ -339,8 +333,7 @@ interface IXMLDOMNamedNodeMap : IDispatch {
 }
 
 interface IXMLDOMDocument : IXMLDOMNode {
-  /*[uuid("2933bf81-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf81, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf81-7b36-11d2-b20e-00c04f983e60"));
   // node corresponding to the DOCTYPE
   /*[id(0x00000026)]*/ int get_doctype(out IXMLDOMDocumentType documentType);
   // info on this DOM implementation
@@ -348,7 +341,7 @@ interface IXMLDOMDocument : IXMLDOMNode {
   // the root of the tree
   /*[id(0x00000028)]*/ int get_documentElement(out IXMLDOMElement DOMElement);
   // the root of the tree
-  /*[id(0x00000028)]*/ int let_documentElement(IXMLDOMElement DOMElement);
+  /*[id(0x00000028)]*/ int putref_documentElement(IXMLDOMElement DOMElement);
   // create an Element node
   /*[id(0x00000029)]*/ int createElement(wchar* tagName, out IXMLDOMElement element);
   // create a DocumentFragment node
@@ -382,7 +375,7 @@ interface IXMLDOMDocument : IXMLDOMNode {
   // flag for asynchronous download
   /*[id(0x0000003D)]*/ int get_async(out short isAsync);
   // flag for asynchronous download
-  /*[id(0x0000003D)]*/ int set_async(short isAsync);
+  /*[id(0x0000003D)]*/ int put_async(short isAsync);
   // abort an asynchronous download
   /*[id(0x0000003E)]*/ int abort();
   // load the document from a string
@@ -392,37 +385,35 @@ interface IXMLDOMDocument : IXMLDOMNode {
   // indicates whether the parser performs validation
   /*[id(0x00000041)]*/ int get_validateOnParse(out short isValidating);
   // indicates whether the parser performs validation
-  /*[id(0x00000041)]*/ int set_validateOnParse(short isValidating);
+  /*[id(0x00000041)]*/ int put_validateOnParse(short isValidating);
   // indicates whether the parser resolves references to external DTD/Entities/Schema
   /*[id(0x00000042)]*/ int get_resolveExternals(out short isResolving);
   // indicates whether the parser resolves references to external DTD/Entities/Schema
-  /*[id(0x00000042)]*/ int set_resolveExternals(short isResolving);
+  /*[id(0x00000042)]*/ int put_resolveExternals(short isResolving);
   // indicates whether the parser preserves whitespace
   /*[id(0x00000043)]*/ int get_preserveWhiteSpace(out short isPreserving);
   // indicates whether the parser preserves whitespace
-  /*[id(0x00000043)]*/ int set_preserveWhiteSpace(short isPreserving);
+  /*[id(0x00000043)]*/ int put_preserveWhiteSpace(short isPreserving);
   // register a readystatechange event handler
-  /*[id(0x00000044)]*/ int set_onreadystatechange(VARIANT value);
+  /*[id(0x00000044)]*/ int put_onreadystatechange(VARIANT value);
   // register an ondataavailable event handler
-  /*[id(0x00000045)]*/ int set_ondataavailable(VARIANT value);
+  /*[id(0x00000045)]*/ int put_ondataavailable(VARIANT value);
   // register an ontransformnode event handler
-  /*[id(0x00000046)]*/ int set_ontransformnode(VARIANT value);
+  /*[id(0x00000046)]*/ int put_ontransformnode(VARIANT value);
 }
 
 interface IXMLDOMDocumentType : IXMLDOMNode {
-  /*[uuid("2933bf8b-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf8b, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf8b-7b36-11d2-b20e-00c04f983e60"));
   // name of the document type (root of the tree)
   /*[id(0x00000083)]*/ int get_name(out wchar* rootName);
-  // a list of entities the document
+  // a list of entities in the document
   /*[id(0x00000084)]*/ int get_entities(out IXMLDOMNamedNodeMap entityMap);
-  // a list of notations the document
+  // a list of notations in the document
   /*[id(0x00000085)]*/ int get_notations(out IXMLDOMNamedNodeMap notationMap);
 }
 
 interface IXMLDOMElement : IXMLDOMNode {
-  /*[uuid("2933bf86-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf86, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf86-7b36-11d2-b20e-00c04f983e60"));
   // get the tagName of the element
   /*[id(0x00000061)]*/ int get_tagName(out wchar* tagName);
   // look up the string value of an attribute by name
@@ -439,41 +430,37 @@ interface IXMLDOMElement : IXMLDOMNode {
   /*[id(0x00000068)]*/ int removeAttributeNode(IXMLDOMAttribute DOMAttribute, out IXMLDOMAttribute attributeNode);
   // build a list of elements by name
   /*[id(0x00000069)]*/ int getElementsByTagName(wchar* tagName, out IXMLDOMNodeList resultList);
-  // collapse all adjacent text nodes sub-tree
+  // collapse all adjacent text nodes in sub-tree
   /*[id(0x0000006A)]*/ int normalize();
 }
 
 interface IXMLDOMAttribute : IXMLDOMNode {
-  /*[uuid("2933bf85-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf85, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf85-7b36-11d2-b20e-00c04f983e60"));
   // get name of the attribute
   /*[id(0x00000076)]*/ int get_name(out wchar* attributeName);
   // string value of the attribute
   /*[id(0x00000078)]*/ int get_value(out VARIANT attributeValue);
   // string value of the attribute
-  /*[id(0x00000078)]*/ int set_value(VARIANT attributeValue);
+  /*[id(0x00000078)]*/ int put_value(VARIANT attributeValue);
 }
 
 interface IXMLDOMDocumentFragment : IXMLDOMNode {
-  /*[uuid("3efaa413-272f-11d2-836f-0000f87a7782")]*/
-  static GUID IID = { 0x3efaa413, 0x272f, 0x11d2, 0x83, 0x6f, 0x00, 0x00, 0xf8, 0x7a, 0x77, 0x82 };
+  mixin(uuid("3efaa413-272f-11d2-836f-0000f87a7782"));
 }
 
 interface IXMLDOMText : IXMLDOMCharacterData {
-  /*[uuid("2933bf87-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf87, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf87-7b36-11d2-b20e-00c04f983e60"));
   // split the text node into two text nodes at the position specified
   /*[id(0x0000007B)]*/ int splitText(int offset, out IXMLDOMText rightHandTextNode);
 }
 
 interface IXMLDOMCharacterData : IXMLDOMNode {
-  /*[uuid("2933bf84-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf84, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf84-7b36-11d2-b20e-00c04f983e60"));
   // value of the node
   /*[id(0x0000006D)]*/ int get_data(out wchar* data);
   // value of the node
-  /*[id(0x0000006D)]*/ int set_data(wchar* data);
-  // number of characters value
+  /*[id(0x0000006D)]*/ int put_data(wchar* data);
+  // number of characters in value
   /*[id(0x0000006E)]*/ int get_length(out int dataLength);
   // retrieve substring of value
   /*[id(0x0000006F)]*/ int substringData(int offset, int count, out wchar* data);
@@ -481,42 +468,37 @@ interface IXMLDOMCharacterData : IXMLDOMNode {
   /*[id(0x00000070)]*/ int appendData(wchar* data);
   // insert string into value
   /*[id(0x00000071)]*/ int insertData(int offset, wchar* data);
-  // delete string withthe value
+  // delete string within the value
   /*[id(0x00000072)]*/ int deleteData(int offset, int count);
-  // replace string withthe value
+  // replace string within the value
   /*[id(0x00000073)]*/ int replaceData(int offset, int count, wchar* data);
 }
 
 interface IXMLDOMComment : IXMLDOMCharacterData {
-  /*[uuid("2933bf88-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf88, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf88-7b36-11d2-b20e-00c04f983e60"));
 }
 
 interface IXMLDOMCDATASection : IXMLDOMText {
-  /*[uuid("2933bf8a-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf8a, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf8a-7b36-11d2-b20e-00c04f983e60"));
 }
 
 interface IXMLDOMProcessingInstruction : IXMLDOMNode {
-  /*[uuid("2933bf89-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf89, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf89-7b36-11d2-b20e-00c04f983e60"));
   // the target
   /*[id(0x0000007F)]*/ int get_target(out wchar* name);
   // the data
   /*[id(0x00000080)]*/ int get_data(out wchar* value);
   // the data
-  /*[id(0x00000080)]*/ int set_data(wchar* value);
+  /*[id(0x00000080)]*/ int put_data(wchar* value);
 }
 
 interface IXMLDOMEntityReference : IXMLDOMNode {
-  /*[uuid("2933bf8e-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf8e, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf8e-7b36-11d2-b20e-00c04f983e60"));
 }
 
 // structure for reporting parser errors
 interface IXMLDOMParseError : IDispatch {
-  /*[uuid("3efaa426-272f-11d2-836f-0000f87a7782")]*/
-  static GUID IID = { 0x3efaa426, 0x272f, 0x11d2, 0x83, 0x6f, 0x00, 0x00, 0xf8, 0x7a, 0x77, 0x82 };
+  mixin(uuid("3efaa426-272f-11d2-836f-0000f87a7782"));
   // the error code
   /*[id(0x00000000)]*/ int get_errorCode(out int errorCode);
   // the URL of the XML document containing the error
@@ -525,23 +507,22 @@ interface IXMLDOMParseError : IDispatch {
   /*[id(0x000000B4)]*/ int get_reason(out wchar* reasonString);
   // the data where the error occurred
   /*[id(0x000000B5)]*/ int get_srcText(out wchar* sourceString);
-  // the line number the XML document where the error occurred
+  // the line number in the XML document where the error occurred
   /*[id(0x000000B6)]*/ int get_line(out int lineNumber);
-  // the character position the line containing the error
+  // the character position in the line containing the error
   /*[id(0x000000B7)]*/ int get_linepos(out int linePosition);
-  // the absolute file position the XML document containing the error
+  // the absolute file position in the XML document containing the error
   /*[id(0x000000B8)]*/ int get_filepos(out int filePosition);
 }
 
 interface IXMLDOMDocument2 : IXMLDOMDocument {
-  /*[uuid("2933bf95-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf95, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf95-7b36-11d2-b20e-00c04f983e60"));
   // A collection of all namespaces for this document
   /*[id(0x000000C9)]*/ int get_namespaces(out IXMLDOMSchemaCollection namespaceCollection);
   // The associated schema cache
   /*[id(0x000000CA)]*/ int get_schemas(out VARIANT otherCollection);
   // The associated schema cache
-  /*[id(0x000000CA)]*/ int let_schemas(VARIANT otherCollection);
+  /*[id(0x000000CA)]*/ int putref_schemas(VARIANT otherCollection);
   // perform runtime validation on the currently loaded XML document
   /*[id(0x000000CB)]*/ int validate(out IXMLDOMParseError errorObj);
   // set the value of the named property
@@ -552,15 +533,14 @@ interface IXMLDOMDocument2 : IXMLDOMDocument {
 
 // XML Schemas Collection
 interface IXMLDOMSchemaCollection : IDispatch {
-  /*[uuid("373984c8-b845-449b-91e7-45ac83036ade")]*/
-  static GUID IID = { 0x373984c8, 0xb845, 0x449b, 0x91, 0xe7, 0x45, 0xac, 0x83, 0x03, 0x6a, 0xde };
+  mixin(uuid("373984c8-b845-449b-91e7-45ac83036ade"));
   // add a new schema
   /*[id(0x00000003)]*/ int add(wchar* namespaceURI, VARIANT var);
   // lookup schema by namespaceURI
   /*[id(0x00000004)]*/ int get(wchar* namespaceURI, out IXMLDOMNode schemaNode);
   // remove schema by namespaceURI
   /*[id(0x00000005)]*/ int remove(wchar* namespaceURI);
-  // number of schemas collection
+  // number of schemas in collection
   /*[id(0x00000006)]*/ int get_length(out int length);
   // Get namespaceURI for schema by index
   /*[id(0x00000000)]*/ int get_namespaceURI(int index, out wchar* length);
@@ -570,8 +550,7 @@ interface IXMLDOMSchemaCollection : IDispatch {
 }
 
 interface IXMLDOMDocument3 : IXMLDOMDocument2 {
-  /*[uuid("2933bf96-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf96, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf96-7b36-11d2-b20e-00c04f983e60"));
   // perform runtime validation on the currently loaded XML document node
   /*[id(0x000000D0)]*/ int validateNode(IXMLDOMNode node, out IXMLDOMParseError errorObj);
   // clone node such that clones ownerDocument is this document
@@ -579,8 +558,7 @@ interface IXMLDOMDocument3 : IXMLDOMDocument2 {
 }
 
 interface IXMLDOMNotation : IXMLDOMNode {
-  /*[uuid("2933bf8c-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf8c, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf8c-7b36-11d2-b20e-00c04f983e60"));
   // the public ID
   /*[id(0x00000088)]*/ int get_publicId(out VARIANT publicId);
   // the system ID
@@ -588,8 +566,7 @@ interface IXMLDOMNotation : IXMLDOMNode {
 }
 
 interface IXMLDOMEntity : IXMLDOMNode {
-  /*[uuid("2933bf8d-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf8d, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf8d-7b36-11d2-b20e-00c04f983e60"));
   // the public ID
   /*[id(0x0000008C)]*/ int get_publicId(out VARIANT publicId);
   // the system ID
@@ -600,8 +577,7 @@ interface IXMLDOMEntity : IXMLDOMNode {
 
 // structure for reporting parser errors
 interface IXMLDOMParseError2 : IXMLDOMParseError {
-  /*[uuid("3efaa428-272f-11d2-836f-0000f87a7782")]*/
-  static GUID IID = { 0x3efaa428, 0x272f, 0x11d2, 0x83, 0x6f, 0x00, 0x00, 0xf8, 0x7a, 0x77, 0x82 };
+  mixin(uuid("3efaa428-272f-11d2-836f-0000f87a7782"));
   /*[id(0x000000BE)]*/ int get_errorXPath(out wchar* xpathexpr);
   /*[id(0x000000BB)]*/ int get_allErrors(out IXMLDOMParseErrorCollection allErrors);
   /*[id(0x000000BC)]*/ int errorParameters(int index, out wchar* param);
@@ -610,8 +586,7 @@ interface IXMLDOMParseError2 : IXMLDOMParseError {
 
 // structure for reporting parser errors
 interface IXMLDOMParseErrorCollection : IDispatch {
-  /*[uuid("3efaa429-272f-11d2-836f-0000f87a7782")]*/
-  static GUID IID = { 0x3efaa429, 0x272f, 0x11d2, 0x83, 0x6f, 0x00, 0x00, 0xf8, 0x7a, 0x77, 0x82 };
+  mixin(uuid("3efaa429-272f-11d2-836f-0000f87a7782"));
   /*[id(0x00000000)]*/ int get_item(int index, out IXMLDOMParseError2 error);
   /*[id(0x000000C1)]*/ int get_length(out int length);
   /*[id(0x000000C2)]*/ int get_next(out IXMLDOMParseError2 error);
@@ -621,8 +596,7 @@ interface IXMLDOMParseErrorCollection : IDispatch {
 
 // XTL runtime object
 interface IXTLRuntime : IXMLDOMNode {
-  /*[uuid("3efaa425-272f-11d2-836f-0000f87a7782")]*/
-  static GUID IID = { 0x3efaa425, 0x272f, 0x11d2, 0x83, 0x6f, 0x00, 0x00, 0xf8, 0x7a, 0x77, 0x82 };
+  mixin(uuid("3efaa425-272f-11d2-836f-0000f87a7782"));
   /*[id(0x000000BB)]*/ int uniqueID(IXMLDOMNode pNode, out int pID);
   /*[id(0x000000BC)]*/ int depth(IXMLDOMNode pNode, out int pDepth);
   /*[id(0x000000BD)]*/ int childNumber(IXMLDOMNode pNode, out int pNumber);
@@ -636,10 +610,9 @@ interface IXTLRuntime : IXMLDOMNode {
 
 // IXSLTemplate Interface
 interface IXSLTemplate : IDispatch {
-  /*[uuid("2933bf93-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf93, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf93-7b36-11d2-b20e-00c04f983e60"));
   // stylesheet to use with processors
-  /*[id(0x00000002)]*/ int let_stylesheet(IXMLDOMNode stylesheet);
+  /*[id(0x00000002)]*/ int putref_stylesheet(IXMLDOMNode stylesheet);
   // stylesheet to use with processors
   /*[id(0x00000002)]*/ int get_stylesheet(out IXMLDOMNode stylesheet);
   // create a new processor object
@@ -648,10 +621,9 @@ interface IXSLTemplate : IDispatch {
 
 // IXSLProcessor Interface
 interface IXSLProcessor : IDispatch {
-  /*[uuid("2933bf92-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID IID = { 0x2933bf92, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
+  mixin(uuid("2933bf92-7b36-11d2-b20e-00c04f983e60"));
   // XML input tree to transform
-  /*[id(0x00000002)]*/ int set_input(VARIANT pVar);
+  /*[id(0x00000002)]*/ int put_input(VARIANT pVar);
   // XML input tree to transform
   /*[id(0x00000002)]*/ int get_input(out VARIANT pVar);
   // template object used to create this processor object
@@ -663,7 +635,7 @@ interface IXSLProcessor : IDispatch {
   // namespace of starting XSL mode
   /*[id(0x00000006)]*/ int get_startModeURI(out wchar* namespaceURI);
   // custom stream object for transform output
-  /*[id(0x00000007)]*/ int set_output(VARIANT pOutput);
+  /*[id(0x00000007)]*/ int put_output(VARIANT pOutput);
   // custom stream object for transform output
   /*[id(0x00000007)]*/ int get_output(out VARIANT pOutput);
   // start/resume the XSL transformation process
@@ -682,12 +654,11 @@ interface IXSLProcessor : IDispatch {
 
 // ISAXXMLReader interface
 interface ISAXXMLReader : IUnknown {
-  /*[uuid("a4f96ed0-f829-476e-81c0-cdc7bd2a0802")]*/
-  static GUID IID = { 0xa4f96ed0, 0xf829, 0x476e, 0x81, 0xc0, 0xcd, 0xc7, 0xbd, 0x2a, 0x08, 0x02 };
-  /*[id(0x60010000)]*/ int getFeature(wchar* pwchName, out short pvfValue);
-  /*[id(0x60010001)]*/ int putFeature(wchar* pwchName, short vfValue);
-  /*[id(0x60010002)]*/ int getProperty(wchar* pwchName, out VARIANT pvarValue);
-  /*[id(0x60010003)]*/ int putProperty(wchar* pwchName, VARIANT varValue);
+  mixin(uuid("a4f96ed0-f829-476e-81c0-cdc7bd2a0802"));
+  /*[id(0x60010000)]*/ int getFeature(ushort* pwchName, out short pvfValue);
+  /*[id(0x60010001)]*/ int putFeature(ushort* pwchName, short vfValue);
+  /*[id(0x60010002)]*/ int getProperty(ushort* pwchName, out VARIANT pvarValue);
+  /*[id(0x60010003)]*/ int putProperty(ushort* pwchName, VARIANT varValue);
   /*[id(0x60010004)]*/ int getEntityResolver(out ISAXEntityResolver ppResolver);
   /*[id(0x60010005)]*/ int putEntityResolver(ISAXEntityResolver pResolver);
   /*[id(0x60010006)]*/ int getContentHandler(out ISAXContentHandler ppHandler);
@@ -696,119 +667,109 @@ interface ISAXXMLReader : IUnknown {
   /*[id(0x60010009)]*/ int putDTDHandler(ISAXDTDHandler pHandler);
   /*[id(0x6001000A)]*/ int getErrorHandler(out ISAXErrorHandler ppHandler);
   /*[id(0x6001000B)]*/ int putErrorHandler(ISAXErrorHandler pHandler);
-  /*[id(0x6001000C)]*/ int getBaseURL(out wchar* ppwchBaseUrl);
-  /*[id(0x6001000D)]*/ int putBaseURL(wchar* pwchBaseUrl);
-  /*[id(0x6001000E)]*/ int getSecureBaseURL(out wchar* ppwchSecureBaseUrl);
-  /*[id(0x6001000F)]*/ int putSecureBaseURL(wchar* pwchSecureBaseUrl);
+  /*[id(0x6001000C)]*/ int getBaseURL(out ushort ppwchBaseUrl);
+  /*[id(0x6001000D)]*/ int putBaseURL(ushort* pwchBaseUrl);
+  /*[id(0x6001000E)]*/ int getSecureBaseURL(out ushort ppwchSecureBaseUrl);
+  /*[id(0x6001000F)]*/ int putSecureBaseURL(ushort* pwchSecureBaseUrl);
   /*[id(0x60010010)]*/ int parse(VARIANT varInput);
-  /*[id(0x60010011)]*/ int parseURL(wchar* pwchUrl);
+  /*[id(0x60010011)]*/ int parseURL(ushort* pwchUrl);
 }
 
 // ISAXEntityResolver interface
 interface ISAXEntityResolver : IUnknown {
-  /*[uuid("99bca7bd-e8c4-4d5f-a0cf-6d907901ff07")]*/
-  static GUID IID = { 0x99bca7bd, 0xe8c4, 0x4d5f, 0xa0, 0xcf, 0x6d, 0x90, 0x79, 0x01, 0xff, 0x07 };
-  /*[id(0x60010000)]*/ int resolveEntity(wchar* pwchPublicId, wchar* pwchSystemId, out VARIANT pvarInput);
+  mixin(uuid("99bca7bd-e8c4-4d5f-a0cf-6d907901ff07"));
+  /*[id(0x60010000)]*/ int resolveEntity(ushort* pwchPublicId, ushort* pwchSystemId, out VARIANT pvarInput);
 }
 
 // ISAXContentHandler interface
 interface ISAXContentHandler : IUnknown {
-  /*[uuid("1545cdfa-9e4e-4497-a8a4-2bf7d0112c44")]*/
-  static GUID IID = { 0x1545cdfa, 0x9e4e, 0x4497, 0xa8, 0xa4, 0x2b, 0xf7, 0xd0, 0x11, 0x2c, 0x44 };
+  mixin(uuid("1545cdfa-9e4e-4497-a8a4-2bf7d0112c44"));
   /*[id(0x60010000)]*/ int putDocumentLocator(ISAXLocator pLocator);
   /*[id(0x60010001)]*/ int startDocument();
   /*[id(0x60010002)]*/ int endDocument();
-  /*[id(0x60010003)]*/ int startPrefixMapping(wchar* pwchPrefix, int cchPrefix, wchar* pwchUri, int cchUri);
-  /*[id(0x60010004)]*/ int endPrefixMapping(wchar* pwchPrefix, int cchPrefix);
-  /*[id(0x60010005)]*/ int startElement(wchar* pwchNamespaceUri, int cchNamespaceUri, wchar* pwchLocalName, int cchLocalName, wchar* pwchQName, int cchQName, ISAXAttributes pAttributes);
-  /*[id(0x60010006)]*/ int endElement(wchar* pwchNamespaceUri, int cchNamespaceUri, wchar* pwchLocalName, int cchLocalName, wchar* pwchQName, int cchQName);
-  /*[id(0x60010007)]*/ int characters(wchar* pwchChars, int cchChars);
-  /*[id(0x60010008)]*/ int ignorableWhitespace(wchar* pwchChars, int cchChars);
-  /*[id(0x60010009)]*/ int processingInstruction(wchar* pwchTarget, int cchTarget, wchar* pwchData, int cchData);
-  /*[id(0x6001000A)]*/ int skippedEntity(wchar* pwchName, int cchName);
+  /*[id(0x60010003)]*/ int startPrefixMapping(ushort* pwchPrefix, int cchPrefix, ushort* pwchUri, int cchUri);
+  /*[id(0x60010004)]*/ int endPrefixMapping(ushort* pwchPrefix, int cchPrefix);
+  /*[id(0x60010005)]*/ int startElement(ushort* pwchNamespaceUri, int cchNamespaceUri, ushort* pwchLocalName, int cchLocalName, ushort* pwchQName, int cchQName, ISAXAttributes pAttributes);
+  /*[id(0x60010006)]*/ int endElement(ushort* pwchNamespaceUri, int cchNamespaceUri, ushort* pwchLocalName, int cchLocalName, ushort* pwchQName, int cchQName);
+  /*[id(0x60010007)]*/ int characters(ushort* pwchChars, int cchChars);
+  /*[id(0x60010008)]*/ int ignorableWhitespace(ushort* pwchChars, int cchChars);
+  /*[id(0x60010009)]*/ int processingInstruction(ushort* pwchTarget, int cchTarget, ushort* pwchData, int cchData);
+  /*[id(0x6001000A)]*/ int skippedEntity(ushort* pwchName, int cchName);
 }
 
 // ISAXLocator interface
 interface ISAXLocator : IUnknown {
-  /*[uuid("9b7e472a-0de4-4640-bff3-84d38a051c31")]*/
-  static GUID IID = { 0x9b7e472a, 0x0de4, 0x4640, 0xbf, 0xf3, 0x84, 0xd3, 0x8a, 0x05, 0x1c, 0x31 };
+  mixin(uuid("9b7e472a-0de4-4640-bff3-84d38a051c31"));
   /*[id(0x60010000)]*/ int getColumnNumber(out int pnColumn);
   /*[id(0x60010001)]*/ int getLineNumber(out int pnLine);
-  /*[id(0x60010002)]*/ int getPublicId(out wchar* ppwchPublicId);
-  /*[id(0x60010003)]*/ int getSystemId(out wchar* ppwchSystemId);
+  /*[id(0x60010002)]*/ int getPublicId(out ushort ppwchPublicId);
+  /*[id(0x60010003)]*/ int getSystemId(out ushort ppwchSystemId);
 }
 
 // ISAXAttributes interface
 interface ISAXAttributes : IUnknown {
-  /*[uuid("f078abe1-45d2-4832-91ea-4466ce2f25c9")]*/
-  static GUID IID = { 0xf078abe1, 0x45d2, 0x4832, 0x91, 0xea, 0x44, 0x66, 0xce, 0x2f, 0x25, 0xc9 };
+  mixin(uuid("f078abe1-45d2-4832-91ea-4466ce2f25c9"));
   /*[id(0x60010000)]*/ int getLength(out int pnLength);
-  /*[id(0x60010001)]*/ int getURI(int nIndex, wchar* ppwchUri, out int pcchUri);
-  /*[id(0x60010002)]*/ int getLocalName(int nIndex, out wchar* ppwchLocalName, out int pcchLocalName);
-  /*[id(0x60010003)]*/ int getQName(int nIndex, out wchar* ppwchQName, out int pcchQName);
-  /*[id(0x60010004)]*/ int getName(int nIndex, out wchar* ppwchUri, out int pcchUri, out wchar* ppwchLocalName, out int pcchLocalName, out wchar* ppwchQName, out int pcchQName);
-  /*[id(0x60010005)]*/ int getIndexFromName(wchar* pwchUri, int cchUri, wchar* pwchLocalName, int cchLocalName, out int pnIndex);
-  /*[id(0x60010006)]*/ int getIndexFromQName(wchar* pwchQName, int cchQName, out int pnIndex);
-  /*[id(0x60010007)]*/ int getType(int nIndex, out wchar* ppwchType, out int pcchType);
-  /*[id(0x60010008)]*/ int getTypeFromName(wchar* pwchUri, int cchUri, wchar* pwchLocalName, int cchLocalName, out wchar* ppwchType, out int pcchType);
-  /*[id(0x60010009)]*/ int getTypeFromQName(wchar* pwchQName, int cchQName, out wchar* ppwchType, out int pcchType);
-  /*[id(0x6001000A)]*/ int getValue(int nIndex, out wchar* ppwchValue, out int pcchValue);
-  /*[id(0x6001000B)]*/ int getValueFromName(wchar* pwchUri, int cchUri, wchar* pwchLocalName, int cchLocalName, out wchar* ppwchValue, out int pcchValue);
-  /*[id(0x6001000C)]*/ int getValueFromQName(wchar* pwchQName, int cchQName, out wchar* ppwchValue, out int pcchValue);
+  /*[id(0x60010001)]*/ int getURI(int nIndex, out ushort ppwchUri, out int pcchUri);
+  /*[id(0x60010002)]*/ int getLocalName(int nIndex, out ushort ppwchLocalName, out int pcchLocalName);
+  /*[id(0x60010003)]*/ int getQName(int nIndex, out ushort ppwchQName, out int pcchQName);
+  /*[id(0x60010004)]*/ int getName(int nIndex, out ushort ppwchUri, out int pcchUri, out ushort ppwchLocalName, out int pcchLocalName, out ushort ppwchQName, out int pcchQName);
+  /*[id(0x60010005)]*/ int getIndexFromName(ushort* pwchUri, int cchUri, ushort* pwchLocalName, int cchLocalName, out int pnIndex);
+  /*[id(0x60010006)]*/ int getIndexFromQName(ushort* pwchQName, int cchQName, out int pnIndex);
+  /*[id(0x60010007)]*/ int getType(int nIndex, out ushort ppwchType, out int pcchType);
+  /*[id(0x60010008)]*/ int getTypeFromName(ushort* pwchUri, int cchUri, ushort* pwchLocalName, int cchLocalName, out ushort ppwchType, out int pcchType);
+  /*[id(0x60010009)]*/ int getTypeFromQName(ushort* pwchQName, int cchQName, out ushort ppwchType, out int pcchType);
+  /*[id(0x6001000A)]*/ int getValue(int nIndex, out ushort ppwchValue, out int pcchValue);
+  /*[id(0x6001000B)]*/ int getValueFromName(ushort* pwchUri, int cchUri, ushort* pwchLocalName, int cchLocalName, out ushort ppwchValue, out int pcchValue);
+  /*[id(0x6001000C)]*/ int getValueFromQName(ushort* pwchQName, int cchQName, out ushort ppwchValue, out int pcchValue);
 }
 
 // ISAXDTDHandler interface
 interface ISAXDTDHandler : IUnknown {
-  /*[uuid("e15c1baf-afb3-4d60-8c36-19a8c45defed")]*/
-  static GUID IID = { 0xe15c1baf, 0xafb3, 0x4d60, 0x8c, 0x36, 0x19, 0xa8, 0xc4, 0x5d, 0xef, 0xed };
-  /*[id(0x60010000)]*/ int notationDecl(wchar* pwchName, int cchName, wchar* pwchPublicId, int cchPublicId, wchar* pwchSystemId, int cchSystemId);
-  /*[id(0x60010001)]*/ int unparsedEntityDecl(wchar* pwchName, int cchName, wchar* pwchPublicId, int cchPublicId, wchar* pwchSystemId, int cchSystemId, wchar* pwchNotationName, int cchNotationName);
+  mixin(uuid("e15c1baf-afb3-4d60-8c36-19a8c45defed"));
+  /*[id(0x60010000)]*/ int notationDecl(ushort* pwchName, int cchName, ushort* pwchPublicId, int cchPublicId, ushort* pwchSystemId, int cchSystemId);
+  /*[id(0x60010001)]*/ int unparsedEntityDecl(ushort* pwchName, int cchName, ushort* pwchPublicId, int cchPublicId, ushort* pwchSystemId, int cchSystemId, ushort* pwchNotationName, int cchNotationName);
 }
 
 // ISAXErrorHandler interface
 interface ISAXErrorHandler : IUnknown {
-  /*[uuid("a60511c4-ccf5-479e-98a3-dc8dc545b7d0")]*/
-  static GUID IID = { 0xa60511c4, 0xccf5, 0x479e, 0x98, 0xa3, 0xdc, 0x8d, 0xc5, 0x45, 0xb7, 0xd0 };
-  /*[id(0x60010000)]*/ int error(ISAXLocator pLocator, wchar* pwchErrorMessage, int hrErrorCode);
-  /*[id(0x60010001)]*/ int fatalError(ISAXLocator pLocator, wchar* pwchErrorMessage, int hrErrorCode);
-  /*[id(0x60010002)]*/ int ignorableWarning(ISAXLocator pLocator, wchar* pwchErrorMessage, int hrErrorCode);
+  mixin(uuid("a60511c4-ccf5-479e-98a3-dc8dc545b7d0"));
+  /*[id(0x60010000)]*/ int error(ISAXLocator pLocator, ushort* pwchErrorMessage, int hrErrorCode);
+  /*[id(0x60010001)]*/ int fatalError(ISAXLocator pLocator, ushort* pwchErrorMessage, int hrErrorCode);
+  /*[id(0x60010002)]*/ int ignorableWarning(ISAXLocator pLocator, ushort* pwchErrorMessage, int hrErrorCode);
 }
 
 // ISAXXMLFilter interface
 interface ISAXXMLFilter : ISAXXMLReader {
-  /*[uuid("70409222-ca09-4475-acb8-40312fe8d145")]*/
-  static GUID IID = { 0x70409222, 0xca09, 0x4475, 0xac, 0xb8, 0x40, 0x31, 0x2f, 0xe8, 0xd1, 0x45 };
+  mixin(uuid("70409222-ca09-4475-acb8-40312fe8d145"));
   /*[id(0x60020000)]*/ int getParent(out ISAXXMLReader ppReader);
   /*[id(0x60020001)]*/ int putParent(ISAXXMLReader pReader);
 }
 
 // ISAXLexicalHandler interface
 interface ISAXLexicalHandler : IUnknown {
-  /*[uuid("7f85d5f5-47a8-4497-bda5-84ba04819ea6")]*/
-  static GUID IID = { 0x7f85d5f5, 0x47a8, 0x4497, 0xbd, 0xa5, 0x84, 0xba, 0x04, 0x81, 0x9e, 0xa6 };
-  /*[id(0x60010000)]*/ int startDTD(wchar* pwchName, int cchName, wchar* pwchPublicId, int cchPublicId, wchar* pwchSystemId, int cchSystemId);
+  mixin(uuid("7f85d5f5-47a8-4497-bda5-84ba04819ea6"));
+  /*[id(0x60010000)]*/ int startDTD(ushort* pwchName, int cchName, ushort* pwchPublicId, int cchPublicId, ushort* pwchSystemId, int cchSystemId);
   /*[id(0x60010001)]*/ int endDTD();
-  /*[id(0x60010002)]*/ int startEntity(wchar* pwchName, int cchName);
-  /*[id(0x60010003)]*/ int endEntity(wchar* pwchName, int cchName);
+  /*[id(0x60010002)]*/ int startEntity(ushort* pwchName, int cchName);
+  /*[id(0x60010003)]*/ int endEntity(ushort* pwchName, int cchName);
   /*[id(0x60010004)]*/ int startCDATA();
   /*[id(0x60010005)]*/ int endCDATA();
-  /*[id(0x60010006)]*/ int comment(wchar* pwchChars, int cchChars);
+  /*[id(0x60010006)]*/ int comment(ushort* pwchChars, int cchChars);
 }
 
 // ISAXDeclHandler interface
 interface ISAXDeclHandler : IUnknown {
-  /*[uuid("862629ac-771a-47b2-8337-4e6843c1be90")]*/
-  static GUID IID = { 0x862629ac, 0x771a, 0x47b2, 0x83, 0x37, 0x4e, 0x68, 0x43, 0xc1, 0xbe, 0x90 };
-  /*[id(0x60010000)]*/ int elementDecl(wchar* pwchName, int cchName, wchar* pwchModel, int cchModel);
-  /*[id(0x60010001)]*/ int attributeDecl(wchar* pwchElementName, int cchElementName, wchar* pwchAttributeName, int cchAttributeName, wchar* pwchType, int cchType, wchar* pwchValueDefault, int cchValueDefault, wchar* pwchValue, int cchValue);
-  /*[id(0x60010002)]*/ int internalEntityDecl(wchar* pwchName, int cchName, wchar* pwchValue, int cchValue);
-  /*[id(0x60010003)]*/ int externalEntityDecl(wchar* pwchName, int cchName, wchar* pwchPublicId, int cchPublicId, wchar* pwchSystemId, int cchSystemId);
+  mixin(uuid("862629ac-771a-47b2-8337-4e6843c1be90"));
+  /*[id(0x60010000)]*/ int elementDecl(ushort* pwchName, int cchName, ushort* pwchModel, int cchModel);
+  /*[id(0x60010001)]*/ int attributeDecl(ushort* pwchElementName, int cchElementName, ushort* pwchAttributeName, int cchAttributeName, ushort* pwchType, int cchType, ushort* pwchValueDefault, int cchValueDefault, ushort* pwchValue, int cchValue);
+  /*[id(0x60010002)]*/ int internalEntityDecl(ushort* pwchName, int cchName, ushort* pwchValue, int cchValue);
+  /*[id(0x60010003)]*/ int externalEntityDecl(ushort* pwchName, int cchName, ushort* pwchPublicId, int cchPublicId, ushort* pwchSystemId, int cchSystemId);
 }
 
 // IVBSAXXMLReader interface
 interface IVBSAXXMLReader : IDispatch {
-  /*[uuid("8c033caa-6cd6-4f73-b728-4531af74945f")]*/
-  static GUID IID = { 0x8c033caa, 0x6cd6, 0x4f73, 0xb7, 0x28, 0x45, 0x31, 0xaf, 0x74, 0x94, 0x5f };
+  mixin(uuid("8c033caa-6cd6-4f73-b728-4531af74945f"));
   // Look up the value of a feature.
   /*[id(0x00000502)]*/ int getFeature(wchar* strName, out short fValue);
   // Set the state of a feature.
@@ -820,27 +781,27 @@ interface IVBSAXXMLReader : IDispatch {
   // Allow an application to register an entity resolver or look up the current entity resolver.
   /*[id(0x00000506)]*/ int get_entityResolver(out IVBSAXEntityResolver oResolver);
   // Allow an application to register an entity resolver or look up the current entity resolver.
-  /*[id(0x00000506)]*/ int let_entityResolver(IVBSAXEntityResolver oResolver);
+  /*[id(0x00000506)]*/ int putref_entityResolver(IVBSAXEntityResolver oResolver);
   // Allow an application to register a content event handler or look up the current content event handler.
   /*[id(0x00000507)]*/ int get_contentHandler(out IVBSAXContentHandler oHandler);
   // Allow an application to register a content event handler or look up the current content event handler.
-  /*[id(0x00000507)]*/ int let_contentHandler(IVBSAXContentHandler oHandler);
+  /*[id(0x00000507)]*/ int putref_contentHandler(IVBSAXContentHandler oHandler);
   // Allow an application to register a DTD event handler or look up the current DTD event handler.
   /*[id(0x00000508)]*/ int get_dtdHandler(out IVBSAXDTDHandler oHandler);
   // Allow an application to register a DTD event handler or look up the current DTD event handler.
-  /*[id(0x00000508)]*/ int let_dtdHandler(IVBSAXDTDHandler oHandler);
+  /*[id(0x00000508)]*/ int putref_dtdHandler(IVBSAXDTDHandler oHandler);
   // Allow an application to register an error event handler or look up the current error event handler.
   /*[id(0x00000509)]*/ int get_errorHandler(out IVBSAXErrorHandler oHandler);
   // Allow an application to register an error event handler or look up the current error event handler.
-  /*[id(0x00000509)]*/ int let_errorHandler(IVBSAXErrorHandler oHandler);
+  /*[id(0x00000509)]*/ int putref_errorHandler(IVBSAXErrorHandler oHandler);
   // Set or get the base URL for the document.
   /*[id(0x0000050A)]*/ int get_baseURL(out wchar* strBaseURL);
   // Set or get the base URL for the document.
-  /*[id(0x0000050A)]*/ int set_baseURL(wchar* strBaseURL);
+  /*[id(0x0000050A)]*/ int put_baseURL(wchar* strBaseURL);
   // Set or get the secure base URL for the document.
   /*[id(0x0000050B)]*/ int get_secureBaseURL(out wchar* strSecureBaseURL);
   // Set or get the secure base URL for the document.
-  /*[id(0x0000050B)]*/ int set_secureBaseURL(wchar* strSecureBaseURL);
+  /*[id(0x0000050B)]*/ int put_secureBaseURL(wchar* strSecureBaseURL);
   // Parse an XML document.
   /*[id(0x0000050C)]*/ int parse(VARIANT varInput);
   // Parse an XML document from a system identifier (URI).
@@ -849,23 +810,21 @@ interface IVBSAXXMLReader : IDispatch {
 
 // IVBSAXEntityResolver interface
 interface IVBSAXEntityResolver : IDispatch {
-  /*[uuid("0c05d096-f45b-4aca-ad1a-aa0bc25518dc")]*/
-  static GUID IID = { 0x0c05d096, 0xf45b, 0x4aca, 0xad, 0x1a, 0xaa, 0x0b, 0xc2, 0x55, 0x18, 0xdc };
+  mixin(uuid("0c05d096-f45b-4aca-ad1a-aa0bc25518dc"));
   // Allow the application to resolve external entities.
   /*[id(0x00000527)]*/ int resolveEntity(ref wchar* strPublicId, ref wchar* strSystemId, out VARIANT varInput);
 }
 
 // IVBSAXContentHandler interface
 interface IVBSAXContentHandler : IDispatch {
-  /*[uuid("2ed7290a-4dd5-4b46-bb26-4e4155e77faa")]*/
-  static GUID IID = { 0x2ed7290a, 0x4dd5, 0x4b46, 0xbb, 0x26, 0x4e, 0x41, 0x55, 0xe7, 0x7f, 0xaa };
-  // Receive an object for locating the origof SAX document events.
-  /*[id(0x0000052A)]*/ int let_documentLocator(IVBSAXLocator value);
+  mixin(uuid("2ed7290a-4dd5-4b46-bb26-4e4155e77faa"));
+  // Receive an object for locating the origin of SAX document events.
+  /*[id(0x0000052A)]*/ int putref_documentLocator(IVBSAXLocator value);
   // Receive notification of the beginning of a document.
   /*[id(0x0000052B)]*/ int startDocument();
   // Receive notification of the end of a document.
   /*[id(0x0000052C)]*/ int endDocument();
-  // Begthe scope of a prefix-URI Namespace mapping.
+  // Begin the scope of a prefix-URI Namespace mapping.
   /*[id(0x0000052D)]*/ int startPrefixMapping(ref wchar* strPrefix, ref wchar* strURI);
   // End the scope of a prefix-URI mapping.
   /*[id(0x0000052E)]*/ int endPrefixMapping(ref wchar* strPrefix);
@@ -875,7 +834,7 @@ interface IVBSAXContentHandler : IDispatch {
   /*[id(0x00000530)]*/ int endElement(ref wchar* strNamespaceURI, ref wchar* strLocalName, ref wchar* strQName);
   // Receive notification of character data.
   /*[id(0x00000531)]*/ int characters(ref wchar* strChars);
-  // Receive notification of ignorable whitespace element content.
+  // Receive notification of ignorable whitespace in element content.
   /*[id(0x00000532)]*/ int ignorableWhitespace(ref wchar* strChars);
   // Receive notification of a processing instruction.
   /*[id(0x00000533)]*/ int processingInstruction(ref wchar* strTarget, ref wchar* strData);
@@ -885,8 +844,7 @@ interface IVBSAXContentHandler : IDispatch {
 
 // IVBSAXLocator interface
 interface IVBSAXLocator : IDispatch {
-  /*[uuid("796e7ac5-5aa2-4eff-acad-3faaf01a3288")]*/
-  static GUID IID = { 0x796e7ac5, 0x5aa2, 0x4eff, 0xac, 0xad, 0x3f, 0xaa, 0xf0, 0x1a, 0x32, 0x88 };
+  mixin(uuid("796e7ac5-5aa2-4eff-acad-3faaf01a3288"));
   // Get the column number where the current document event ends.
   /*[id(0x00000521)]*/ int get_columnNumber(out int nColumn);
   // Get the line number where the current document event ends.
@@ -899,9 +857,8 @@ interface IVBSAXLocator : IDispatch {
 
 // IVBSAXAttributes interface
 interface IVBSAXAttributes : IDispatch {
-  /*[uuid("10dc0586-132b-4cac-8bb3-db00ac8b7ee0")]*/
-  static GUID IID = { 0x10dc0586, 0x132b, 0x4cac, 0x8b, 0xb3, 0xdb, 0x00, 0xac, 0x8b, 0x7e, 0xe0 };
-  // Get the number of attributes the list.
+  mixin(uuid("10dc0586-132b-4cac-8bb3-db00ac8b7ee0"));
+  // Get the number of attributes in the list.
   /*[id(0x00000540)]*/ int get_length(out int nLength);
   // Look up an attribute's Namespace URI by index.
   /*[id(0x00000541)]*/ int getURI(int nIndex, out wchar* strURI);
@@ -929,8 +886,7 @@ interface IVBSAXAttributes : IDispatch {
 
 // IVBSAXDTDHandler interface
 interface IVBSAXDTDHandler : IDispatch {
-  /*[uuid("24fb3297-302d-4620-ba39-3a732d850558")]*/
-  static GUID IID = { 0x24fb3297, 0x302d, 0x4620, 0xba, 0x39, 0x3a, 0x73, 0x2d, 0x85, 0x05, 0x58 };
+  mixin(uuid("24fb3297-302d-4620-ba39-3a732d850558"));
   // Receive notification of a notation declaration event.
   /*[id(0x00000537)]*/ int notationDecl(ref wchar* strName, ref wchar* strPublicId, ref wchar* strSystemId);
   // Receive notification of an unparsed entity declaration event.
@@ -939,8 +895,7 @@ interface IVBSAXDTDHandler : IDispatch {
 
 // IVBSAXErrorHandler interface
 interface IVBSAXErrorHandler : IDispatch {
-  /*[uuid("d963d3fe-173c-4862-9095-b92f66995f52")]*/
-  static GUID IID = { 0xd963d3fe, 0x173c, 0x4862, 0x90, 0x95, 0xb9, 0x2f, 0x66, 0x99, 0x5f, 0x52 };
+  mixin(uuid("d963d3fe-173c-4862-9095-b92f66995f52"));
   // Receive notification of a recoverable error.
   /*[id(0x0000053B)]*/ int error(IVBSAXLocator oLocator, ref wchar* strErrorMessage, int nErrorCode);
   // Receive notification of a non-recoverable error.
@@ -951,18 +906,16 @@ interface IVBSAXErrorHandler : IDispatch {
 
 // IVBSAXXMLFilter interface
 interface IVBSAXXMLFilter : IDispatch {
-  /*[uuid("1299eb1b-5b88-433e-82de-82ca75ad4e04")]*/
-  static GUID IID = { 0x1299eb1b, 0x5b88, 0x433e, 0x82, 0xde, 0x82, 0xca, 0x75, 0xad, 0x4e, 0x04 };
+  mixin(uuid("1299eb1b-5b88-433e-82de-82ca75ad4e04"));
   // Set or get the parent reader
   /*[id(0x0000051D)]*/ int get_parent(out IVBSAXXMLReader oReader);
   // Set or get the parent reader
-  /*[id(0x0000051D)]*/ int let_parent(IVBSAXXMLReader oReader);
+  /*[id(0x0000051D)]*/ int putref_parent(IVBSAXXMLReader oReader);
 }
 
 // IVBSAXLexicalHandler interface
 interface IVBSAXLexicalHandler : IDispatch {
-  /*[uuid("032aac35-8c0e-4d9d-979f-e3b702935576")]*/
-  static GUID IID = { 0x032aac35, 0x8c0e, 0x4d9d, 0x97, 0x9f, 0xe3, 0xb7, 0x02, 0x93, 0x55, 0x76 };
+  mixin(uuid("032aac35-8c0e-4d9d-979f-e3b702935576"));
   // Report the start of DTD declarations, if any.
   /*[id(0x0000054E)]*/ int startDTD(ref wchar* strName, ref wchar* strPublicId, ref wchar* strSystemId);
   // Report the end of DTD declarations.
@@ -975,14 +928,13 @@ interface IVBSAXLexicalHandler : IDispatch {
   /*[id(0x00000552)]*/ int startCDATA();
   // Report the end of a CDATA section.
   /*[id(0x00000553)]*/ int endCDATA();
-  // Report an XML comment anywhere the document.
+  // Report an XML comment anywhere in the document.
   /*[id(0x00000554)]*/ int comment(ref wchar* strChars);
 }
 
 // IVBSAXDeclHandler interface
 interface IVBSAXDeclHandler : IDispatch {
-  /*[uuid("e8917260-7579-4be1-b5dd-7afbfa6f077b")]*/
-  static GUID IID = { 0xe8917260, 0x7579, 0x4be1, 0xb5, 0xdd, 0x7a, 0xfb, 0xfa, 0x6f, 0x07, 0x7b };
+  mixin(uuid("e8917260-7579-4be1-b5dd-7afbfa6f077b"));
   // Report an element type declaration.
   /*[id(0x00000557)]*/ int elementDecl(ref wchar* strName, ref wchar* strModel);
   // Report an attribute type declaration.
@@ -995,38 +947,37 @@ interface IVBSAXDeclHandler : IDispatch {
 
 // IMXWriter interface
 interface IMXWriter : IDispatch {
-  /*[uuid("4d7ff4ba-1565-4ea8-94e1-6e724a46f98d")]*/
-  static GUID IID = { 0x4d7ff4ba, 0x1565, 0x4ea8, 0x94, 0xe1, 0x6e, 0x72, 0x4a, 0x46, 0xf9, 0x8d };
+  mixin(uuid("4d7ff4ba-1565-4ea8-94e1-6e724a46f98d"));
   // Set or get the output.
-  /*[id(0x00000569)]*/ int set_output(VARIANT varDestination);
+  /*[id(0x00000569)]*/ int put_output(VARIANT varDestination);
   // Set or get the output.
   /*[id(0x00000569)]*/ int get_output(out VARIANT varDestination);
   // Set or get the output encoding.
-  /*[id(0x0000056B)]*/ int set_encoding(wchar* strEncoding);
+  /*[id(0x0000056B)]*/ int put_encoding(wchar* strEncoding);
   // Set or get the output encoding.
   /*[id(0x0000056B)]*/ int get_encoding(out wchar* strEncoding);
   // Determine whether or not to write the byte order mark
-  /*[id(0x0000056C)]*/ int set_byteOrderMark(short fWriteByteOrderMark);
+  /*[id(0x0000056C)]*/ int put_byteOrderMark(short fWriteByteOrderMark);
   // Determine whether or not to write the byte order mark
   /*[id(0x0000056C)]*/ int get_byteOrderMark(out short fWriteByteOrderMark);
   // Enable or disable auto indent mode.
-  /*[id(0x0000056D)]*/ int set_indent(short fIndentMode);
+  /*[id(0x0000056D)]*/ int put_indent(short fIndentMode);
   // Enable or disable auto indent mode.
   /*[id(0x0000056D)]*/ int get_indent(out short fIndentMode);
   // Set or get the standalone document declaration.
-  /*[id(0x0000056E)]*/ int set_standalone(short fValue);
+  /*[id(0x0000056E)]*/ int put_standalone(short fValue);
   // Set or get the standalone document declaration.
   /*[id(0x0000056E)]*/ int get_standalone(out short fValue);
   // Determine whether or not to omit the XML declaration.
-  /*[id(0x0000056F)]*/ int set_omitXMLDeclaration(short fValue);
+  /*[id(0x0000056F)]*/ int put_omitXMLDeclaration(short fValue);
   // Determine whether or not to omit the XML declaration.
   /*[id(0x0000056F)]*/ int get_omitXMLDeclaration(out short fValue);
   // Set or get the xml version info.
-  /*[id(0x00000570)]*/ int set_version(wchar* strVersion);
+  /*[id(0x00000570)]*/ int put_version(wchar* strVersion);
   // Set or get the xml version info.
   /*[id(0x00000570)]*/ int get_version(out wchar* strVersion);
   // When enabled, the writer no longer escapes out its input when writing it out.
-  /*[id(0x00000571)]*/ int set_disableOutputEscaping(short fValue);
+  /*[id(0x00000571)]*/ int put_disableOutputEscaping(short fValue);
   // When enabled, the writer no longer escapes out its input when writing it out.
   /*[id(0x00000571)]*/ int get_disableOutputEscaping(out short fValue);
   // Flushes all writer buffers forcing the writer to write to the underlying output object
@@ -1035,17 +986,16 @@ interface IMXWriter : IDispatch {
 
 // IMXAttributes interface
 interface IMXAttributes : IDispatch {
-  /*[uuid("f10d27cc-3ec0-415c-8ed8-77ab1c5e7262")]*/
-  static GUID IID = { 0xf10d27cc, 0x3ec0, 0x415c, 0x8e, 0xd8, 0x77, 0xab, 0x1c, 0x5e, 0x72, 0x62 };
+  mixin(uuid("f10d27cc-3ec0-415c-8ed8-77ab1c5e7262"));
   // Add an attribute to the end of the list.
   /*[id(0x0000055D)]*/ int addAttribute(wchar* strURI, wchar* strLocalName, wchar* strQName, wchar* strType, wchar* strValue);
-  // Add an attribute, whose value is equal to the indexed attribute the input attributes object, to the end of the list.
+  // Add an attribute, whose value is equal to the indexed attribute in the input attributes object, to the end of the list.
   /*[id(0x00000567)]*/ int addAttributeFromIndex(VARIANT varAtts, int nIndex);
   // Clear the attribute list for reuse.
   /*[id(0x0000055E)]*/ int clear();
   // Remove an attribute from the list.
   /*[id(0x0000055F)]*/ int removeAttribute(int nIndex);
-  // Set an attribute the list.
+  // Set an attribute in the list.
   /*[id(0x00000560)]*/ int setAttribute(int nIndex, wchar* strURI, wchar* strLocalName, wchar* strQName, wchar* strType, wchar* strValue);
   // Copy an entire Attributes object.
   /*[id(0x00000561)]*/ int setAttributes(VARIANT varAtts);
@@ -1063,8 +1013,7 @@ interface IMXAttributes : IDispatch {
 
 // IMXReaderControl interface
 interface IMXReaderControl : IDispatch {
-  /*[uuid("808f4e35-8d5a-4fbe-8466-33a41279ed30")]*/
-  static GUID IID = { 0x808f4e35, 0x8d5a, 0x4fbe, 0x84, 0x66, 0x33, 0xa4, 0x12, 0x79, 0xed, 0x30 };
+  mixin(uuid("808f4e35-8d5a-4fbe-8466-33a41279ed30"));
   // Abort the reader
   /*[id(0x00000576)]*/ int abort();
   // Resume the reader
@@ -1075,16 +1024,14 @@ interface IMXReaderControl : IDispatch {
 
 // IMXSchemaDeclHandler interface
 interface IMXSchemaDeclHandler : IDispatch {
-  /*[uuid("fa4bb38c-faf9-4cca-9302-d1dd0fe520db")]*/
-  static GUID IID = { 0xfa4bb38c, 0xfaf9, 0x4cca, 0x93, 0x02, 0xd1, 0xdd, 0x0f, 0xe5, 0x20, 0xdb };
+  mixin(uuid("fa4bb38c-faf9-4cca-9302-d1dd0fe520db"));
   // Access schema element declaration
   /*[id(0x0000057B)]*/ int schemaElementDecl(ISchemaElement oSchemaElement);
 }
 
 // XML Schema Element
 interface ISchemaElement : ISchemaParticle {
-  /*[uuid("50ea08b7-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b7, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b7-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005C4)]*/ int get_type(out ISchemaType type);
   /*[id(0x000005BD)]*/ int get_scope(out ISchemaComplexType scopeParam);
   /*[id(0x00000597)]*/ int get_defaultValue(out wchar* defaultValue);
@@ -1100,16 +1047,14 @@ interface ISchemaElement : ISchemaParticle {
 
 // XML Schema Particle
 interface ISchemaParticle : ISchemaItem {
-  /*[uuid("50ea08b5-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b5, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b5-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005AF)]*/ int get_minOccurs(out VARIANT minOccurs);
   /*[id(0x000005AB)]*/ int get_maxOccurs(out VARIANT maxOccurs);
 }
 
 // XML Schema Item
 interface ISchemaItem : IDispatch {
-  /*[uuid("50ea08b3-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b3, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b3-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005B1)]*/ int get_name(out wchar* name);
   /*[id(0x000005B3)]*/ int get_namespaceURI(out wchar* namespaceURI);
   /*[id(0x000005BB)]*/ int get_schema(out ISchema schema);
@@ -1121,8 +1066,7 @@ interface ISchemaItem : IDispatch {
 
 // XML Schema
 interface ISchema : ISchemaItem {
-  /*[uuid("50ea08b4-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b4, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b4-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005C2)]*/ int get_targetNamespace(out wchar* targetNamespace);
   /*[id(0x000005C9)]*/ int get_version(out wchar* versionParam);
   /*[id(0x000005C5)]*/ int get_types(out ISchemaItemCollection types);
@@ -1136,8 +1080,7 @@ interface ISchema : ISchemaItem {
 
 // XML Schema Item Collection
 interface ISchemaItemCollection : IDispatch {
-  /*[uuid("50ea08b2-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b2, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b2-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x00000000)]*/ int get_item(int index, out ISchemaItem item);
   /*[id(0x0000058F)]*/ int itemByName(wchar* name, out ISchemaItem item);
   /*[id(0x00000590)]*/ int itemByQName(wchar* name, wchar* namespaceURI, out ISchemaItem item);
@@ -1147,8 +1090,7 @@ interface ISchemaItemCollection : IDispatch {
 
 // XML Schema String Collection
 interface ISchemaStringCollection : IDispatch {
-  /*[uuid("50ea08b1-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b1, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b1-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x00000000)]*/ int get_item(int index, out wchar* bstr);
   /*[id(0x000005A7)]*/ int get_length(out int length);
   /*[id(0xFFFFFFFC)]*/ int get__newEnum(out IUnknown ppUnk);
@@ -1156,8 +1098,7 @@ interface ISchemaStringCollection : IDispatch {
 
 // XML Schema Type
 interface ISchemaType : ISchemaItem {
-  /*[uuid("50ea08b8-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b8, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b8-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x00000594)]*/ int get_baseTypes(out ISchemaItemCollection baseTypes);
   /*[id(0x0000059D)]*/ int get_final(out SCHEMADERIVATIONMETHOD finalParam);
   /*[id(0x000005C8)]*/ int get_variety(out SCHEMATYPEVARIETY variety);
@@ -1179,8 +1120,7 @@ interface ISchemaType : ISchemaItem {
 
 // XML Schema Complex Type
 interface ISchemaComplexType : ISchemaType {
-  /*[uuid("50ea08b9-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b9, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b9-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005A2)]*/ int get_isAbstract(out short abstractParam);
   /*[id(0x00000591)]*/ int get_anyAttribute(out ISchemaAny anyAttribute);
   /*[id(0x00000593)]*/ int get_attributes(out ISchemaItemCollection attributes);
@@ -1191,43 +1131,39 @@ interface ISchemaComplexType : ISchemaType {
 
 // XML Schema Any
 interface ISchemaAny : ISchemaParticle {
-  /*[uuid("50ea08bc-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08bc, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08bc-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005B2)]*/ int get_namespaces(out ISchemaStringCollection namespaces);
   /*[id(0x000005B7)]*/ int get_processContents(out SCHEMAPROCESSCONTENTS processContents);
 }
 
 // XML Schema Type
 interface ISchemaModelGroup : ISchemaParticle {
-  /*[uuid("50ea08bb-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08bb, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08bb-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005B5)]*/ int get_particles(out ISchemaItemCollection particles);
 }
 
 // IMXXMLFilter interface
 interface IMXXMLFilter : IDispatch {
-  /*[uuid("c90352f7-643c-4fbc-bb23-e996eb2d51fd")]*/
-  static GUID IID = { 0xc90352f7, 0x643c, 0x4fbc, 0xbb, 0x23, 0xe9, 0x96, 0xeb, 0x2d, 0x51, 0xfd };
+  mixin(uuid("c90352f7-643c-4fbc-bb23-e996eb2d51fd"));
   /*[id(0x0000058F)]*/ int getFeature(wchar* strName, out short fValue);
   /*[id(0x00000591)]*/ int putFeature(wchar* strName, short fValue);
   /*[id(0x00000590)]*/ int getProperty(wchar* strName, out VARIANT varValue);
   /*[id(0x00000592)]*/ int putProperty(wchar* strName, VARIANT varValue);
   /*[id(0x0000058D)]*/ int get_entityResolver(out IUnknown oResolver);
-  /*[id(0x0000058D)]*/ int let_entityResolver(IUnknown oResolver);
+  /*[id(0x0000058D)]*/ int putref_entityResolver(IUnknown oResolver);
   /*[id(0x0000058B)]*/ int get_contentHandler(out IUnknown oHandler);
-  /*[id(0x0000058B)]*/ int let_contentHandler(IUnknown oHandler);
+  /*[id(0x0000058B)]*/ int putref_contentHandler(IUnknown oHandler);
   /*[id(0x0000058C)]*/ int get_dtdHandler(out IUnknown oHandler);
-  /*[id(0x0000058C)]*/ int let_dtdHandler(IUnknown oHandler);
+  /*[id(0x0000058C)]*/ int putref_dtdHandler(IUnknown oHandler);
   /*[id(0x0000058E)]*/ int get_errorHandler(out IUnknown oHandler);
-  /*[id(0x0000058E)]*/ int let_errorHandler(IUnknown oHandler);
+  /*[id(0x0000058E)]*/ int putref_errorHandler(IUnknown oHandler);
 }
 
 // XML Schemas Collection 2
 interface IXMLDOMSchemaCollection2 : IXMLDOMSchemaCollection {
-  /*[uuid("50ea08b0-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b0, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b0-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x0000058B)]*/ int validate();
-  /*[id(0x0000058C)]*/ int set_validateOnLoad(short validateOnLoad);
+  /*[id(0x0000058C)]*/ int put_validateOnLoad(short validateOnLoad);
   /*[id(0x0000058C)]*/ int get_validateOnLoad(out short validateOnLoad);
   /*[id(0x0000058D)]*/ int getSchema(wchar* namespaceURI, out ISchema schema);
   /*[id(0x0000058E)]*/ int getDeclaration(IXMLDOMNode node, out ISchemaItem item);
@@ -1235,8 +1171,7 @@ interface IXMLDOMSchemaCollection2 : IXMLDOMSchemaCollection {
 
 // XML Schema Attribute
 interface ISchemaAttribute : ISchemaItem {
-  /*[uuid("50ea08b6-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08b6, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08b6-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005C4)]*/ int get_type(out ISchemaType type);
   /*[id(0x000005BD)]*/ int get_scope(out ISchemaComplexType scopeParam);
   /*[id(0x00000597)]*/ int get_defaultValue(out wchar* defaultValue);
@@ -1247,16 +1182,14 @@ interface ISchemaAttribute : ISchemaItem {
 
 // XML Schema Attribute Group
 interface ISchemaAttributeGroup : ISchemaItem {
-  /*[uuid("50ea08ba-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08ba, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08ba-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x00000591)]*/ int get_anyAttribute(out ISchemaAny anyAttribute);
   /*[id(0x00000593)]*/ int get_attributes(out ISchemaItemCollection attributes);
 }
 
 // XML Schema Any
 interface ISchemaIdentityConstraint : ISchemaItem {
-  /*[uuid("50ea08bd-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08bd, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08bd-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005BE)]*/ int get_selector(out wchar* selector);
   /*[id(0x0000059C)]*/ int get_fields(out ISchemaStringCollection fields);
   /*[id(0x000005BA)]*/ int get_referencedKey(out ISchemaIdentityConstraint key);
@@ -1264,23 +1197,21 @@ interface ISchemaIdentityConstraint : ISchemaItem {
 
 // XML Schema Notation
 interface ISchemaNotation : ISchemaItem {
-  /*[uuid("50ea08be-dd1b-4664-9a50-c2f40f4bd79a")]*/
-  static GUID IID = { 0x50ea08be, 0xdd1b, 0x4664, 0x9a, 0x50, 0xc2, 0xf4, 0x0f, 0x4b, 0xd7, 0x9a };
+  mixin(uuid("50ea08be-dd1b-4664-9a50-c2f40f4bd79a"));
   /*[id(0x000005C1)]*/ int get_systemIdentifier(out wchar* uri);
   /*[id(0x000005B9)]*/ int get_publicIdentifier(out wchar* uri);
 }
 
 interface IXMLDOMSelection : IXMLDOMNodeList {
-  /*[uuid("aa634fc7-5888-44a7-a257-3a47150d3a0e")]*/
-  static GUID IID = { 0xaa634fc7, 0x5888, 0x44a7, 0xa2, 0x57, 0x3a, 0x47, 0x15, 0x0d, 0x3a, 0x0e };
+  mixin(uuid("aa634fc7-5888-44a7-a257-3a47150d3a0e"));
   // selection expression
   /*[id(0x00000051)]*/ int get_expr(out wchar* expression);
   // selection expression
-  /*[id(0x00000051)]*/ int set_expr(wchar* expression);
+  /*[id(0x00000051)]*/ int put_expr(wchar* expression);
   // nodes to apply selection expression to
   /*[id(0x00000052)]*/ int get_context(out IXMLDOMNode ppNode);
   // nodes to apply selection expression to
-  /*[id(0x00000052)]*/ int let_context(IXMLDOMNode ppNode);
+  /*[id(0x00000052)]*/ int putref_context(IXMLDOMNode ppNode);
   // gets the next node without advancing the list position
   /*[id(0x00000053)]*/ int peekNode(out IXMLDOMNode ppNode);
   // checks to see if the node matches the pattern
@@ -1298,16 +1229,24 @@ interface IXMLDOMSelection : IXMLDOMNodeList {
 }
 
 interface XMLDOMDocumentEvents : IDispatch {
-  /*[uuid("3efaa427-272f-11d2-836f-0000f87a7782")]*/
-  static GUID IID = { 0x3efaa427, 0x272f, 0x11d2, 0x83, 0x6f, 0x00, 0x00, 0xf8, 0x7a, 0x77, 0x82 };
+  mixin(uuid("3efaa427-272f-11d2-836f-0000f87a7782"));
   /+/*[id(0x000000C6)]*/ int ondataavailable();+/
   /+/*[id(0xFFFFFD9F)]*/ int onreadystatechange();+/
 }
 
+// DSO Control
+interface IDSOControl : IDispatch {
+  mixin(uuid("310afa62-0575-11d2-9ca9-0060b0ec3d39"));
+  /*[id(0x00010001)]*/ int get_XMLDocument(out IXMLDOMDocument ppDoc);
+  /*[id(0x00010001)]*/ int put_XMLDocument(IXMLDOMDocument ppDoc);
+  /*[id(0x00010002)]*/ int get_JavaDSOCompatible(out int fJavaDSOCompatible);
+  /*[id(0x00010002)]*/ int put_JavaDSOCompatible(int fJavaDSOCompatible);
+  /*[id(0xFFFFFDF3)]*/ int get_readyState(out int state);
+}
+
 // IXMLHTTPRequest Interface
 interface IXMLHTTPRequest : IDispatch {
-  /*[uuid("ed8c108d-4349-11d2-91a4-00c04f7969e8")]*/
-  static GUID IID = { 0xed8c108d, 0x4349, 0x11d2, 0x91, 0xa4, 0x00, 0xc0, 0x4f, 0x79, 0x69, 0xe8 };
+  mixin(uuid("ed8c108d-4349-11d2-91a4-00c04f7969e8"));
   // Open HTTP connection
   /*[id(0x00000001)]*/ int open(wchar* bstrMethod, wchar* bstrUrl, VARIANT varAsync, VARIANT bstrUser, VARIANT bstrPassword);
   // Add HTTP request header
@@ -1335,16 +1274,15 @@ interface IXMLHTTPRequest : IDispatch {
   // Get ready state
   /*[id(0x0000000D)]*/ int get_readyState(out int plState);
   // Register a complete event handler
-  /*[id(0x0000000E)]*/ int set_onreadystatechange(IDispatch value);
+  /*[id(0x0000000E)]*/ int put_onreadystatechange(IDispatch value);
 }
 
 // IServerXMLHTTPRequest Interface
 interface IServerXMLHTTPRequest : IXMLHTTPRequest {
-  /*[uuid("2e9196bf-13ba-4dd4-91ca-6c571f281495")]*/
-  static GUID IID = { 0x2e9196bf, 0x13ba, 0x4dd4, 0x91, 0xca, 0x6c, 0x57, 0x1f, 0x28, 0x14, 0x95 };
-  // Specify timeout settings (milliseconds)
+  mixin(uuid("2e9196bf-13ba-4dd4-91ca-6c571f281495"));
+  // Specify timeout settings (in milliseconds)
   /*[id(0x0000000F)]*/ int setTimeouts(int resolveTimeout, int connectTimeout, int sendTimeout, int receiveTimeout);
-  // Wait for asynchronous send to complete, with optional timeout (seconds)
+  // Wait for asynchronous send to complete, with optional timeout (in seconds)
   /*[id(0x00000010)]*/ int waitForResponse(VARIANT timeoutInSeconds, out short isSuccessful);
   // Get an option value
   /*[id(0x00000011)]*/ int getOption(SERVERXMLHTTP_OPTION option, out VARIANT value);
@@ -1354,8 +1292,7 @@ interface IServerXMLHTTPRequest : IXMLHTTPRequest {
 
 // IServerXMLHTTPRequest2 Interface
 interface IServerXMLHTTPRequest2 : IServerXMLHTTPRequest {
-  /*[uuid("2e01311b-c322-4b0a-bd77-b90cfdc8dce7")]*/
-  static GUID IID = { 0x2e01311b, 0xc322, 0x4b0a, 0xbd, 0x77, 0xb9, 0x0c, 0xfd, 0xc8, 0xdc, 0xe7 };
+  mixin(uuid("2e01311b-c322-4b0a-bd77-b90cfdc8dce7"));
   // Specify proxy configuration
   /*[id(0x00000013)]*/ int setProxy(SXH_PROXY_SETTING proxySetting, VARIANT varProxyServer, VARIANT varBypassList);
   // Specify proxy authentication credentials
@@ -1364,8 +1301,7 @@ interface IServerXMLHTTPRequest2 : IServerXMLHTTPRequest {
 
 // IMXNamespacePrefixes interface
 interface IMXNamespacePrefixes : IDispatch {
-  /*[uuid("c90352f4-643c-4fbc-bb23-e996eb2d51fd")]*/
-  static GUID IID = { 0xc90352f4, 0x643c, 0x4fbc, 0xbb, 0x23, 0xe9, 0x96, 0xeb, 0x2d, 0x51, 0xfd };
+  mixin(uuid("c90352f4-643c-4fbc-bb23-e996eb2d51fd"));
   /*[id(0x00000000)]*/ int get_item(int index, out wchar* prefix);
   /*[id(0x00000588)]*/ int get_length(out int length);
   /*[id(0xFFFFFFFC)]*/ int get__newEnum(out IUnknown ppUnk);
@@ -1373,9 +1309,8 @@ interface IMXNamespacePrefixes : IDispatch {
 
 // IVBMXNamespaceManager interface
 interface IVBMXNamespaceManager : IDispatch {
-  /*[uuid("c90352f5-643c-4fbc-bb23-e996eb2d51fd")]*/
-  static GUID IID = { 0xc90352f5, 0x643c, 0x4fbc, 0xbb, 0x23, 0xe9, 0x96, 0xeb, 0x2d, 0x51, 0xfd };
-  /*[id(0x0000057E)]*/ int set_allowOverride(short fOverride);
+  mixin(uuid("c90352f5-643c-4fbc-bb23-e996eb2d51fd"));
+  /*[id(0x0000057E)]*/ int put_allowOverride(short fOverride);
   /*[id(0x0000057E)]*/ int get_allowOverride(out short fOverride);
   /*[id(0x0000057F)]*/ int reset();
   /*[id(0x00000580)]*/ int pushContext();
@@ -1390,8 +1325,7 @@ interface IVBMXNamespaceManager : IDispatch {
 
 // IMXNamespaceManager interface
 interface IMXNamespaceManager : IUnknown {
-  /*[uuid("c90352f6-643c-4fbc-bb23-e996eb2d51fd")]*/
-  static GUID IID = { 0xc90352f6, 0x643c, 0x4fbc, 0xbb, 0x23, 0xe9, 0x96, 0xeb, 0x2d, 0x51, 0xfd };
+  mixin(uuid("c90352f6-643c-4fbc-bb23-e996eb2d51fd"));
   /*[id(0x60010000)]*/ int putAllowOverride(short fOverride);
   /*[id(0x60010001)]*/ int getAllowOverride(out short fOverride);
   /*[id(0x60010002)]*/ int reset();
@@ -1408,336 +1342,312 @@ interface IMXNamespaceManager : IUnknown {
 
 // W3C-DOM XML Document (Apartment)
 abstract class DOMDocument {
-  /*[uuid("f6d90f11-9c73-11d3-b32e-00c04f990bb4")]*/
-  static GUID CLSID = { 0xf6d90f11, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument2);
+  mixin(uuid("f6d90f11-9c73-11d3-b32e-00c04f990bb4"));
+  mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
 abstract class DOMDocument26 {
-  /*[uuid("f5078f1b-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f1b, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument2);
+  mixin(uuid("f5078f1b-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
 abstract class DOMDocument30 {
-  /*[uuid("f5078f32-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f32, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument2);
+  mixin(uuid("f5078f32-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
 abstract class DOMDocument40 {
-  /*[uuid("88d969c0-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969c0, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument2);
+  mixin(uuid("88d969c0-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document 6.0 (Apartment)
 abstract class DOMDocument60 {
-  /*[uuid("88d96a05-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a05, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument3);
+  mixin(uuid("88d96a05-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXMLDOMDocument3);
 }
 
 // W3C-DOM XML Document (Free threaded)
 abstract class FreeThreadedDOMDocument {
-  /*[uuid("f6d90f12-9c73-11d3-b32e-00c04f990bb4")]*/
-  static GUID CLSID = { 0xf6d90f12, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument2);
+  mixin(uuid("f6d90f12-9c73-11d3-b32e-00c04f990bb4"));
+  mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
 abstract class FreeThreadedDOMDocument26 {
-  /*[uuid("f5078f1c-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f1c, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument2);
+  mixin(uuid("f5078f1c-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
 abstract class FreeThreadedDOMDocument30 {
-  /*[uuid("f5078f33-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f33, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument2);
+  mixin(uuid("f5078f33-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
 abstract class FreeThreadedDOMDocument40 {
-  /*[uuid("88d969c1-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969c1, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument2);
+  mixin(uuid("88d969c1-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document 6.0 (Free threaded)
 abstract class FreeThreadedDOMDocument60 {
-  /*[uuid("88d96a06-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a06, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMDocument3);
+  mixin(uuid("88d96a06-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXMLDOMDocument3);
 }
 
 // XML Schema Cache
 abstract class XMLSchemaCache {
-  /*[uuid("373984c9-b845-449b-91e7-45ac83036ade")]*/
-  static GUID CLSID = { 0x373984c9, 0xb845, 0x449b, 0x91, 0xe7, 0x45, 0xac, 0x83, 0x03, 0x6a, 0xde };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMSchemaCollection);
+  mixin(uuid("373984c9-b845-449b-91e7-45ac83036ade"));
+  mixin Interfaces!(IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 2.6
 abstract class XMLSchemaCache26 {
-  /*[uuid("f5078f1d-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f1d, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMSchemaCollection);
+  mixin(uuid("f5078f1d-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 3.0
 abstract class XMLSchemaCache30 {
-  /*[uuid("f5078f34-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f34, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMSchemaCollection);
+  mixin(uuid("f5078f34-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 4.0
 abstract class XMLSchemaCache40 {
-  /*[uuid("88d969c2-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969c2, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMSchemaCollection2);
+  mixin(uuid("88d969c2-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXMLDOMSchemaCollection2);
 }
 
 // XML Schema Cache 6.0
 abstract class XMLSchemaCache60 {
-  /*[uuid("88d96a07-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a07, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXMLDOMSchemaCollection2);
+  mixin(uuid("88d96a07-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXMLDOMSchemaCollection2);
 }
 
 // Compiled XSL Stylesheet Cache
 abstract class XSLTemplate {
-  /*[uuid("2933bf94-7b36-11d2-b20e-00c04f983e60")]*/
-  static GUID CLSID = { 0x2933bf94, 0x7b36, 0x11d2, 0xb2, 0x0e, 0x00, 0xc0, 0x4f, 0x98, 0x3e, 0x60 };
-  mixin CoInterfaces!(/*[default]*/ IXSLTemplate);
+  mixin(uuid("2933bf94-7b36-11d2-b20e-00c04f983e60"));
+  mixin Interfaces!(IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 2.6
 abstract class XSLTemplate26 {
-  /*[uuid("f5078f21-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f21, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXSLTemplate);
+  mixin(uuid("f5078f21-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 3.0
 abstract class XSLTemplate30 {
-  /*[uuid("f5078f36-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f36, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXSLTemplate);
+  mixin(uuid("f5078f36-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 4.0
 abstract class XSLTemplate40 {
-  /*[uuid("88d969c3-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969c3, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXSLTemplate);
+  mixin(uuid("88d969c3-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXSLTemplate);
 }
 
 // XSL Stylesheet Cache 6.0
 abstract class XSLTemplate60 {
-  /*[uuid("88d96a08-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a08, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXSLTemplate);
+  mixin(uuid("88d96a08-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXSLTemplate);
+}
+
+// XML Data Source Object
+abstract class DSOControl {
+  mixin(uuid("f6d90f14-9c73-11d3-b32e-00c04f990bb4"));
+  mixin Interfaces!(IDSOControl);
+}
+
+// XML Data Source Object
+abstract class DSOControl26 {
+  mixin(uuid("f5078f1f-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IDSOControl);
+}
+
+// XML Data Source Object
+abstract class DSOControl30 {
+  mixin(uuid("f5078f39-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IDSOControl);
+}
+
+// XML Data Source Object
+abstract class DSOControl40 {
+  mixin(uuid("88d969c4-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IDSOControl);
 }
 
 // XML HTTP Request class.
 abstract class XMLHTTP {
-  /*[uuid("f6d90f16-9c73-11d3-b32e-00c04f990bb4")]*/
-  static GUID CLSID = { 0xf6d90f16, 0x9c73, 0x11d3, 0xb3, 0x2e, 0x00, 0xc0, 0x4f, 0x99, 0x0b, 0xb4 };
-  mixin CoInterfaces!(/*[default]*/ IXMLHTTPRequest);
+  mixin(uuid("f6d90f16-9c73-11d3-b32e-00c04f990bb4"));
+  mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
 abstract class XMLHTTP26 {
-  /*[uuid("f5078f1e-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f1e, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXMLHTTPRequest);
+  mixin(uuid("f5078f1e-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
 abstract class XMLHTTP30 {
-  /*[uuid("f5078f35-c551-11d3-89b9-0000f81fe221")]*/
-  static GUID CLSID = { 0xf5078f35, 0xc551, 0x11d3, 0x89, 0xb9, 0x00, 0x00, 0xf8, 0x1f, 0xe2, 0x21 };
-  mixin CoInterfaces!(/*[default]*/ IXMLHTTPRequest);
+  mixin(uuid("f5078f35-c551-11d3-89b9-0000f81fe221"));
+  mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
 abstract class XMLHTTP40 {
-  /*[uuid("88d969c5-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969c5, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXMLHTTPRequest);
+  mixin(uuid("88d969c5-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // XML HTTP Request class 6.0
 abstract class XMLHTTP60 {
-  /*[uuid("88d96a0a-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a0a, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IXMLHTTPRequest);
+  mixin(uuid("88d96a0a-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
 abstract class ServerXMLHTTP {
-  /*[uuid("afba6b42-5692-48ea-8141-dc517dcf0ef1")]*/
-  static GUID CLSID = { 0xafba6b42, 0x5692, 0x48ea, 0x81, 0x41, 0xdc, 0x51, 0x7d, 0xcf, 0x0e, 0xf1 };
-  mixin CoInterfaces!(/*[default]*/ IServerXMLHTTPRequest);
+  mixin(uuid("afba6b42-5692-48ea-8141-dc517dcf0ef1"));
+  mixin Interfaces!(IServerXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
 abstract class ServerXMLHTTP30 {
-  /*[uuid("afb40ffd-b609-40a3-9828-f88bbe11e4e3")]*/
-  static GUID CLSID = { 0xafb40ffd, 0xb609, 0x40a3, 0x98, 0x28, 0xf8, 0x8b, 0xbe, 0x11, 0xe4, 0xe3 };
-  mixin CoInterfaces!(/*[default]*/ IServerXMLHTTPRequest);
+  mixin(uuid("afb40ffd-b609-40a3-9828-f88bbe11e4e3"));
+  mixin Interfaces!(IServerXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
 abstract class ServerXMLHTTP40 {
-  /*[uuid("88d969c6-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969c6, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IServerXMLHTTPRequest2);
+  mixin(uuid("88d969c6-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IServerXMLHTTPRequest2);
 }
 
 // Server XML HTTP Request 6.0 
 abstract class ServerXMLHTTP60 {
-  /*[uuid("88d96a0b-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a0b, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IServerXMLHTTPRequest2);
+  mixin(uuid("88d96a0b-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IServerXMLHTTPRequest2);
 }
 
 // SAX XML Reader (version independent) coclass
 abstract class SAXXMLReader {
-  /*[uuid("079aa557-4a18-424a-8eee-e39f0a8d41b9")]*/
-  static GUID CLSID = { 0x079aa557, 0x4a18, 0x424a, 0x8e, 0xee, 0xe3, 0x9f, 0x0a, 0x8d, 0x41, 0xb9 };
-  mixin CoInterfaces!(/*[default]*/ IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
+  mixin(uuid("079aa557-4a18-424a-8eee-e39f0a8d41b9"));
+  mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
 }
 
 // SAX XML Reader 3.0 coclass
 abstract class SAXXMLReader30 {
-  /*[uuid("3124c396-fb13-4836-a6ad-1317f1713688")]*/
-  static GUID CLSID = { 0x3124c396, 0xfb13, 0x4836, 0xa6, 0xad, 0x13, 0x17, 0xf1, 0x71, 0x36, 0x88 };
-  mixin CoInterfaces!(/*[default]*/ IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
+  mixin(uuid("3124c396-fb13-4836-a6ad-1317f1713688"));
+  mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
 }
 
 // SAX XML Reader 4.0 coclass
 abstract class SAXXMLReader40 {
-  /*[uuid("7c6e29bc-8b8b-4c3d-859e-af6cd158be0f")]*/
-  static GUID CLSID = { 0x7c6e29bc, 0x8b8b, 0x4c3d, 0x85, 0x9e, 0xaf, 0x6c, 0xd1, 0x58, 0xbe, 0x0f };
-  mixin CoInterfaces!(/*[default]*/ IVBSAXXMLReader, ISAXXMLReader);
+  mixin(uuid("7c6e29bc-8b8b-4c3d-859e-af6cd158be0f"));
+  mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader);
 }
 
 // SAX XML Reader 6.0
 abstract class SAXXMLReader60 {
-  /*[uuid("88d96a0c-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a0c, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IVBSAXXMLReader, ISAXXMLReader);
+  mixin(uuid("88d96a0c-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader);
 }
 
 // Microsoft XML Writer (version independent) coclass
 abstract class MXXMLWriter {
-  /*[uuid("fc220ad8-a72a-4ee8-926e-0b7ad152a020")]*/
-  static GUID CLSID = { 0xfc220ad8, 0xa72a, 0x4ee8, 0x92, 0x6e, 0x0b, 0x7a, 0xd1, 0x52, 0xa0, 0x20 };
-  mixin CoInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
+  mixin(uuid("fc220ad8-a72a-4ee8-926e-0b7ad152a020"));
+  mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 3.0 coclass
 abstract class MXXMLWriter30 {
-  /*[uuid("3d813dfe-6c91-4a4e-8f41-04346a841d9c")]*/
-  static GUID CLSID = { 0x3d813dfe, 0x6c91, 0x4a4e, 0x8f, 0x41, 0x04, 0x34, 0x6a, 0x84, 0x1d, 0x9c };
-  mixin CoInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
+  mixin(uuid("3d813dfe-6c91-4a4e-8f41-04346a841d9c"));
+  mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 4.0 coclass
 abstract class MXXMLWriter40 {
-  /*[uuid("88d969c8-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969c8, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
+  mixin(uuid("88d969c8-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 6.0
 abstract class MXXMLWriter60 {
-  /*[uuid("88d96a0f-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a0f, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
+  mixin(uuid("88d96a0f-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer (version independent) coclass
 abstract class MXHTMLWriter {
-  /*[uuid("a4c23ec3-6b70-4466-9127-550077239978")]*/
-  static GUID CLSID = { 0xa4c23ec3, 0x6b70, 0x4466, 0x91, 0x27, 0x55, 0x00, 0x77, 0x23, 0x99, 0x78 };
-  mixin CoInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
+  mixin(uuid("a4c23ec3-6b70-4466-9127-550077239978"));
+  mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 3.0 coclass
 abstract class MXHTMLWriter30 {
-  /*[uuid("853d1540-c1a7-4aa9-a226-4d3bd301146d")]*/
-  static GUID CLSID = { 0x853d1540, 0xc1a7, 0x4aa9, 0xa2, 0x26, 0x4d, 0x3b, 0xd3, 0x01, 0x14, 0x6d };
-  mixin CoInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
+  mixin(uuid("853d1540-c1a7-4aa9-a226-4d3bd301146d"));
+  mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 4.0 coclass
 abstract class MXHTMLWriter40 {
-  /*[uuid("88d969c9-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969c9, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
+  mixin(uuid("88d969c9-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 6.0
 abstract class MXHTMLWriter60 {
-  /*[uuid("88d96a10-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a10, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
+  mixin(uuid("88d96a10-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // SAX Attributes (version independent) coclass
 abstract class SAXAttributes {
-  /*[uuid("4dd441ad-526d-4a77-9f1b-9841ed802fb0")]*/
-  static GUID CLSID = { 0x4dd441ad, 0x526d, 0x4a77, 0x9f, 0x1b, 0x98, 0x41, 0xed, 0x80, 0x2f, 0xb0 };
-  mixin CoInterfaces!(/*[default]*/ IMXAttributes, IVBSAXAttributes, ISAXAttributes);
+  mixin(uuid("4dd441ad-526d-4a77-9f1b-9841ed802fb0"));
+  mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 3.0 coclass
 abstract class SAXAttributes30 {
-  /*[uuid("3e784a01-f3ae-4dc0-9354-9526b9370eba")]*/
-  static GUID CLSID = { 0x3e784a01, 0xf3ae, 0x4dc0, 0x93, 0x54, 0x95, 0x26, 0xb9, 0x37, 0x0e, 0xba };
-  mixin CoInterfaces!(/*[default]*/ IMXAttributes, IVBSAXAttributes, ISAXAttributes);
+  mixin(uuid("3e784a01-f3ae-4dc0-9354-9526b9370eba"));
+  mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 4.0 coclass
 abstract class SAXAttributes40 {
-  /*[uuid("88d969ca-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969ca, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IMXAttributes, IVBSAXAttributes, ISAXAttributes);
+  mixin(uuid("88d969ca-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 6.0
 abstract class SAXAttributes60 {
-  /*[uuid("88d96a0e-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a0e, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IMXAttributes, IVBSAXAttributes, ISAXAttributes);
+  mixin(uuid("88d96a0e-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // MX Namespace Manager coclass
 abstract class MXNamespaceManager {
-  /*[uuid("88d969d5-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969d5, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IVBMXNamespaceManager, IMXNamespaceManager);
+  mixin(uuid("88d969d5-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IVBMXNamespaceManager, IMXNamespaceManager);
 }
 
 // MX Namespace Manager 4.0 coclass
 abstract class MXNamespaceManager40 {
-  /*[uuid("88d969d6-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d969d6, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IVBMXNamespaceManager, IMXNamespaceManager);
+  mixin(uuid("88d969d6-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IVBMXNamespaceManager, IMXNamespaceManager);
 }
 
 // MX Namespace Manager 6.0
 abstract class MXNamespaceManager60 {
-  /*[uuid("88d96a11-f192-11d4-a65f-0040963251e5")]*/
-  static GUID CLSID = { 0x88d96a11, 0xf192, 0x11d4, 0xa6, 0x5f, 0x00, 0x40, 0x96, 0x32, 0x51, 0xe5 };
-  mixin CoInterfaces!(/*[default]*/ IVBMXNamespaceManager, IMXNamespaceManager);
+  mixin(uuid("88d96a11-f192-11d4-a65f-0040963251e5"));
+  mixin Interfaces!(IVBMXNamespaceManager, IMXNamespaceManager);
 }

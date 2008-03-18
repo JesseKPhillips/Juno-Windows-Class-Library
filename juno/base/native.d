@@ -1,29 +1,48 @@
+/**
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.base.native;
 
-private import juno.base.string : toUtf8, format;
+private import juno.base.core,
+  juno.base.string;
 
-private import juno.base.core;
-private import std.string : toStringz, toUTF16z;
+private import std.string : format;
 private import std.conv : toUshort;
-private import std.traits : ReturnType, ParameterTypeTuple;
-private import std.c.string : memcpy;
+private import std.traits, std.typetuple;
 
-pragma (lib, "advapi32.lib");
-pragma (lib, "shell32.lib");
+private import std.c.windows.windows :
+  FILETIME,
+  SYSTEMTIME,
+  GetSystemTimeAsFileTime,
+  FileTimeToLocalFileTime,
+  InterlockedIncrement,
+  InterlockedDecrement;
+
+pragma(lib, "shell32.lib");
+pragma(lib, "advapi32.lib");
 
 extern(Windows):
 
+version(D_Version2) {
+Handle INVALID_HANDLE_VALUE = cast(Handle)-1;
+} else {
+extern Handle INVALID_HANDLE_VALUE;
+}
+
 const uint MAX_PATH = 260;
 
-enum {
-  ERROR_SUCCESS = 0,
-  ERROR_INVALID_FUNCTION = 1,
-  ERROR_FILE_NOT_FOUND = 2,
-  ERROR_PATH_NOT_FOUND = 3,
-  ERROR_TOO_MANY_OPEN_FILES = 4,
-  ERROR_ACCESS_DENIED = 5,
-  ERROR_INVALID_HANDLE = 6,
-  ERROR_CLASS_ALREADY_EXISTS = 1410
+enum : uint {
+  ERROR_SUCCESS                         = 0,
+  ERROR_INVALID_FUNCTION                = 1,
+  ERROR_FILE_NOT_FOUND                  = 2,
+  ERROR_PATH_NOT_FOUND                  = 3,
+  ERROR_TOO_MANY_OPEN_FILES             = 4,
+  ERROR_ACCESS_DENIED                   = 5,
+  ERROR_INVALID_HANDLE                  = 6,
+  ERROR_BAD_IMPERSONATION_LEVEL         = 1346,
+  ERROR_CLASS_ALREADY_EXISTS            = 1410
 }
 
 enum : uint {
@@ -65,203 +84,9 @@ enum {
   SEVERITY_ERROR = 1
 }
 
-template MAKE_SCODE_T(uint sev, uint fac, uint code) {
-  const MAKE_SCODE_T = ((sev << 31) | (fac << 16) | code);
+template tMAKE_SCODE(uint sev, uint fac, uint code) {
+  const tMAKE_SCODE = ((sev << 31) | (fac << 16) | code);
 }
-
-template MAKELANGID_T(ushort p, ushort s) {
-  const MAKELANGID_T = cast(ushort)((s << 10) | p);
-}
-
-template PRIMARYLANGID_T(ushort lgid) {
-  const PRIMARYLANGID_T = cast(ushort)(lgid & 0x3ff);
-}
-
-template SUBLANGID_T(ushort lgid) {
-  const SUBLANGID_T = cast(ushort)(lgid >> 10);
-}
-
-template MAKELCID_T(ushort lgid, ushort srtid) {
-  const MAKELCID_T = cast(uint)((srtid << 16) | lgid);
-}
-
-enum : ushort {
-  LANG_NEUTRAL = 0x0,
-  LANG_INVARIANT = 0x7f
-}
-
-enum : ushort {
-  SUBLANG_NEUTRAL = 0x0,
-  SUBLANG_DEFAULT = 0x1,
-  SUBLANG_SYS_DEFAULT = 0x2
-}
-
-enum : ushort {
-  SORT_DEFAULT = 0x0
-}
-
-enum : ushort {
-  LANG_SYSTEM_DEFAULT = MAKELANGID_T!(LANG_NEUTRAL, SUBLANG_SYS_DEFAULT),
-  LANG_USER_DEFAULT = MAKELANGID_T!(LANG_NEUTRAL, SUBLANG_NEUTRAL)
-}
-
-enum : uint {
-  LOCALE_SYSTEM_DEFAULT = MAKELCID_T!(LANG_SYSTEM_DEFAULT, SORT_DEFAULT),
-  LOCALE_USER_DEFAULT = MAKELCID_T!(LANG_USER_DEFAULT, SORT_DEFAULT),
-  LOCALE_NEUTRAL = MAKELCID_T!(MAKELANGID_T!(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT),
-  LOCALE_INVARIANT = MAKELCID_T!(MAKELANGID_T!(LANG_INVARIANT, SUBLANG_NEUTRAL), SORT_DEFAULT)
-}
-
-enum : uint {
-  CP_ACP                   = 0,
-  CP_OEMCP                 = 1,
-  CP_MACCP                 = 2,
-  CP_THREAD_ACP            = 3,
-  CP_UTF7                  = 65000,
-  CP_UTF8                  = 65001
-}
-
-enum : uint {
-  STD_INPUT_HANDLE = -10,
-  STD_OUTPUT_HANDLE = -11,
-  STD_ERROR_HANDLE = -12
-}
-
-struct POINT {
-  int x;
-  int y;
-}
-
-struct SIZE {
-  int cx;
-  int cy;
-}
-
-struct RECT {
-  int left;
-  int top;
-  int right;
-  int bottom;
-
-  static RECT fromXYWH(int x, int y, int width, int height) {
-    return RECT(x, y, x + width, y + height);
-  }
-}
-
-struct OSVERSIONINFOW {
-  uint dwOSVersionInfoSize = OSVERSIONINFOW.sizeof;
-  uint dwMajorVersion;
-  uint dwMinorVersion;
-  uint dwBuildNumber;
-  uint dwPlatformId;
-  wchar[128] szCDVersion;
-}
-
-alias OSVERSIONINFOW OSVERSIONINFO;
-
-enum : uint {
-  VER_PLATFORM_WIN32s            = 0,
-  VER_PLATFORM_WIN32_WINDOWS     = 1,
-  VER_PLATFORM_WIN32_NT          = 2
-}
-
-struct FILETIME {
-  uint dwLowDateTime;
-  uint dwHighDateTime;
-}
-
-struct CPINFO {
-  uint MaxCharSize;
-  ubyte[2] DefaultChar;
-  ubyte[12] LeadByte;
-}
-
-extern final Handle HKEY_CLASSES_ROOT;
-extern final Handle HKEY_CURRENT_USER;
-extern final Handle HKEY_LOCAL_MACHINE;
-extern final Handle HKEY_USERS;
-extern final Handle HKEY_PERFORMANCE_DATA;
-extern final Handle HKEY_CURRENT_CONFIG;
-extern final Handle HKEY_DYN_DATA;
-
-enum : uint {
-  DELETE                          = 0x00010000,
-  READ_CONTROL                    = 0x00020000,
-  WRITE_DAC                       = 0x00040000,
-  WRITE_OWNER                     = 0x00080000,
-  SYNCHRONIZE                     = 0x00100000,
-  STANDARD_RIGHTS_REQUIRED        = 0x000F0000,
-  STANDARD_RIGHTS_READ            = READ_CONTROL,
-  STANDARD_RIGHTS_WRITE           = READ_CONTROL,
-  STANDARD_RIGHTS_EXECUTE         = READ_CONTROL,
-  STANDARD_RIGHTS_ALL             = 0x001F0000,
-  SPECIFIC_RIGHTS_ALL             = 0x0000FFFF
-}
-
-enum : uint {
-  KEY_QUERY_VALUE        = 0x0001,
-  KEY_SET_VALUE          = 0x0002,
-  KEY_CREATE_SUB_KEY     = 0x0004,
-  KEY_ENUMERATE_SUB_KEYS = 0x0008,
-  KEY_NOTIFY             = 0x0010,
-  KEY_CREATE_LINK        = 0x0020,
-
-  KEY_READ               = (STANDARD_RIGHTS_READ | KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | KEY_NOTIFY) & ~SYNCHRONIZE,
-  KEY_WRITE              = (STANDARD_RIGHTS_WRITE | KEY_SET_VALUE | KEY_CREATE_SUB_KEY) & ~SYNCHRONIZE,
-  KEY_EXECUTE            = KEY_READ & ~SYNCHRONIZE,
-  KEY_ALL_ACCESS         = (STANDARD_RIGHTS_ALL | KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_CREATE_SUB_KEY | KEY_ENUMERATE_SUB_KEYS | KEY_NOTIFY | KEY_CREATE_LINK) & ~SYNCHRONIZE,
-}
-
-enum : uint {
-  REG_NONE                        = 0,
-  REG_SZ                          = 1,
-  REG_EXPAND_SZ                   = 2,
-  REG_BINARY                      = 3,
-  REG_DWORD                       = 4,
-  REG_DWORD_LITTLE_ENDIAN         = 4,
-  REG_DWORD_BIG_ENDIAN            = 5,
-  REG_LINK                        = 6,
-  REG_MULTI_SZ                    = 7,
-  REG_RESOURCE_LIST               = 8,
-  REG_FULL_RESOURCE_DESCRIPTOR    = 9,
-  REG_RESOURCE_REQUIREMENTS_LIST  = 10,
-  REG_QWORD                       = 11,
-  REG_QWORD_LITTLE_ENDIAN         = 11
-}
-
-extern final Handle INVALID_HANDLE_VALUE; // Already defined by Phobos
-
-extern ushort SUBLANGID(uint lgid);
-
-extern ushort LOWORD(uint);
-extern ushort HIWORD(uint);
-
-int SignedLOWORD(int n) {
-  return cast(short)(n & 0xffff);
-}
-
-int SignedHIWORD(int n) {
-  return cast(short)((n >> 16) & 0xffff);
-}
-
-ubyte LOBYTE(uint w) {
-  return cast(ubyte)(w & 0xff);
-}
-
-ubyte HIBYTE(uint w) {
-  return cast(ubyte)(w >> 8);
-}
-
-struct LARGE_INTEGER {
-  long QuadPart;
-}
-
-struct ULARGE_INTEGER {
-  ulong QuadPart;
-}
-
-int InterlockedIncrement(ref int Addend);
-int InterlockedDecrement(ref int Addend);
 
 enum : uint {
   FORMAT_MESSAGE_ALLOCATE_BUFFER  = 0x00000100,
@@ -272,7 +97,53 @@ enum : uint {
   FORMAT_MESSAGE_IGNORE_INSERTS   = 0x00000200
 }
 
-int InterlockedCompareExchange(int* Destination, int ExChange, int Comparand);
+int FormatMessageW(uint dwFlags, void* lpSource, uint dwMessageId, uint dwLanguageId, wchar* lpBuffer, uint nSize, void** Arguments);
+alias FormatMessageW FormatMessage;
+
+enum : uint {
+  LMEM_FIXED          = 0x0000,
+  LMEM_MOVEABLE       = 0x0002,
+  LMEM_NOCOMPACT      = 0x0010,
+  LMEM_NODISCARD      = 0x0020,
+  LMEM_ZEROINIT       = 0x0040,
+  LMEM_MODIFY         = 0x0080,
+  LMEM_DISCARDABLE    = 0x0F00,
+  LMEM_VALID_FLAGS    = 0x0F72,
+  LMEM_INVALID_HANDLE = 0x8000
+}
+
+Handle LocalAlloc(uint uFlags, size_t cb);
+
+Handle LocalFree(Handle hMem);
+
+enum : uint {
+  GMEM_FIXED          = 0x0000,
+  GMEM_MOVEABLE       = 0x0002,
+  GMEM_NOCOMPACT      = 0x0010,
+  GMEM_NODISCARD      = 0x0020,
+  GMEM_ZEROINIT       = 0x0040,
+  GMEM_MODIFY         = 0x0080,
+  GMEM_DISCARDABLE    = 0x0100,
+  GMEM_NOT_BANKED     = 0x1000,
+  GMEM_SHARE          = 0x2000,
+  GMEM_DDESHARE       = 0x2000,
+  GMEM_NOTIFY         = 0x4000,
+  GMEM_LOWER          = GMEM_NOT_BANKED,
+  GMEM_VALID_FLAGS    = 0x7F72,
+  GMEM_INVALID_HANDLE = 0x8000
+}
+
+Handle GlobalAlloc(uint uFlags, size_t dwBytes);
+
+Handle GlobalReAlloc(Handle hMem, size_t dwBytes, uint uFlags);
+
+size_t GlobalSize(Handle hMem);
+
+void* GlobalLock(Handle hMem);
+
+int GlobalUnlock(Handle hMem);
+
+Handle GlobalFree(Handle hMem);
 
 enum : uint {
   HEAP_NO_SERIALIZE               = 0x00000001,
@@ -292,300 +163,320 @@ enum : uint {
 }
 
 Handle HeapCreate(uint flOptions, size_t dwInitialSize, size_t dwMaximumSize);
+
 int HeapDestroy(Handle hHeap);
 
 Handle GetProcessHeap();
 
 void* HeapAlloc(Handle hHeap, uint dwFlags, size_t dwBytes);
+
 int HeapFree(Handle hHeap, uint dwFlags, void* lpMem);
 
-int FlushInstructionCache(Handle hProcess, void* lpBaseAddress, size_t dwSize);
+uint GetLastError();
 
-Handle GetCurrentProcess();
+Handle LoadLibraryW(in wchar* lpLibFileName);
+alias LoadLibraryW LoadLibrary;
 
-void Sleep(uint dwMilliseconds);
+void* GetProcAddress(Handle hModule, in char* lpProcName);
 
-struct LIST_ENTRY {
-  LIST_ENTRY* Flink;
-  LIST_ENTRY* Blink;
+uint GetVersion();
+
+struct OVERLAPPED {
+  uint Internal;
+  uint InternalHigh;
+  union {
+    struct {
+      uint Offset;
+      uint OffsetHigh;
+    }
+    void* Pointer;
+  }
+  Handle hEvent;
 }
 
-struct CRITICAL_SECTION_DEBUG {
-  ushort Type;
-  ushort CreatorBackTraceIndex;
-  CRITICAL_SECTION* CriticalSection;
-  LIST_ENTRY ProcessLocksList;
-  uint EntryCount;
-  uint ContentionCount;
-  uint Flags;
-  ushort CreatorBackTraceIndexHigh;
-  ushort SpareWORD;
+enum {
+  GENERIC_READ = 0x80000000,
+  GENERIC_WRITE = 0x40000000,
+  GENERIC_EXECUTE = 0x20000000,
+  GENERIC_ALL = 0x10000000
 }
 
-struct CRITICAL_SECTION {
-  CRITICAL_SECTION_DEBUG DebugInfo;
-  int LockCount;
-  int RecursionCount;
-  Handle OwningThread;
-  Handle LockSemaphore;
-  uint SpinCount;
+enum : uint {
+  FILE_SHARE_READ = 0x00000001,
+  FILE_SHARE_WRITE = 0x00000002,
+  FILE_SHARE_DELETE = 0x00000004
 }
 
-void InitializeCriticalSection(out CRITICAL_SECTION lpCriticalSection);
-void EnterCriticalSection(ref CRITICAL_SECTION lpCriticalSection);
-void LeaveCriticalSection(ref CRITICAL_SECTION lpCriticalSection);
-int TryEnterCriticalSection(ref CRITICAL_SECTION lpCriticalSection);
-void DeleteCriticalSection(ref CRITICAL_SECTION lpCriticalSection);
-uint TlsAlloc();
-int TlsFree(uint dwTlsIndex);
-void* TlsGetValue(uint dwTlsIndex);
-int TlsSetValue(uint dwTlsIndex, void* lpTlsValue);
+enum : uint {
+  CREATE_NEW = 1,
+  CREATE_ALWAYS = 2,
+  OPEN_EXISTING = 3,
+  OPEN_ALWAYS = 4,
+  TRUNCATE_EXISTING = 5
+}
 
-Handle GetModuleHandleW(wchar* lpModuleName);
+Handle CreateFileW(in wchar* lpFileName, uint dwDesiredAccess, uint dwShareMode, SECURITY_ATTRIBUTES* lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, Handle hTemplateFile);
+alias CreateFileW CreateFile;
+
+int WriteFile(Handle hFile, in void* lpBuffer, uint nNumberOfBytesToWrite, out uint lpNumberOfBytesWritten, OVERLAPPED* lpOverlapped);
+
+int ReadFile(Handle hFile, void* lpBuffer, uint nNumberOfBytesToRead, out uint lpNumberOfBytesRead, OVERLAPPED* lpOverlapped);
+
+enum : uint {
+  FILE_BEGIN,
+  FILE_CURRENT,
+  FILE_END
+}
+
+uint SetFilePointer(Handle hFile, int lDistanceToMove, ref uint lpDistanceToMoveHigh, uint dwMoveMethod);
+
+int SetFilePointerEx(Handle hFile, long lDistanceToMove, out long lpNewFilePointer, uint dwMoveMethod);
+
+int GetFileSizeEx(Handle hFile, out long lpFileSize);
+
+int CloseHandle(Handle hObject);
+
+Handle GetModuleHandleW(in wchar* lpModuleName);
 alias GetModuleHandleW GetModuleHandle;
 
 uint GetModuleFileNameW(Handle hModule, wchar* lpFilename, uint nSize);
 alias GetModuleFileNameW GetModuleFileName;
 
-int FormatMessageW(uint dwFlags, void* lpSource, uint dwMessageId, uint dwLanguageId, wchar* lpBuffer, uint nSize, void** Arguments);
-alias FormatMessageW FormatMessage;
+Handle LoadResource(Handle hModule, Handle hResInfo);
 
-uint GetLastError();
+uint SizeofResource(Handle hModule, Handle hResInfo);
 
-Handle LoadLibraryW(wchar* lpLibFileName);
-alias LoadLibraryW LoadLibrary;
+void* LockResource(Handle hResData);
 
-void* GetProcAddress(Handle hModule, char* lpProcName);
-uint GetVersion();
+Handle FindResourceW(Handle hModule, in wchar* lpName, in wchar* lpType);
+alias FindResourceW FindResource;
 
-uint ExpandEnvironmentStringsW(wchar* lpSrc, wchar* lpDst, uint nSize);
-alias ExpandEnvironmentStringsW ExpandEnvironmentStrings;
+alias int function(Handle hModule, wchar* lpType, int lParam) ENUMRESTYPEPROCW;
+alias ENUMRESTYPEPROCW ENUMRESTYPEPROC;
 
-uint GetFullPathNameW(wchar* lpFileName, uint nBufferLength, wchar* lpBuffer, wchar** lpFilePart);
-alias GetFullPathNameW GetFullPathName;
+int EnumResourceTypesW(Handle hModule, ENUMRESTYPEPROCW lpEnumFunc, int lParam);
+alias EnumResourceTypesW EnumResourceTypes;
 
-uint GetLongPathNameW(wchar* lpszShortPath, wchar* lpszLongPath, uint cchBuffer);
-alias GetLongPathNameW GetLongPathName;
+alias int function(Handle hModule, wchar* lpType, wchar* lpName, int lParam) ENUMRESNAMEPROCW;
+alias ENUMRESNAMEPROCW ENUMRESNAMEPROC;
 
-uint GetTempPathW(uint nBufferLength, wchar* lpBuffer);
-alias GetTempPathW GetTempPath;
+int EnumResourceNamesW(Handle hModule, in wchar* lpType, ENUMRESNAMEPROCW lpEnumFunc, int lParam);
+alias EnumResourceNamesW EnumResourceNames;
 
-uint GetTempFileNameW(wchar* lpPathName, wchar* lpPrefixString, uint uUnique, wchar* lpTempFileName);
-alias GetTempFileNameW GetTempFileName;
+const uint TLS_OUT_OF_INDEXES = 0xFFFFFFFF;
 
-uint GetACP();
-Handle GetStdHandle(uint nStdHandle);
-int GetCPInfo(uint CodePage, out CPINFO lpCPInfo);
+uint TlsAlloc();
 
-uint GetThreadLocale();
-int SetThreadLocale(uint Locale);
-uint GetUserDefaultLCID();
-ushort GetUserDefaultLangID();
-ushort GetSystemDefaultLangID();
-int MultiByteToWideChar(uint CodePage, uint dwFlags, char* lpMultiByteStr, int cbMultiByte, wchar* lpWideCharStr, int cchWideChar);
-int WideCharToMultiByte(uint CodePage, uint dwFlags, wchar* lpWideCharStr, int cchWideChar, char* lpMultiByteStr, int cbMultiByte, char* lpDefaultChar, int* lpUseDefaultChar);
+int TlsFree(uint dwTlsIndex);
+
+void* TlsGetValue(uint dwTlsIndex);
+
+int TlsSetValue(uint dwTlsIndex, void* lpTlsValue);
+
+struct POINT {
+  int x;
+  int y;
+}
+
+struct SIZE {
+  int cx;
+  int cy;
+}
+
+struct RECT {
+  int left;
+  int top;
+  int right;
+  int bottom;
+}
+
+template tMAKELCID(ushort lgid, ushort srtid) {
+  const tMAKELCID = (srtid << 16) | lgid;
+}
+
+template tMAKELANGID(ushort p, ushort s) {
+  const tMAKELANGID = (s << 10)  | p;
+}
+
+extern ushort SUBLANGID(ushort lgid);
 
 enum : uint {
-  SORT_STRINGSORT           = 0x00001000
+  LCID_INSTALLED          = 0x00000001,
+  LCID_SUPPORTED          = 0x00000002,
+  LCID_ALTERNATE_SORTS    = 0x00000004
+}
+
+enum : ushort {
+  SUBLANG_NEUTRAL                            = 0x00,
+  SUBLANG_DEFAULT                            = 0x01,
+  SUBLANG_SYS_DEFAULT                        = 0x02,
+}
+
+enum : ushort {
+  LANG_NEUTRAL                    = 0x00,
+  LANG_INVARIANT                  = 0x7f,
+  LANG_SYSTEM_DEFAULT             = tMAKELANGID!(LANG_NEUTRAL, SUBLANG_SYS_DEFAULT),
+  LANG_USER_DEFAULT               = tMAKELANGID!(LANG_NEUTRAL, SUBLANG_DEFAULT)
+}
+
+enum : ushort {
+  SORT_DEFAULT                    = 0x0
 }
 
 enum : uint {
-  NORM_IGNORECASE           = 0x00000001,
-  NORM_IGNORENONSPACE       = 0x00000002,
-  NORM_IGNORESYMBOLS        = 0x00000004,
-  NORM_IGNOREKANATYPE       = 0x00010000,
-  NORM_IGNOREWIDTH          = 0x00020000,
-  NORM_LINGUISTIC_CASING    = 0x08000000
+  LOCALE_USER_DEFAULT = tMAKELCID!(LANG_USER_DEFAULT, SORT_DEFAULT),
+  LOCALE_SYSTEM_DEFAULT = tMAKELCID!(LANG_SYSTEM_DEFAULT, SORT_DEFAULT),
+  LOCALE_NEUTRAL = tMAKELCID!(tMAKELANGID!(LANG_NEUTRAL, SUBLANG_NEUTRAL), SORT_DEFAULT),
+  LOCALE_INVARIANT = tMAKELCID!(tMAKELANGID!(LANG_INVARIANT, SUBLANG_NEUTRAL), SORT_DEFAULT)
 }
 
-int CompareStringW(uint Locale, uint dwCmpFlags, wchar* lpString1, int cchCount1, wchar* lpString2, int cchCount2);
-alias CompareStringW CompareString;
-
 enum : uint {
-  LCMAP_LOWERCASE           = 0x00000100,
-  LCMAP_UPPERCASE           = 0x00000200,
-  LCMAP_SORTKEY             = 0x00000400,
-  LCMAP_BYTEREV             = 0x00000800,
-  LCMAP_HIRAGANA            = 0x00100000,
-  LCMAP_KATAKANA            = 0x00200000,
-  LCMAP_HALFWIDTH           = 0x00400000,
-  LCMAP_FULLWIDTH           = 0x00800000,
-  LCMAP_LINGUISTIC_CASING   = 0x01000000,
-  LCMAP_SIMPLIFIED_CHINESE  = 0x02000000,
-  LCMAP_TRADITIONAL_CHINESE = 0x04000000
-}
-
-int LCMapStringW(uint Locale, uint dwMapFlags, wchar* lpSrcStr, int cchSrc, wchar* lpDestStr, int cchDest);
-alias LCMapStringW LCMapString;
-
-alias int function(wchar*) LOCALE_ENUMPROCW;
-alias LOCALE_ENUMPROCW LOCALE_ENUMPROC;
-
-enum : uint {
-  LCID_INSTALLED           = 0x00000001,
-  LCID_SUPPORTED           = 0x00000002,
-  LCID_ALTERNATE_SORTS     = 0x00000004
-}
-
-int EnumSystemLocalesW(LOCALE_ENUMPROCW lpLocaleEnumProc, uint dwFlags);
-alias EnumSystemLocalesW EnumSystemLocales;
-
-enum : uint {
-  LOCALE_NOUSEROVERRIDE         = 0x80000000,
-  LOCALE_USE_CP_ACP             = 0x40000000,
-  LOCALE_RETURN_NUMBER          = 0x20000000,
-
-  LOCALE_ILANGUAGE              = 0x00000001,
-  LOCALE_SLANGUAGE              = 0x00000002,
-  LOCALE_SENGLANGUAGE           = 0x00001001,
-  LOCALE_SABBREVLANGNAME        = 0x00000003,
-  LOCALE_SNATIVELANGNAME        = 0x00000004,
-
-  LOCALE_ICOUNTRY               = 0x00000005,
-  LOCALE_SCOUNTRY               = 0x00000006,
-  LOCALE_SENGCOUNTRY            = 0x00001002,
-  LOCALE_SABBREVCTRYNAME        = 0x00000007,
-  LOCALE_SNATIVECTRYNAME        = 0x00000008,
-  LOCALE_IGEOID                 = 0x0000005B,
-  
-  LOCALE_IDEFAULTLANGUAGE       = 0x00000009,
-  LOCALE_IDEFAULTCOUNTRY        = 0x0000000A,
-  LOCALE_IDEFAULTCODEPAGE       = 0x0000000B,
-  LOCALE_IDEFAULTANSICODEPAGE   = 0x00001004,
-  LOCALE_IDEFAULTMACCODEPAGE    = 0x00001011,
-
-  LOCALE_SLIST                  = 0x0000000C,
-  LOCALE_IMEASURE               = 0x0000000D,
-
-  LOCALE_SDECIMAL               = 0x0000000E,
-  LOCALE_STHOUSAND              = 0x0000000F,
-  LOCALE_SGROUPING              = 0x00000010,
-  LOCALE_IDIGITS                = 0x00000011,
-  LOCALE_ILZERO                 = 0x00000012,
-  LOCALE_INEGNUMBER             = 0x00001010,
-  LOCALE_SNATIVEDIGITS          = 0x00000013,
-
-  LOCALE_SCURRENCY              = 0x00000014,
-  LOCALE_SINTLSYMBOL            = 0x00000015,
-  LOCALE_SMONDECIMALSEP         = 0x00000016,
-  LOCALE_SMONTHOUSANDSEP        = 0x00000017,
-  LOCALE_SMONGROUPING           = 0x00000018,
-  LOCALE_ICURRDIGITS            = 0x00000019,
-  LOCALE_IINTLCURRDIGITS        = 0x0000001A,
-  LOCALE_ICURRENCY              = 0x0000001B,
-  LOCALE_INEGCURR               = 0x0000001C,
-
-  LOCALE_SDATE                  = 0x0000001D,
-  LOCALE_STIME                  = 0x0000001E,
-  LOCALE_SSHORTDATE             = 0x0000001F,
-  LOCALE_SLONGDATE              = 0x00000020,
-  LOCALE_STIMEFORMAT            = 0x00001003,
-  LOCALE_IDATE                  = 0x00000021,
-  LOCALE_ILDATE                 = 0x00000022,
-  LOCALE_ITIME                  = 0x00000023,
-  LOCALE_ITIMEMARKPOSN          = 0x00001005,
-  LOCALE_ICENTURY               = 0x00000024,
-  LOCALE_ITLZERO                = 0x00000025,
-  LOCALE_IDAYLZERO              = 0x00000026,
-  LOCALE_IMONLZERO              = 0x00000027,
-  LOCALE_S1159                  = 0x00000028,
-  LOCALE_S2359                  = 0x00000029,
-
-  LOCALE_ICALENDARTYPE          = 0x00001009,
-  LOCALE_IOPTIONALCALENDAR      = 0x0000100B,
-  LOCALE_IFIRSTDAYOFWEEK        = 0x0000100C,
-  LOCALE_IFIRSTWEEKOFYEAR       = 0x0000100D,
-
-  LOCALE_SDAYNAME1              = 0x0000002A,
-  LOCALE_SDAYNAME2              = 0x0000002B,
-  LOCALE_SDAYNAME3              = 0x0000002C,
-  LOCALE_SDAYNAME4              = 0x0000002D,
-  LOCALE_SDAYNAME5              = 0x0000002E,
-  LOCALE_SDAYNAME6              = 0x0000002F,
-  LOCALE_SDAYNAME7              = 0x00000030,
-  LOCALE_SABBREVDAYNAME1        = 0x00000031,
-  LOCALE_SABBREVDAYNAME2        = 0x00000032,
-  LOCALE_SABBREVDAYNAME3        = 0x00000033,
-  LOCALE_SABBREVDAYNAME4        = 0x00000034,
-  LOCALE_SABBREVDAYNAME5        = 0x00000035,
-  LOCALE_SABBREVDAYNAME6        = 0x00000036,
-  LOCALE_SABBREVDAYNAME7        = 0x00000037,
-  LOCALE_SMONTHNAME1            = 0x00000038,
-  LOCALE_SMONTHNAME2            = 0x00000039,
-  LOCALE_SMONTHNAME3            = 0x0000003A,
-  LOCALE_SMONTHNAME4            = 0x0000003B,
-  LOCALE_SMONTHNAME5            = 0x0000003C,
-  LOCALE_SMONTHNAME6            = 0x0000003D,
-  LOCALE_SMONTHNAME7            = 0x0000003E,
-  LOCALE_SMONTHNAME8            = 0x0000003F,
-  LOCALE_SMONTHNAME9            = 0x00000040,
-  LOCALE_SMONTHNAME10           = 0x00000041,
-  LOCALE_SMONTHNAME11           = 0x00000042,
-  LOCALE_SMONTHNAME12           = 0x00000043,
-  LOCALE_SMONTHNAME13           = 0x0000100E,
-  LOCALE_SABBREVMONTHNAME1      = 0x00000044,
-  LOCALE_SABBREVMONTHNAME2      = 0x00000045,
-  LOCALE_SABBREVMONTHNAME3      = 0x00000046,
-  LOCALE_SABBREVMONTHNAME4      = 0x00000047,
-  LOCALE_SABBREVMONTHNAME5      = 0x00000048,
-  LOCALE_SABBREVMONTHNAME6      = 0x00000049,
-  LOCALE_SABBREVMONTHNAME7      = 0x0000004A,
-  LOCALE_SABBREVMONTHNAME8      = 0x0000004B,
-  LOCALE_SABBREVMONTHNAME9      = 0x0000004C,
-  LOCALE_SABBREVMONTHNAME10     = 0x0000004D,
-  LOCALE_SABBREVMONTHNAME11     = 0x0000004E,
-  LOCALE_SABBREVMONTHNAME12     = 0x0000004F,
-  LOCALE_SABBREVMONTHNAME13     = 0x0000100F,
-
-  LOCALE_SPOSITIVESIGN          = 0x00000050,
-  LOCALE_SNEGATIVESIGN          = 0x00000051,
-  LOCALE_IPOSSIGNPOSN           = 0x00000052,
-  LOCALE_INEGSIGNPOSN           = 0x00000053,
-  LOCALE_IPOSSYMPRECEDES        = 0x00000054,
-  LOCALE_IPOSSEPBYSPACE         = 0x00000055,
-  LOCALE_INEGSYMPRECEDES        = 0x00000056,
-  LOCALE_INEGSEPBYSPACE         = 0x00000057,
-  LOCALE_FONTSIGNATURE          = 0x00000058,
-  LOCALE_SISO639LANGNAME        = 0x00000059,
-  LOCALE_SISO3166CTRYNAME       = 0x0000005A,
-  LOCALE_IDEFAULTEBCDICCODEPAGE = 0x00001012,
-  LOCALE_IPAPERSIZE             = 0x0000100A,
-  LOCALE_SENGCURRNAME           = 0x00001007,
-  LOCALE_SNATIVECURRNAME        = 0x00001008,
-  LOCALE_SYEARMONTH             = 0x00001006,
-  LOCALE_SSORTNAME              = 0x00001013,
-  LOCALE_IDIGITSUBSTITUTION     = 0x00001014,
-
-  // Vista
-  LOCALE_SNAME                  = 0x0000005c,
-  LOCALE_SDURATION              = 0x0000005d,
-  LOCALE_SKEYBOARDSTOINSTALL    = 0x0000005e,
-  LOCALE_SSHORTESTDAYNAME1      = 0x00000060,
-  LOCALE_SSHORTESTDAYNAME2      = 0x00000061,
-  LOCALE_SSHORTESTDAYNAME3      = 0x00000062,
-  LOCALE_SSHORTESTDAYNAME4      = 0x00000063,
-  LOCALE_SSHORTESTDAYNAME5      = 0x00000064,
-  LOCALE_SSHORTESTDAYNAME6      = 0x00000065,
-  LOCALE_SSHORTESTDAYNAME7      = 0x00000066,
-  LOCALE_SISO639LANGNAME2       = 0x00000067,
-  LOCALE_SISO3166CTRYNAME2      = 0x00000068,
-  LOCALE_SNAN                   = 0x00000069,
-  LOCALE_SPOSINFINITY           = 0x0000006a,
-  LOCALE_SNEGINFINITY           = 0x0000006b,
-  LOCALE_SSCRIPTS               = 0x0000006c,
-  LOCALE_SPARENT                = 0x0000006d,
-  LOCALE_SCONSOLEFALLBACKNAME   = 0x0000006e,
-  LOCALE_SLANGDISPLAYNAME       = 0x0000006f
+  LOCALE_NOUSEROVERRIDE        = 0x80000000,
+  LOCALE_USE_CP_ACP            = 0x40000000,
+  LOCALE_RETURN_NUMBER         = 0x20000000,
+  LOCALE_ILANGUAGE             = 0x00000001,
+  LOCALE_SLANGUAGE             = 0x00000002,
+  LOCALE_SENGLANGUAGE          = 0x00001001,
+  LOCALE_SABBREVLANGNAME       = 0x00000003,
+  LOCALE_SNATIVELANGNAME       = 0x00000004,
+  LOCALE_ICOUNTRY              = 0x00000005,
+  LOCALE_SCOUNTRY              = 0x00000006,
+  LOCALE_SENGCOUNTRY           = 0x00001002,
+  LOCALE_SABBREVCTRYNAME       = 0x00000007,
+  LOCALE_SNATIVECTRYNAME       = 0x00000008,
+  LOCALE_IGEOID                = 0x0000005B,
+  LOCALE_IDEFAULTLANGUAGE      = 0x00000009,
+  LOCALE_IDEFAULTCOUNTRY       = 0x0000000A,
+  LOCALE_IDEFAULTCODEPAGE      = 0x0000000B,
+  LOCALE_IDEFAULTANSICODEPAGE  = 0x00001004,
+  LOCALE_IDEFAULTMACCODEPAGE   = 0x00001011,
+  LOCALE_SLIST                 = 0x0000000C,
+  LOCALE_IMEASURE              = 0x0000000D,
+  LOCALE_SDECIMAL              = 0x0000000E,
+  LOCALE_STHOUSAND             = 0x0000000F,
+  LOCALE_SGROUPING             = 0x00000010,
+  LOCALE_IDIGITS               = 0x00000011,
+  LOCALE_ILZERO                = 0x00000012,
+  LOCALE_INEGNUMBER            = 0x00001010,
+  LOCALE_SNATIVEDIGITS         = 0x00000013,
+  LOCALE_SCURRENCY             = 0x00000014,
+  LOCALE_SINTLSYMBOL           = 0x00000015,
+  LOCALE_SMONDECIMALSEP        = 0x00000016,
+  LOCALE_SMONTHOUSANDSEP       = 0x00000017,
+  LOCALE_SMONGROUPING          = 0x00000018,
+  LOCALE_ICURRDIGITS           = 0x00000019,
+  LOCALE_IINTLCURRDIGITS       = 0x0000001A,
+  LOCALE_ICURRENCY             = 0x0000001B,
+  LOCALE_INEGCURR              = 0x0000001C,
+  LOCALE_SDATE                 = 0x0000001D,
+  LOCALE_STIME                 = 0x0000001E,
+  LOCALE_SSHORTDATE            = 0x0000001F,
+  LOCALE_SLONGDATE             = 0x00000020,
+  LOCALE_STIMEFORMAT           = 0x00001003,
+  LOCALE_IDATE                 = 0x00000021,
+  LOCALE_ILDATE                = 0x00000022,
+  LOCALE_ITIME                 = 0x00000023,
+  LOCALE_ITIMEMARKPOSN         = 0x00001005,
+  LOCALE_ICENTURY              = 0x00000024,
+  LOCALE_ITLZERO               = 0x00000025,
+  LOCALE_IDAYLZERO             = 0x00000026,
+  LOCALE_IMONLZERO             = 0x00000027,
+  LOCALE_S1159                 = 0x00000028,
+  LOCALE_S2359                 = 0x00000029,
+  LOCALE_ICALENDARTYPE         = 0x00001009,
+  LOCALE_IOPTIONALCALENDAR     = 0x0000100B,
+  LOCALE_IFIRSTDAYOFWEEK       = 0x0000100C,
+  LOCALE_IFIRSTWEEKOFYEAR      = 0x0000100D,
+  LOCALE_SDAYNAME1             = 0x0000002A,
+  LOCALE_SDAYNAME2             = 0x0000002B,
+  LOCALE_SDAYNAME3             = 0x0000002C,
+  LOCALE_SDAYNAME4             = 0x0000002D,
+  LOCALE_SDAYNAME5             = 0x0000002E,
+  LOCALE_SDAYNAME6             = 0x0000002F,
+  LOCALE_SDAYNAME7             = 0x00000030,
+  LOCALE_SABBREVDAYNAME1       = 0x00000031,
+  LOCALE_SABBREVDAYNAME2       = 0x00000032,
+  LOCALE_SABBREVDAYNAME3       = 0x00000033,
+  LOCALE_SABBREVDAYNAME4       = 0x00000034,
+  LOCALE_SABBREVDAYNAME5       = 0x00000035,
+  LOCALE_SABBREVDAYNAME6       = 0x00000036,
+  LOCALE_SABBREVDAYNAME7       = 0x00000037,
+  LOCALE_SMONTHNAME1           = 0x00000038,
+  LOCALE_SMONTHNAME2           = 0x00000039,
+  LOCALE_SMONTHNAME3           = 0x0000003A,
+  LOCALE_SMONTHNAME4           = 0x0000003B,
+  LOCALE_SMONTHNAME5           = 0x0000003C,
+  LOCALE_SMONTHNAME6           = 0x0000003D,
+  LOCALE_SMONTHNAME7           = 0x0000003E,
+  LOCALE_SMONTHNAME8           = 0x0000003F,
+  LOCALE_SMONTHNAME9           = 0x00000040,
+  LOCALE_SMONTHNAME10          = 0x00000041,
+  LOCALE_SMONTHNAME11          = 0x00000042,
+  LOCALE_SMONTHNAME12          = 0x00000043,
+  LOCALE_SMONTHNAME13          = 0x0000100E,
+  LOCALE_SABBREVMONTHNAME1     = 0x00000044,
+  LOCALE_SABBREVMONTHNAME2     = 0x00000045,
+  LOCALE_SABBREVMONTHNAME3     = 0x00000046,
+  LOCALE_SABBREVMONTHNAME4     = 0x00000047,
+  LOCALE_SABBREVMONTHNAME5     = 0x00000048,
+  LOCALE_SABBREVMONTHNAME6     = 0x00000049,
+  LOCALE_SABBREVMONTHNAME7     = 0x0000004A,
+  LOCALE_SABBREVMONTHNAME8     = 0x0000004B,
+  LOCALE_SABBREVMONTHNAME9     = 0x0000004C,
+  LOCALE_SABBREVMONTHNAME10    = 0x0000004D,
+  LOCALE_SABBREVMONTHNAME11    = 0x0000004E,
+  LOCALE_SABBREVMONTHNAME12    = 0x0000004F,
+  LOCALE_SABBREVMONTHNAME13    = 0x0000100F,
+  LOCALE_SPOSITIVESIGN         = 0x00000050,
+  LOCALE_SNEGATIVESIGN         = 0x00000051,
+  LOCALE_IPOSSIGNPOSN          = 0x00000052,
+  LOCALE_INEGSIGNPOSN          = 0x00000053,
+  LOCALE_IPOSSYMPRECEDES       = 0x00000054,
+  LOCALE_IPOSSEPBYSPACE        = 0x00000055,
+  LOCALE_INEGSYMPRECEDES       = 0x00000056,
+  LOCALE_INEGSEPBYSPACE        = 0x00000057,
+  LOCALE_FONTSIGNATURE         = 0x00000058,
+  LOCALE_SISO639LANGNAME       = 0x00000059,
+  LOCALE_SISO3166CTRYNAME      = 0x0000005A,
+  LOCALE_IDEFAULTEBCDICCODEPAGE= 0x00001012,
+  LOCALE_IPAPERSIZE            = 0x0000100A,
+  LOCALE_SENGCURRNAME          = 0x00001007,
+  LOCALE_SNATIVECURRNAME       = 0x00001008,
+  LOCALE_SYEARMONTH            = 0x00001006,
+  LOCALE_SSORTNAME             = 0x00001013,
+  LOCALE_IDIGITSUBSTITUTION    = 0x00001014,
+  LOCALE_SNAME                 = 0x0000005c,
+  LOCALE_SDURATION             = 0x0000005d,
+  LOCALE_SKEYBOARDSTOINSTALL   = 0x0000005e,
+  LOCALE_SSHORTESTDAYNAME1     = 0x00000060,
+  LOCALE_SSHORTESTDAYNAME2     = 0x00000061,
+  LOCALE_SSHORTESTDAYNAME3     = 0x00000062,
+  LOCALE_SSHORTESTDAYNAME4     = 0x00000063,
+  LOCALE_SSHORTESTDAYNAME5     = 0x00000064,
+  LOCALE_SSHORTESTDAYNAME6     = 0x00000065,
+  LOCALE_SSHORTESTDAYNAME7     = 0x00000066,
+  LOCALE_SISO639LANGNAME2      = 0x00000067,
+  LOCALE_SISO3166CTRYNAME2     = 0x00000068,
+  LOCALE_SNAN                  = 0x00000069,
+  LOCALE_SPOSINFINITY          = 0x0000006a,
+  LOCALE_SNEGINFINITY          = 0x0000006b,
+  LOCALE_SSCRIPTS              = 0x0000006c,
+  LOCALE_SPARENT               = 0x0000006d,
+  LOCALE_SCONSOLEFALLBACKNAME  = 0x0000006e,
+  LOCALE_SLANGDISPLAYNAME      = 0x0000006f
 }
 
 int GetLocaleInfoW(uint Locale, uint LCType, wchar* lpLCData, int cchData);
 alias GetLocaleInfoW GetLocaleInfo;
 
-enum : uint {
-  CAL_NOUSEROVERRIDE        = LOCALE_NOUSEROVERRIDE,
-  CAL_USE_CP_ACP            = LOCALE_USE_CP_ACP,
-  CAL_RETURN_NUMBER         = LOCALE_RETURN_NUMBER,
+alias int function(wchar*) LOCALE_ENUMPROCW;
+alias LOCALE_ENUMPROCW LOCALE_ENUMPROC;
 
+int EnumSystemLocalesW(LOCALE_ENUMPROCW lpLocaleEnumProc, uint dwFlags);
+alias EnumSystemLocalesW EnumSystemLocales;
+
+enum : uint {
+  CAL_NOUSEROVERRIDE = LOCALE_NOUSEROVERRIDE,
   CAL_ICALINTVALUE          = 0x00000001,
   CAL_SCALNAME              = 0x00000002,
   CAL_IYEAROFFSETRANGE      = 0x00000003,
@@ -632,10 +523,8 @@ enum : uint {
   CAL_SABBREVMONTHNAME11    = 0x0000002c,
   CAL_SABBREVMONTHNAME12    = 0x0000002d,
   CAL_SABBREVMONTHNAME13    = 0x0000002e,
-
   CAL_SYEARMONTH            = 0x0000002f,
   CAL_ITWODIGITYEARMAX      = 0x00000030,
-
   CAL_SSHORTESTDAYNAME1     = 0x00000031,
   CAL_SSHORTESTDAYNAME2     = 0x00000032,
   CAL_SSHORTESTDAYNAME3     = 0x00000033,
@@ -643,255 +532,134 @@ enum : uint {
   CAL_SSHORTESTDAYNAME5     = 0x00000035,
   CAL_SSHORTESTDAYNAME6     = 0x00000036,
   CAL_SSHORTESTDAYNAME7     = 0x00000037,
-
   ENUM_ALL_CALENDARS        = 0xffffffff
 }
 
 enum : uint {
-  CAL_GREGORIAN                 = 1,
-  CAL_GREGORIAN_US              = 2,
-  CAL_JAPAN                     = 3,
-  CAL_TAIWAN                    = 4,
-  CAL_KOREA                     = 5,
-  CAL_HIJRI                     = 6,
-  CAL_THAI                      = 7,
-  CAL_HEBREW                    = 8,
-  CAL_GREGORIAN_ME_FRENCH       = 9,
-  CAL_GREGORIAN_ARABIC          = 10,
-  CAL_GREGORIAN_XLIT_ENGLISH    = 11,
-  CAL_GREGORIAN_XLIT_FRENCH     = 12,
-  CAL_UMALQURA                  = 23
+  CAL_GREGORIAN                = 1,
+  CAL_GREGORIAN_US             = 2,
+  CAL_JAPAN                    = 3,
+  CAL_TAIWAN                   = 4,
+  CAL_KOREA                    = 5,
+  CAL_HIJRI                    = 6,
+  CAL_THAI                     = 7,
+  CAL_HEBREW                   = 8,
+  CAL_GREGORIAN_ME_FRENCH      = 9,
+  CAL_GREGORIAN_ARABIC         = 10,
+  CAL_GREGORIAN_XLIT_ENGLISH   = 11,
+  CAL_GREGORIAN_XLIT_FRENCH    = 12,
+  CAL_UMALQURA                 = 23
 }
 
 int GetCalendarInfoW(uint Locale, uint Calendar, uint CalType, wchar* lpCalData, int cchData, uint* lpValue);
 alias GetCalendarInfoW GetCalendarInfo;
 
-alias int function(wchar*, uint) CALINFO_ENUMPROCEXW;
-alias CALINFO_ENUMPROCEXW CALINFO_ENUMPROCEX;
+enum : uint {
+  DATE_SHORTDATE           = 0x00000001,
+  DATE_LONGDATE            = 0x00000002,
+  DATE_USE_ALT_CALENDAR    = 0x00000004
+}
+
+int GetDateFormatW(uint Locale, uint dwFlags, SYSTEMTIME* lpDate, in wchar* lpFormat, wchar* lpDateStr, int cchDate);
+alias GetDateFormatW GetDateFormat;
+
+enum : uint {
+  GEO_NATION            = 0x0001,
+  GEO_LATITUDE          = 0x0002,
+  GEO_LONGITUDE         = 0x0003,
+  GEO_ISO2              = 0x0004,
+  GEO_ISO3              = 0x0005,
+  GEO_RFC1766           = 0x0006,
+  GEO_LCID              = 0x0007,
+  GEO_FRIENDLYNAME      = 0x0008,
+  GEO_OFFICIALNAME      = 0x0009,
+  GEO_TIMEZONES         = 0x000A,
+  GEO_OFFICIALLANGUAGES = 0x000B
+}
+
+//int GetGeoInfoW(uint Location, uint GeoType, wchar* lpGeoData, int cchData, ushort LangId);
+//alias GetGeoInfoW GetGeoInfo;
+
+alias int function(wchar* lpCalendarInfoString) CALINFO_ENUMPROCW;
+alias int function(wchar* lpCalendarInfoString, uint Calendar) CALINFO_ENUMPROCEXW;
+
+int EnumCalendarInfoW(CALINFO_ENUMPROCW lpCalInfoEnumProc, uint Locale, uint Calendar, uint CalType);
+alias EnumCalendarInfoW EnumCalendarInfo;
 
 int EnumCalendarInfoExW(CALINFO_ENUMPROCEXW lpCalInfoEnumProcEx, uint Locale, uint Calendar, uint CalType);
 alias EnumCalendarInfoExW EnumCalendarInfoEx;
 
-enum : uint {
-  DATE_SHORTDATE            = 0x00000001,
-  DATE_LONGDATE             = 0x00000002,
-  DATE_USE_ALT_CALENDAR     = 0x00000004
-}
-
-alias int function(wchar*, uint) DATEFMT_ENUMPROCEXW;
-alias DATEFMT_ENUMPROCEXW DATEFMT_ENUMPROCEX;
+alias int function(wchar* lpDateFormatString, uint CalendarId) DATEFMT_ENUMPROCEXW;
 
 int EnumDateFormatsExW(DATEFMT_ENUMPROCEXW lpDateFmtEnumProcEx, uint Locale, uint dwFlags);
 alias EnumDateFormatsExW EnumDateFormatsEx;
 
-enum : uint {
-  TIME_NOMINUTESORSECONDS   = 0x00000001,
-  TIME_NOSECONDS            = 0x00000002,
-  TIME_NOTIMEMARKER         = 0x00000004,
-  TIME_FORCE24HOURFORMAT    = 0x00000008
-}
-
-alias int function(wchar*) TIMEFMT_ENUMPROCW;
-alias TIMEFMT_ENUMPROCW TIMEFMT_ENUMPROC;
+alias int function(wchar* lpTimeFormatString) TIMEFMT_ENUMPROCW;
 
 int EnumTimeFormatsW(TIMEFMT_ENUMPROCW lpTimeFmtEnumProc, uint Locale, uint dwFlags);
 alias EnumTimeFormatsW EnumTimeFormats;
 
-enum : uint {
-  GEO_NATION = 0x1,
-  GEO_LATITUDE = 0x2,
-  GEO_LONGITUDE = 0x3,
-  GEO_ISO2 = 0x4,
-  GEO_ISO3 = 0x5,
-  GEO_RFC1766 = 0x6,
-  GEO_LCID = 0x7,
-  GEO_FRIENDLYNAME = 0x8,
-  GEO_OFFICIALNAME = 0x9,
-  GEO_TIMEZONES = 0xA,
-  GEO_OFFICALLANGUAGES = 0xB
-}
+uint GetThreadLocale();
 
-struct SYSTEMTIME {
-  ushort wYear;
-  ushort wMonth;
-  ushort wDayOfWeek;
-  ushort wDay;
-  ushort wHour;
-  ushort wMinute;
-  ushort wSecond;
-  ushort wMilliseconds;
-}
+int SetThreadLocale(uint Locale);
 
-struct TIME_ZONE_INFORMATION {
-  int Bias;
-  wchar[32] StandardName;
-  SYSTEMTIME StandardDate;
-  int StandardBias;
-  wchar[32] DaylightName;
-  SYSTEMTIME DaylightDate;
-  int DaylightBias;
-}
+uint GetUserDefaultLCID();
 
-struct DYNAMIC_TIME_ZONE_INFORMATION {
-  int Bias;
-  wchar[32] StandardName;
-  SYSTEMTIME StandardDate;
-  int StandardBias;
-  wchar[32] DaylightName;
-  SYSTEMTIME DaylightDate;
-  int DaylightBias;
-  wchar[128] TimeZoneKeyName;
-  int DynamicDaylightTimeDisabled;
-}
+ushort GetUserDefaultLangID();
 
-struct REG_TIME_ZONE_INFORMATION {
-  int Bias;
-  int StandardBias;
-  int DaylightBias;
-  SYSTEMTIME StandardDate;
-  SYSTEMTIME DaylightDate;
-
-  static REG_TIME_ZONE_INFORMATION opCall(ubyte[] bytes) {
-    REG_TIME_ZONE_INFORMATION value;
-    memcpy(&value, bytes.ptr, REG_TIME_ZONE_INFORMATION.sizeof);
-    return value;
-  }
-
-  static REG_TIME_ZONE_INFORMATION opCall(TIME_ZONE_INFORMATION timeZoneInfo) {
-    REG_TIME_ZONE_INFORMATION value;
-    value.Bias = timeZoneInfo.Bias;
-    value.StandardBias = timeZoneInfo.StandardBias;
-    value.DaylightBias = timeZoneInfo.DaylightBias;
-    value.StandardDate = timeZoneInfo.StandardDate;
-    value.DaylightDate = timeZoneInfo.DaylightDate;
-    return value;
-  }
-}
-
-void GetSystemTimeAsFileTime(out FILETIME lpSystemTimeAsFileTime);
-
-int FileTimeToLocalFileTime(ref FILETIME lpFileTime, out FILETIME lpLocalFileTime);
-
-uint GetTimeZoneInformation(out TIME_ZONE_INFORMATION lpTimeZoneInformation);
-
-int GetVersionInfoW(out OSVERSIONINFO lpVersionInformation);
-alias GetVersionInfoW GetVersionInfo;
+ushort GetSystemDefaultLangID();
 
 enum : uint {
-  PAGE_NOACCESS          = 0x01,
-  PAGE_READONLY          = 0x02,
-  PAGE_READWRITE         = 0x04,
-  PAGE_WRITECOPY         = 0x08,
-  PAGE_EXECUTE           = 0x10,
-  PAGE_EXECUTE_READ      = 0x20,
-  PAGE_EXECUTE_READWRITE = 0x40,
-  PAGE_EXECUTE_WRITECOPY = 0x80,
-  PAGE_GUARD            = 0x100,
-  PAGE_NOCACHE          = 0x200,
-  PAGE_WRITECOMBINE     = 0x400,
-  MEM_COMMIT           = 0x1000,
-  MEM_RESERVE          = 0x2000,
-  MEM_DECOMMIT         = 0x4000,
-  MEM_RELEASE          = 0x8000,
-  MEM_FREE            = 0x10000,
-  MEM_PRIVATE         = 0x20000,
-  MEM_MAPPED          = 0x40000,
-  MEM_RESET           = 0x80000,
-  MEM_TOP_DOWN       = 0x100000,
-  MEM_WRITE_WATCH    = 0x200000,
-  MEM_PHYSICAL       = 0x400000,
-  MEM_ROTATE         = 0x800000,
-  MEM_LARGE_PAGES  = 0x20000000,
-  MEM_4MB_PAGES    = 0x80000000
-}
-
-void* VirtualAlloc(void* lpAddress, size_t dwSize, uint flAllocationType, uint flProtect);
-int VirtualFree(void* lpAddress, size_t dwSize, uint dwFreeType);
-
-enum : uint {
-  GMEM_FIXED          = 0x0000,
-  GMEM_MOVEABLE       = 0x0002,
-  GMEM_NOCOMPACT      = 0x0010,
-  GMEM_NODISCARD      = 0x0020,
-  GMEM_ZEROINIT       = 0x0040,
-  GMEM_MODIFY         = 0x0080,
-  GMEM_DISCARDABLE    = 0x0100,
-  GMEM_NOT_BANKED     = 0x1000,
-  GMEM_SHARE          = 0x2000,
-  GMEM_DDESHARE       = 0x2000,
-  GMEM_NOTIFY         = 0x4000,
-  GMEM_LOWER          = GMEM_NOT_BANKED,
-  GMEM_VALID_FLAGS    = 0x7F72,
-  GMEM_INVALID_HANDLE = 0x8000
-}
-
-Handle GlobalAlloc(uint uFlags, size_t dwBytes);
-
-void* GlobalLock(Handle hMem);
-
-int GlobalUnlock(Handle hMem);
-
-enum {
-  LMEM_FIXED          = 0x0000,
-  LMEM_MOVEABLE       = 0x0002,
-  LMEM_NOCOMPACT      = 0x0010,
-  LMEM_NODISCARD      = 0x0020,
-  LMEM_ZEROINIT       = 0x0040,
-  LMEM_MODIFY         = 0x0080,
-  LMEM_DISCARDABLE    = 0x0F00,
-  LMEM_VALID_FLAGS    = 0x0F72,
-  LMEM_INVALID_HANDLE = 0x8000
-}
-
-Handle LocalAlloc(uint uFlags, size_t uBytes);
-
-Handle LocalFree(Handle hMem);
-
-enum {
-  GENERIC_READ                     = 0x80000000,
-  GENERIC_WRITE                    = 0x40000000,
-  GENERIC_EXECUTE                  = 0x20000000,
-  GENERIC_ALL                      = 0x10000000
+  NORM_IGNORECASE          = 0x00000001,
+  NORM_IGNORENONSPACE      = 0x00000002,
+  NORM_IGNORESYMBOLS       = 0x00000004,
+  NORM_IGNOREKANATYPE      = 0x00010000,
+  NORM_IGNOREWIDTH         = 0x00020000,
+  NORM_LINGUISTIC_CASING   = 0x08000000
 }
 
 enum {
-  CREATE_NEW         = 1,
-  CREATE_ALWAYS      = 2,
-  OPEN_EXISTING      = 3,
-  OPEN_ALWAYS        = 4,
-  TRUNCATE_EXISTING  = 5
+  CP_ACP                   = 0,
+  CP_OEMCP                 = 1,
+  CP_MACCP                 = 2,
+  CP_THREAD_ACP            = 3,
+  CP_SYMBOL                = 42,
+  CP_UTF7                  = 65000,
+  CP_UTF8                  = 65001
 }
+
+struct CPINFO {
+  uint MaxCharSize;
+  ubyte[2] DefaultChar;
+  ubyte[12] LeadByte;
+}
+
+int GetCPInfo(uint CodePage, out CPINFO lpCPInfo);
+
+uint GetACP();
+
+int CompareStringW(uint Locale, uint dwCmpFlags, in wchar* lpString1, int cchCount1, in wchar* lpString2, int cchCount2);
+alias CompareStringW CompareString;
 
 enum : uint {
-  FILE_ATTRIBUTE_READONLY             = 0x00000001,
-  FILE_ATTRIBUTE_HIDDEN               = 0x00000002,
-  FILE_ATTRIBUTE_SYSTEM               = 0x00000004,
-  FILE_ATTRIBUTE_DIRECTORY            = 0x00000010,
-  FILE_ATTRIBUTE_ARCHIVE              = 0x00000020,
-  FILE_ATTRIBUTE_DEVICE               = 0x00000040,
-  FILE_ATTRIBUTE_NORMAL               = 0x00000080,
-  FILE_ATTRIBUTE_TEMPORARY            = 0x00000100,
-  FILE_ATTRIBUTE_SPARSE_FILE          = 0x00000200,
-  FILE_ATTRIBUTE_REPARSE_POINT        = 0x00000400,
-  FILE_ATTRIBUTE_COMPRESSED           = 0x00000800,
-  FILE_ATTRIBUTE_OFFLINE              = 0x00001000,
-  FILE_ATTRIBUTE_NOT_CONTENT_INDEXED  = 0x00002000,
-  FILE_ATTRIBUTE_ENCRYPTED            = 0x00004000,
-  FILE_ATTRIBUTE_VIRTUAL              = 0x00010000
+  LCMAP_LOWERCASE           = 0x00000100,
+  LCMAP_UPPERCASE           = 0x00000200,
+  LCMAP_SORTKEY             = 0x00000400,
+  LCMAP_BYTEREV             = 0x00000800,
+  LCMAP_HIRAGANA            = 0x00100000,
+  LCMAP_KATAKANA            = 0x00200000,
+  LCMAP_HALFWIDTH           = 0x00400000,
+  LCMAP_FULLWIDTH           = 0x00800000,
+  LCMAP_LINGUISTIC_CASING   = 0x01000000,
+  LCMAP_SIMPLIFIED_CHINESE  = 0x02000000,
+  LCMAP_TRADITIONAL_CHINESE = 0x04000000
 }
 
-struct OVERLAPPED {
-  uint Internal;
-  uint InternalHigh;
-  union {
-    struct {
-      uint Offset;
-      uint OffsetHigh;
-    }
-    void* Pointer;
-  }
-  Handle hEvent;
-}
+int LCMapStringW(uint Locale, uint dwMapFlags, wchar* lpSrcStr, int cchSrc, wchar* lpDestStr, int cchDest);
+alias LCMapStringW LCMapString;
+
+int MultiByteToWideChar(uint CodePage, uint dwFlags, in char* lpMultiByteStr, int cbMultiByte, wchar* lpWideCharStr, int cchWideChar);
+int WideCharToMultiByte(uint CodePage, uint dwFlags, wchar* lpWideCharStr, int cchWideChar, char* lpMultiByteStr, int cbMultiByte, char* lpDefaultChar, int* lpUseDefaultChar);
 
 struct SECURITY_ATTRIBUTES {
   uint nLength;
@@ -899,295 +667,225 @@ struct SECURITY_ATTRIBUTES {
   int bInheritHandle;
 }
 
-enum : uint {
-  FILE_READ_DATA                = 0x0001,
-  FILE_LIST_DIRECTORY           = 0x0001,
-  FILE_WRITE_DATA               = 0x0002,
-  FILE_ADD_FILE                 = 0x0002,
+struct ACL {
+  ubyte AclRevision;
+  ubyte Sbsz1;
+  ushort AclSize;
+  ushort AceCount;
+  ushort Sbsz2;
 }
 
-enum : uint {
-  FILE_SHARE_READ                = 0x00000001,
-  FILE_SHARE_WRITE               = 0x00000002,
-  FILE_SHARE_DELETE              = 0x00000004  
+struct SECURITY_DESCRIPTOR {
+  ubyte Revision;
+  ubyte Sbz1;
+  ushort Control;
+  void* Owner;
+  void* Group;
+  ACL* Sacl;
+  ACL* Dacl;
 }
 
-enum : uint {
-  FILE_FLAG_WRITE_THROUGH         = 0x80000000,
-  FILE_FLAG_OVERLAPPED            = 0x40000000,
-  FILE_FLAG_NO_BUFFERING          = 0x20000000,
-  FILE_FLAG_RANDOM_ACCESS         = 0x10000000,
-  FILE_FLAG_SEQUENTIAL_SCAN       = 0x08000000,
-  FILE_FLAG_DELETE_ON_CLOSE       = 0x04000000,
-  FILE_FLAG_BACKUP_SEMANTICS      = 0x02000000,
-  FILE_FLAG_POSIX_SEMANTICS       = 0x01000000,
-  FILE_FLAG_OPEN_REPARSE_POINT    = 0x00200000,
-  FILE_FLAG_OPEN_NO_RECALL        = 0x00100000,
-  FILE_FLAG_FIRST_PIPE_INSTANCE   = 0x00080000
+struct COAUTHIDENTITY {
+  wchar* User;
+  uint UserLength;
+  wchar* Domain;
+  uint DomainLength;
+  wchar* Password;
+  uint PasswordLength;
+  uint Flags;
 }
 
-Handle CreateFileW(wchar* lpFileName, uint dwDesiredAccess, uint dwShareMode, SECURITY_ATTRIBUTES* lpSecurityAttributes, uint dwCreationDisposition, uint dwFlagsAndAttributes, Handle hTemplateFile);
-alias CreateFileW CreateFile;
-
-uint GetFileSize(Handle hFile, uint* lpFileSizeHigh);
-
-int ReadFile(Handle hFile, void* lpBuffer, uint nNumberOfBytesToRead, out uint lpNumberOfBytesRead, OVERLAPPED* lpOverlapped);
-int WriteFile(Handle hFile, void* lpBuffer, uint nNumberOfBytesToWrite, out uint lpNumberOfBytesWritten, OVERLAPPED* lpOverlapped);
-
-int EncryptFileW(wchar* lpFileName);
-alias EncryptFileW EncryptFile;
-
-int DecryptFileW(wchar* lpFileName, uint dwReserved);
-alias DecryptFileW DecryptFile;
-
-int MoveFileW(wchar* lpExistingFileName, wchar* lpNewFileName);
-alias MoveFileW MoveFile;
-
-struct WIN32_FILE_ATTRIBUTE_DATA {
-  uint dwFileAttributes;
-  FILETIME ftCreationTime;
-  FILETIME ftLastAccessTime;
-  FILETIME ftLastWriteTime;
-  uint nFileSizeHigh;
-  uint nFileSizeLow;
+struct COAUTHINFO {
+  uint dwAuthnSvc;
+  uint dwAuthzSvc;
+  wchar* pwszServerPrincName;
+  uint dwAuthnLevel;
+  uint dwImpersonationLevel;
+  COAUTHIDENTITY* pAuthIdentityData;
+  uint dwCapabilities;
 }
 
-int GetFileAttributesExW(wchar* lpFileName, int fInfoLevelId, void* lpFileInformation);
-alias GetFileAttributesExW GetFileAttributesEx;
+uint GetFullPathNameW(in wchar* lpFileName, uint nBufferLength, wchar* lpBuffer, wchar** lpFilePart);
+alias GetFullPathNameW GetFullPathName;
 
-enum : uint {
-  REPLACEFILE_WRITE_THROUGH       = 0x00000001,
-  REPLACEFILE_IGNORE_MERGE_ERRORS = 0x00000002
-}
+uint GetLongPathNameW(in wchar* lpszShortPath, wchar* lpszLongPath, uint cchBuffer);
+alias GetLongPathNameW GetLongPathName;
 
-int ReplaceFileW(wchar* lpReplacedFileName, wchar* lpReplacementFileName, wchar* lpBackupFileName, uint dwReplaceFlags, void* lpExclude, void* lpReserved);
-alias ReplaceFileW ReplaceFile;
-
-uint GetCurrentDirectoryW(uint nBufferLength, wchar* lpBuffer);
-alias GetCurrentDirectoryW GetCurrentDirectory;
-
-uint GetSystemDirectoryW(wchar* lpBuffer, uint nSize);
-alias GetSystemDirectoryW GetSystemDirectory;
-
-int CreateDirectoryW(wchar* lpPathName, SECURITY_ATTRIBUTES* lpSecurityAttributes);
-alias CreateDirectoryW CreateDirectory;
-
-int CloseHandle(Handle hObject);
-
-alias void function(uint dwErrorCode, uint dwNumberOfBytesTransferred, OVERLAPPED* lpOverlapped) OVERLAPPED_COMPLETION_ROUTINE;
-
-int ReadDirectoryChangesW(Handle hDirectory, void* lpBuffer, uint nBufferLength, int bWatchSubtree, uint dwNotifyFilter, ref uint lpBytesReturned, OVERLAPPED* lpOverlapped, OVERLAPPED_COMPLETION_ROUTINE lpCompletionRoutine);
-alias ReadDirectoryChangesW ReadDirectoryChanges;
-
-int RegOpenKeyExW(Handle hKey, wchar* lpSubKey, uint ulOptions, uint samDesired, out Handle phkResult);
-alias RegOpenKeyExW RegOpenKeyEx;
-
-int RegQueryValueExW(Handle hKey, wchar* lpValueName, uint* lpReserved, uint* lpType, ubyte* lpData, uint* lpcbData);
-alias RegQueryValueExW RegQueryValueEx;
-
-int RegQueryInfoKeyW(Handle hKey, wchar* lpClass, uint* lpcchClass, uint* lpReserved, uint* lpcSubKeys, uint* lpcbMaxSubKeyLen, uint* lpcbMaxClassLen, uint* lpcValues, uint* lpcbMaxValueNameLen, uint* lpcMaxValueLen, uint* lpcbSecurityDescriptor, FILETIME* lpftLastWriteTime);
-alias RegQueryInfoKeyW RegQueryInfoKey;
-
-int RegEnumKeyExW(Handle hKey, uint dwIndex, wchar* lpName, uint* lpcchName, uint* lpReserved, wchar* lpClass, uint* lpcchClass, FILETIME* lpftLastWriteTime);
-alias RegEnumKeyExW RegEnumKeyEx;
-
-int RegEnumValueW(Handle hKey, uint dwIndex, wchar* lpValueName, uint* lpcchValueName, uint* lpReserved, uint* lpType, ubyte* lpData, uint* lpcbData);
-alias RegEnumValueW RegEnumValue;
-
-int RegCreateKeyExW(Handle hKey, wchar* lpSubKey, uint Reserved, wchar* lpClass, uint dwOptions, int samDesired, SECURITY_ATTRIBUTES* lpSecurityAttriubtes, out Handle phkResult, out uint lpsdwDisposition);
-alias RegCreateKeyExW RegCreateKeyEx;
-
-int RegCloseKey(Handle hKey);
-
-int RegFlushKey(Handle hKey);
-
-int RegDeleteKeyW(Handle hKey, wchar* lpName);
-alias RegDeleteKeyW RegDeleteKey;
-
-int RegDeleteValueW(Handle hKey, wchar* lpValueName);
-alias RegDeleteValueW RegDeleteValue;
-
-int RegSetValueExW(Handle hKey, wchar* lpValueName, uint Reserved, uint dwType, ubyte* lpData, uint cbData);
-alias RegSetValueExW RegSetValueEx;
-
-struct COORD {
-  short X;
-  short Y;
-}
-
-struct SMALL_RECT {
-  short Left;
-  short Top;
-  short Right;
-  short Bottom;
-}
-
-struct CONSOLE_SCREEN_BUFFER_INFO {
-  COORD dwSize;
-  COORD dwCursorPosition;
-  ushort wAttributes;
-  SMALL_RECT dwMaximumWindowSize;
-  COORD dwMaximumSize;
-}
-
-enum : ushort {
-  FOREGROUND_BLUE      = 0x0001,
-  FOREGROUND_GREEN     = 0x0002,
-  FOREGROUND_RED       = 0x0004,
-  FOREGROUND_INTENSITY = 0x0008,
-  FOREGROUND_MASK      = 0x000F,
-  BACKGROUND_BLUE      = 0x0010,
-  BACKGROUND_GREEN     = 0x0020,
-  BACKGROUND_RED       = 0x0040,
-  BACKGROUND_INTENSITY = 0x0080,
-  BACKGROUND_MASK      = 0x00F0
-}
-
-int GetConsoleScreenBufferInfo(Handle hConsoleOutput, out CONSOLE_SCREEN_BUFFER_INFO lpConsoleScreenBufferInfo);
-
-int SetConsoleTextAttribute(Handle hConsoleOutput, ushort wAttributes);
-
-int FillConsoleOutputCharacterW(Handle hConsoleOutput, wchar cCharacter, uint nLength, COORD dwWriteCoord, out uint lpNumberOfCharsWritten);
-alias FillConsoleOutputCharacterW FillConsoleOutputCharacter;
-
-int FillConsoleOutputAttribute(Handle hConsoleOutput, ushort wAttribute, int nLength, COORD dwWriteCoord, out uint lpNumberOfAttrsWritten);
-
-int SetConsoleCursorPosition(Handle hConsoleOutput, COORD dwCursorPosition);
-
-uint GetConsoleCP();
-
-int SetConsoleCP(uint wCodePageID);
-
-uint GetConsoleOutputCP();
-
-int SetConsoleOutputCP(uint wCodePageID);
-
-uint GetConsoleTitleW(wchar* lpConsoleTitle, uint nSize);
-alias GetConsoleTitleW GetConsoleTitle;
-
-int SetConsoleTitleW(wchar* lpConsoleTitle);
-alias SetConsoleTitleW SetConsoleTitle;
-
-int Beep(uint dwFreq, uint dwDuration);
-
-uint GetTickCount();
-
-int GetComputerNameW(wchar* lpBuffer, ref uint nSize);
+int GetComputerNameW(in wchar* lpBuffer, ref uint nSize);
 alias GetComputerNameW GetComputerName;
 
-int SetComputerNameW(wchar* lpComputerName);
+int SetComputerNameW(in wchar* lpComputerName);
 alias SetComputerNameW SetComputerName;
 
-int GetUserNameW(wchar* lpBuffer, ref uint nSize);
+int GetUserNameW(in wchar* lpBuffer, ref uint nSize);
 alias GetUserNameW GetUserName;
 
 wchar* GetCommandLineW();
 alias GetCommandLineW GetCommandLine;
 
-wchar** CommandLineToArgvW(wchar* lpCmdLine, out int pNumArgs);
+wchar** CommandLineToArgvW(in wchar* lpCmdLine, out int pNumArgs);
 alias CommandLineToArgvW CommandLineToArgv;
 
-enum : uint {
-  MUTANT_QUERY_STATE = 0x0001,
-  MUTEX_MODIFY_STATE = MUTANT_QUERY_STATE
+version(D_Version2) {
+
+Handle HKEY_CLASSES_ROOT = cast(Handle)0x80000000;
+Handle HKEY_CURRENT_USER = cast(Handle)0x80000000;
+Handle HKEY_LOCAL_MACHINE = cast(Handle)0x80000000;
+Handle HKEY_USERS = cast(Handle)0x80000000;
+Handle HKEY_PERFORMANCE_DATA = cast(Handle)0x80000000;
+Handle HKEY_CURRENT_CONFIG = cast(Handle)0x80000000;
+Handle HKEY_DYN_DATA = cast(Handle)0x80000000;
+
+} else {
+
+extern Handle HKEY_CLASSES_ROOT;
+extern Handle HKEY_CURRENT_USER;
+extern Handle HKEY_LOCAL_MACHINE;
+extern Handle HKEY_USERS;
+extern Handle HKEY_PERFORMANCE_DATA;
+extern Handle HKEY_CURRENT_CONFIG;
+extern Handle HKEY_DYN_DATA;
+
 }
-
-Handle CreateMutexW(SECURITY_ATTRIBUTES* lpMutexAttributes, int bInitialOwner, wchar* lpName);
-alias CreateMutexW CreateMutex;
-
-Handle OpenMutexW(uint dwDesiredAccess, int bInheritHandle, wchar* lpName);
-alias OpenMutexW OpenMutex;
-
-int ReleaseMutex(Handle hMutex);
-
-Handle CreateSemaphoreW(SECURITY_ATTRIBUTES* lpSemaphoreAttributes, int lInitialCount, int lMaximumCount, wchar* lpName);
-alias CreateSemaphoreW CreateSemaphore;
-
-int ReleaseSemaphore(Handle hSemaphore, int lReleaseCount, out int lpPreviousCount);
-
-Handle CreateEventW(SECURITY_ATTRIBUTES* lpEventAttributes, int bManualReset, int bInitialState, wchar* lpName);
-alias CreateEventW CreateEvent;
-
-int ResetEvent(Handle hEvent);
-
-enum : uint {
-  STATUS_WAIT_0                    = 0x00000000,
-  STATUS_ABANDONED_WAIT_0          = 0x00000080,
-  STATUS_USER_APC                  = 0x000000C0,
-  STATUS_TIMEOUT                   = 0x00000102,
-  STATUS_PENDING                   = 0x00000103,
-
-  WAIT_OBJECT_0                    = STATUS_WAIT_0,
-  WAIT_ABANDONED                   = STATUS_ABANDONED_WAIT_0,
-  WAIT_IO_COMPLETION               = STATUS_USER_APC
-}
-
-uint WaitForSingleObject(Handle hEvent, uint dwMilliseconds);
-
-int SetEvent(Handle hEvent);
 
 enum : uint {
-  SHGFP_TYPE_CURRENT = 0,
-  SHGFP_TYPE_DEFAULT = 1
+  DELETE                          = 0x00010000,
+  READ_CONTROL                    = 0x00020000,
+  WRITE_DAC                       = 0x00040000,
+  WRITE_OWNER                     = 0x00080000,
+  SYNCHRONIZE                     = 0x00100000,
+  STANDARD_RIGHTS_REQUIRED        = 0x000F0000,
+  STANDARD_RIGHTS_READ            = READ_CONTROL,
+  STANDARD_RIGHTS_WRITE           = READ_CONTROL,
+  STANDARD_RIGHTS_EXECUTE         = READ_CONTROL,
+  STANDARD_RIGHTS_ALL             = 0x001F0000,
+  SPECIFIC_RIGHTS_ALL             = 0x0000FFFF
 }
 
-int SHGetFolderPathW(Handle hwnd, int csidl, Handle hToken, uint dwFlags, wchar* pszPath);
-alias SHGetFolderPathW SHGetFolderPath;
+enum : uint {
+  KEY_QUERY_VALUE        = 0x0001,
+  KEY_SET_VALUE          = 0x0002,
+  KEY_CREATE_SUB_KEY     = 0x0004,
+  KEY_ENUMERATE_SUB_KEYS = 0x0008,
+  KEY_NOTIFY             = 0x0010,
+  KEY_CREATE_LINK        = 0x0020,
 
-extern (D):
-
-bool isWindowsVista() {
-  return (LOBYTE(LOWORD(GetVersion())) >= 6);
+  KEY_READ               = (STANDARD_RIGHTS_READ | KEY_QUERY_VALUE | KEY_ENUMERATE_SUB_KEYS | KEY_NOTIFY) & ~SYNCHRONIZE,
+  KEY_WRITE              = (STANDARD_RIGHTS_WRITE | KEY_SET_VALUE | KEY_CREATE_SUB_KEY) & ~SYNCHRONIZE,
+  KEY_EXECUTE            = KEY_READ & ~SYNCHRONIZE,
+  KEY_ALL_ACCESS         = (STANDARD_RIGHTS_ALL | KEY_QUERY_VALUE | KEY_SET_VALUE | KEY_CREATE_SUB_KEY | KEY_ENUMERATE_SUB_KEYS | KEY_NOTIFY | KEY_CREATE_LINK) & ~SYNCHRONIZE,
 }
 
-public class Win32Exception : BaseException {
+enum : uint {
+  REG_NONE                        = 0,
+  REG_SZ                          = 1,
+  REG_EXPAND_SZ                   = 2,
+  REG_BINARY                      = 3,
+  REG_DWORD                       = 4,
+  REG_DWORD_LITTLE_ENDIAN         = 4,
+  REG_DWORD_BIG_ENDIAN            = 5,
+  REG_LINK                        = 6,
+  REG_MULTI_SZ                    = 7,
+  REG_RESOURCE_LIST               = 8,
+  REG_FULL_RESOURCE_DESCRIPTOR    = 9,
+  REG_RESOURCE_REQUIREMENTS_LIST  = 10,
+  REG_QWORD                       = 11,
+  REG_QWORD_LITTLE_ENDIAN         = 11
+}
+
+int RegCloseKey(Handle hKey);
+
+int RegFlushKey(Handle hKey);
+
+int RegOpenKeyExW(Handle hKey, in wchar* lpSubKey, uint ulOptions, uint samDesired, out Handle phkResult);
+alias RegOpenKeyExW RegOpenKeyEx;
+
+int RegCreateKeyExW(Handle hKey, in wchar* lpSubKey, uint Reserved, wchar* lpClass, uint dwOptions, uint samDesired, SECURITY_ATTRIBUTES* lpSecurityAttributes, out Handle phkResult, uint* lpdwDisposition);
+alias RegCreateKeyExW RegCreateKeyEx;
+
+int RegQueryValueExW(Handle hKey, in wchar* lpValueName, uint* lpReserved, uint* lpType, ubyte* lpData, uint* lpcbData);
+alias RegQueryValueExW RegQueryValueEx;
+
+int RegSetValueExW(Handle hKey, in wchar* lpValueName, uint Reserved, uint dwType, in ubyte* lpData, uint cbData);
+alias RegSetValueExW RegSetValueEx;
+
+int RegEnumKeyW(Handle hKey, uint dwIndex, wchar* lpName, uint cchName);
+alias RegEnumKeyW RegEnumKey;
+
+int RegEnumKeyExW(Handle hKey, uint dwIndex, wchar* lpName, uint* lpcchName, uint* lpReserved, wchar* lpClass, uint* lpcchClass, FILETIME* lpftWriteTime);
+alias RegEnumKeyExW RegEnumKeyEx;
+
+int RegEnumValueW(Handle hKey, uint dwIndex, wchar* lpValueName, uint* lpcchValueName, uint* lpReserved, uint* lpType, ubyte* lpData, uint* lpcbData);
+alias RegEnumValueW RegEnumValue;
+
+int RegQueryInfoKeyW(Handle hKey, wchar* lpClass, uint* lpcchClass, uint* lpReserved, uint* lpcSubKeys, uint* lpcbMaxSubKeyLen, uint* lpcbMaxClassLen, uint* lpcValues, uint* lpcbMaxValueNameLen, uint* lpcbMaxValueLen, uint* lpcbSecurityDescriptor, FILETIME* lpftLastWriteTime);
+alias RegQueryInfoKeyW RegQueryInfoKey;
+
+int RegDeleteKeyW(Handle hKey, in wchar* lpSubKey);
+alias RegDeleteKeyW RegDeleteKey;
+
+int RegDeleteValueW(Handle hKey, in wchar* lpValueName);
+alias RegDeleteValueW RegDeleteValue;
+
+int RegSaveKeyW(Handle hKey, in wchar* lpFile, SECURITY_ATTRIBUTES* lpSecurityAttributes);
+alias RegSaveKeyW RegSaveKey;
+
+uint ExpandEnvironmentStringsW(in wchar* lpSrc, wchar* lpDst, uint nSize);
+alias ExpandEnvironmentStringsW ExpandEnvironmentStrings;
+
+int Beep(uint dwFreq, uint dwDuration);
+
+uint GetTickCount();
+
+class Win32Exception : Exception {
 
   private uint errorCode_;
 
-  public this(uint error = GetLastError()) {
-    this(error, getErrorMessage(error));
+  this(uint errorCode = GetLastError()) {
+    this(errorCode, getErrorMessage(errorCode));
   }
 
-  public this(uint error, string message) {
+  this(uint errorCode, string message) {
     super(message);
-    errorCode_ = error;
+    errorCode_ = errorCode;
   }
 
-  public uint errorCode() {
+  uint errorCode() {
     return errorCode_;
   }
 
-  private static string getErrorMessage(uint error) {
+  private static string getErrorMessage(uint errorCode) {
     wchar[256] buffer;
-    uint r = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, error, LOCALE_USER_DEFAULT, buffer.ptr, buffer.length + 1, null);
-    if (r != 0) {
-      string s = toUtf8(buffer.ptr, 0, r);
-      while (r > 0) {
-        char ch = s[r - 1];
-        if (ch > ' ' && ch != '.')
+    uint result = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, errorCode, 0, buffer.ptr, buffer.length + 1, null);
+    if (result != 0) {
+      string s = .toUTF8(buffer[0 .. result]);
+
+      while (result > 0) {
+        char c = s[result - 1];
+        if (c > ' ' && c != '.')
           break;
-        r--;
+        result--;
       }
-      return s[0 .. r];
+      return s[0 .. result];
     }
-    return format("Unspecified error (0x{0:X8})", error);
+    return format("Unspecified error (0x%08X)", errorCode);
   }
 
 }
 
 // Runtime DLL support.
 
-public class DllNotFoundException : BaseException {
+class DllNotFoundException : Exception {
 
-  public this(string message = "Dll was not found.") {
+  this(string message = "Dll was not found.") {
     super(message);
   }
 
 }
 
-public class EntryPointNotFoundException : BaseException {
+class EntryPointNotFoundException : Exception {
 
-  public this(string message = "Entry point was not found.") {
+  this(string message = "Entry point was not found.") {
     super(message);
   }
 
@@ -1207,7 +905,7 @@ private T AddressOfFunction(T)(string dllName, string entryPoint, CharSet charSe
   if (auto value = dllName in moduleStore)
     moduleHandle = *value;
   else
-    moduleStore[dllName] = moduleHandle = LoadLibrary(dllName.toUTF16z());
+    moduleStore[dllName] = moduleHandle = LoadLibrary(dllName.toUtf16z());
 
   if (moduleHandle == Handle.init)
     throw new DllNotFoundException("Unable to load DLL '" ~ dllName ~ "'.");
@@ -1218,7 +916,7 @@ private T AddressOfFunction(T)(string dllName, string entryPoint, CharSet charSe
   if (entryPoint[0] == '#')
     func = cast(T)GetProcAddress(moduleHandle, cast(char*).toUshort(entryPoint[1 .. $]));
   else
-    func = cast(T)GetProcAddress(moduleHandle, entryPoint.toStringz());
+    func = cast(T)GetProcAddress(moduleHandle, entryPoint.toUtf8z());
 
   if (func == null) {
     CharSet linkType = charSet;
@@ -1227,7 +925,7 @@ private T AddressOfFunction(T)(string dllName, string entryPoint, CharSet charSe
 
     string entryPointName = entryPoint.dup ~ ((linkType == CharSet.Ansi) ? 'A' : 'W');
 
-    func = cast(T)GetProcAddress(moduleHandle, entryPointName.toStringz());
+    func = cast(T)GetProcAddress(moduleHandle, entryPointName.toUtf8z());
 
     if (func == null)
       throw new EntryPointNotFoundException("Unable to find an entry point named '" ~ entryPoint ~ "' in DLL '" ~ dllName ~ "'.");
@@ -1236,27 +934,16 @@ private T AddressOfFunction(T)(string dllName, string entryPoint, CharSet charSe
   return func;
 }
 
-public struct DllImport(string dllName, string entryPoint, TFunction, CharSet charSet = CharSet.Auto) {
-  public static ReturnType!(TFunction) opCall(ParameterTypeTuple!(TFunction) args) {
+struct DllImport(string dllName, string entryPoint, TFunction, CharSet charSet = CharSet.Auto) {
+  static ReturnType!(TFunction) opCall(ParameterTypeTuple!(TFunction) args) {
     return AddressOfFunction!(TFunction)(dllName, entryPoint, charSet)(args);
   }
 }
 
-extern(Windows):
-
-// XP and above
-alias DllImport!("kernel32.dll", "GetGeoInfo",
-  int function(int Location, uint GeoType, wchar* lpGeoData, int cchData, ushort LangId))
+// XP
+alias DllImport!("kernel32.dll", "GetGeoInfo", 
+  int function(uint Location, uint GeoType, wchar* lpGeoData, int cchData, ushort LangId)) 
   GetGeoInfo;
-
-alias DllImport!("nlsdl.dll", "DownlevelLCIDToLocaleName",
-  int function(uint Locale, wchar* lpName, int cchName, uint dwFlags))
-  DownlevelLCIDToLocaleName;
-
-// Vista
-alias DllImport!("kernel32.dll", "LCIDToLocaleName",
-  int function(uint Locale, wchar* lpName, int cchName, uint dwFlags))
-  LCIDToLocaleName;
 
 enum : uint {
   FIND_STARTSWITH          = 0x00100000,
@@ -1266,6 +953,6 @@ enum : uint {
 }
 
 // Vista
-alias DllImport!("kernel32.dll", "FindNLSString",
-  int function(uint Locale, uint dwFindNLSStringFlags, wchar* lpStringSource, int cchSource, wchar* lpStringValue, int cchValue, int* pcchFound))
+alias DllImport!("kernel32", "FindNLSString",
+  int function(uint Locale, uint dwFindNLSStringFlags, in wchar* lpStringSource, int cchSource, in wchar* lpStringValue, int cchValue, int* pcchFound))
   FindNLSString;

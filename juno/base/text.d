@@ -1,30 +1,9 @@
-/*
- * Copyright (c) 2007 John Chapman
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use,
- * copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following
- * conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
- * OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
- * OTHER DEALINGS IN THE SOFTWARE.
- */
-
 /**
  * Contains classes representing ASCII, UTF-8 and UTF-16 character encodings.
+ *
+ * Copyright: (c) 2008 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.base.text;
 
@@ -33,11 +12,11 @@ private import juno.base.core,
   juno.base.native,
   juno.com.core;
 
-private import std.string : icmp;
+private import std.string : icmp, wcslen, format;
 
 // MLang
 
-enum MIMECONTF : uint {
+enum : uint {
   MIMECONTF_MAILNEWS = 0x1,
   MIMECONTF_BROWSER = 0x2,
   MIMECONTF_MINIMAL = 0x4,
@@ -94,7 +73,7 @@ struct DetectEncodingInfo {
 }
 
 interface IEnumCodePage : IUnknown {
-  static GUID IID = { 0x275c23e3, 0x3747, 0x11d0, 0x9f, 0xea, 0x00, 0xaa, 0x00, 0x3f, 0x86, 0x46 };
+  mixin(uuid("275c23e3-3747-11d0-9fea-00aa003f8646"));
   int Clone(out IEnumCodePage ppEnum);
   int Next(uint celt, MIMECPINFO* rgelt, out uint pceltFetched);
   int Reset();
@@ -102,7 +81,7 @@ interface IEnumCodePage : IUnknown {
 }
 
 interface IEnumRfc1766 : IUnknown {
-  static GUID IID = { 0x3dc39d1d, 0xc030, 0x11d0, 0xb8, 0x1b, 0x00, 0xc0, 0x4f, 0xc9, 0xb3, 0x1f };
+  mixin(uuid("3dc39d1d-c030-11d0-b81b-00c04fc9b31f"));
   int Clone(out IEnumRfc1766 ppEnum);
   int Next(uint celt, RFC1766INFO* rgelt, out uint pceltFetched);
   int Reset();
@@ -110,7 +89,7 @@ interface IEnumRfc1766 : IUnknown {
 }
 
 interface IEnumScript : IUnknown {
-  static GUID IID = { 0x3dc39d1d, 0xc030, 0x11d0, 0xb8, 0x1b, 0x00, 0xc0, 0x4f, 0xc9, 0xb3, 0x1f };
+  mixin(uuid("AE5F1430-388B-11d2-8380-00C04F8F5DA1"));
   int Clone(out IEnumScript ppEnum);
   int Next(uint celt, SCRIPTINFO* rgelt, out uint pceltFetched);
   int Reset();
@@ -118,7 +97,7 @@ interface IEnumScript : IUnknown {
 }
 
 interface IMLangConvertCharset : IUnknown {
-  static GUID IID = { 0xd66d6f98, 0xcdaa, 0x11d0, 0xb8, 0x22, 0x00, 0xc0, 0x4f, 0xc9, 0xb3, 0x1f };
+  mixin(uuid("d66d6f98-cdaa-11d0-b822-00c04fc9b31f"));
   int Initialize(uint uiSrcCodePage, uint uiDstCodePage, uint dwProperty);
   int GetSourceCodePage(out uint puiSrcCodePage);
   int GetDestinationCodePage(out uint puiDstCodePage);
@@ -129,7 +108,7 @@ interface IMLangConvertCharset : IUnknown {
 }
 
 interface IMultiLanguage : IUnknown {
-  static GUID IID = { 0x275c23e1, 0x3747, 0x11d0, 0x9f, 0xea, 0x00, 0xaa, 0x00, 0x3f, 0x86, 0x46 };
+  mixin(uuid("275c23e1-3747-11d0-9fea-00aa003f8646"));
   int GetNumberOfCodePageInfo(out uint pcCodePage);
   int GetCodePageInfo(uint uiCodePage, out MIMECPINFO pCodePageInfo);
   int GetFamilyCodePage(uint uiCodePage, out uint puiFamilyCodePage);
@@ -148,7 +127,7 @@ interface IMultiLanguage : IUnknown {
 }
 
 interface IMultiLanguage2 : IUnknown {
-  static GUID IID = { 0xDCCFC164, 0x2B38, 0x11d2, 0xB7, 0xEC, 0x00, 0xC0, 0x4F, 0x8F, 0x5D, 0x9A };
+  mixin(uuid("DCCFC164-2B38-11d2-B7EC-00C04F8F5D9A"));
   int GetNumberOfCodePageInfo(out uint pcCodePage);
   int GetCodePageInfo(uint uiCodePage, ushort LangId, out MIMECPINFO pCodePageInfo);
   int GetFamilyCodePage(uint uiCodePage, out uint puiFamilyCodePage);
@@ -179,22 +158,22 @@ interface IMultiLanguage2 : IUnknown {
 }
 
 interface IMultiLanguage3 : IMultiLanguage2 {
-  static GUID IID = { 0x4e5868ab, 0xb157, 0x4623, 0x9a, 0xcc, 0x6a, 0x1d, 0x9c, 0xae, 0xbe, 0x04 };
+  mixin(uuid("4e5868ab-b157-4623-9acc-6a1d9caebe04"));
   int DetectOutboundCodePage(uint dwFlags, wchar* lpWideCharStr, int cchWideChar, uint* puiPreferredCodePages, uint nPreferredCodePages, uint* puiDetectedCodePages, ref uint pnDetectedCodePages, wchar* lpSpecialChar);
   int DetectOutboundCodePageInIStream(uint dwFlags, IStream pStrIn, uint* puiPreferredCodePages, uint nPreferredCodePages, uint* puiDetectedCodePages, wchar* lpSpecialChar);
 }
 
 abstract final class CMultiLanguage {
-  static GUID CLSID = { 0x275c23e2, 0x3747, 0x11d0, 0x9f, 0xea, 0x00, 0xaa, 0x00, 0x3f, 0x86, 0x46 };
-  mixin CoInterfaces!(IMultiLanguage2);
+  mixin(uuid("275c23e2-3747-11d0-9fea-00aa003f8646"));
+  mixin Interfaces!(IMultiLanguage2);
 }
 
-extern (Windows)
+extern(Windows)
 alias DllImport!("mlang.dll", "ConvertINetString",
   int function(uint* lpdwMode, uint dwSrcEncoding, uint dwDstEncoding, ubyte* lpSrcStr, uint* lpnSrcSize, ubyte* lpDstStr, uint* lpnDstSize))
   ConvertINetString;
 
-extern (Windows)
+extern(Windows)
 alias DllImport!("mlang.dll", "IsConvertINetStringAvailable",
   int function(uint dwSrcEncoding, uint dwDstEncoding))
   IsConvertINetStringAvailable;
@@ -216,24 +195,31 @@ private uint[string] codePageByName;
 private void initCodePageInfo() {
   synchronized {
     if (auto mlang = CMultiLanguage.coCreate!(IMultiLanguage2)) {
-      scope (exit) tryRelease(mlang);
+      scope(exit) tryRelease(mlang);
 
       IEnumCodePage cp;
-      if (mlang.EnumCodePages(MIMECONTF.MIMECONTF_MIME_LATEST, 0, cp) == S_OK) {
-        scope (exit) tryRelease(cp);
+      if (SUCCEEDED(mlang.EnumCodePages(MIMECONTF_MIME_LATEST, 0, cp))) {
+        scope(exit) tryRelease(cp);
 
         uint num = 0;
-        mlang.GetNumberOfCodePageInfo(num);
-        if (num > 0) {
+        if (SUCCEEDED(mlang.GetNumberOfCodePageInfo(num)) && num > 0) {
           MIMECPINFO* cpInfo = cast(MIMECPINFO*)CoTaskMemAlloc(num * MIMECPINFO.sizeof);
 
           uint count = 0;
-          cp.Next(num, cpInfo, count);
-          codePageInfoTable.length = count;
+          if (SUCCEEDED(cp.Next(num, cpInfo, count)) && count > 0) {
+            codePageInfoTable.length = count;
 
-          for (uint index = 0; index < count; index++) {
-            with (cpInfo[index]) {
-              codePageInfoTable[index] = CodePageInfo(uiCodePage, uiFamilyCodePage, toUtf8(wszWebCharset.ptr), toUtf8(wszHeaderCharset.ptr), toUtf8(wszBodyCharset.ptr), toUtf8(wszDescription.ptr), dwFlags);
+            for (uint index = 0; index < count; index++) {
+              with (cpInfo[index]) {
+                codePageInfoTable[index] = CodePageInfo(
+                  uiCodePage, 
+                  uiFamilyCodePage, 
+                  toUtf8(wszWebCharset.ptr), 
+                  toUtf8(wszHeaderCharset.ptr), 
+                  toUtf8(wszBodyCharset.ptr), 
+                  toUtf8(wszDescription.ptr), 
+                  dwFlags);
+              }
             }
           }
 
@@ -284,96 +270,48 @@ private uint getCodePageFromName(string name) {
 }
 
 /**
- * Converts a set of characters into a sequence of bytes.
- */
-public abstract class Encoder {
-
-  /**
-   * Encodes a set of characters from the specified character array into a sequence of bytes.
-   * Params:
-   *   chars = The character array containing the characters to _encode.
-   *   index = The position of the first character to _encode.
-   *   count = The number of characters to _encode.
-   * Returns: A byte array containing the resulting sequence of bytes.
-   */
-  public abstract ubyte[] encode(char[] chars, int index, int count);
-
-}
-
-/**
- * Converts a sequence of encoded bytes into a set of characters.
- */
-public abstract class Decoder {
-
-  /** 
-   * Decodes a sequence of _bytes from the specified byte array into a set of characters.
-   * Params:
-   *   bytes = The byte array containing the sequence of _bytes to _decode.
-   *   index = The position of the first byte to _decode.
-   *   count = The number of _bytes to _decode.
-   * Returns: A character array containing the resulting set of characters.
-   */
-  public abstract char[] decode(ubyte[] bytes, int index, int count);
-
-}
-
-/**
  * Represents a character encoding.
  */
-public abstract class Encoding {
-
-  private static class DefaultEncoder : Encoder {
-
-    private Encoding encoding_;
-
-    public this(Encoding encoding) {
-      encoding_ = encoding;
-    }
-
-    public override ubyte[] encode(char[] chars, int index, int count) {
-      return encoding_.encode(chars, index, count);
-    }
-
-  }
-
-  private static class DefaultDecoder : Decoder {
-
-    private Encoding encoding_;
-
-    public this(Encoding encoding) {
-      encoding_ = encoding;
-    }
-
-    public override char[] decode(ubyte[] bytes, int index, int count) {
-      return encoding_.decode(bytes, index, count);
-    }
-
-  }
+abstract class Encoding {
 
   private const uint CP_DEFAULT = 0;
   private const uint CP_ASCII = 20127;
   private const uint CP_UTF16 = 1200;
   private const uint CP_UTF16BE = 1201;
+  private const uint CP_UTF32 = 12000;
+  private const uint CP_UTF32BE = 12001;
   private const uint CP_WINDOWS_1252 = 1252;
   private const uint ISO_8859_1 = 28591;
+
+  private const uint ISO_SIMPLIFIED_CN = 50227;
+  private const uint GB18030 = 54936;
+  private const uint ISO_8859_8I = 38598;
+  private const uint ISCII_DEVANAGARI = 57002;
+  private const uint ISCII_BENGALI = 57003;
+  private const uint ISCII_TAMIL = 57004;
+  private const uint ISCII_TELUGU = 57005;
+  private const uint ISCII_ASSEMESE = 57006;
+  private const uint ISCII_ORIYA = 57007;
+  private const uint ISCII_KANNADA = 57008;
+  private const uint ISCII_MALAYALAM = 57009;
+  private const uint ISCII_GUJARATHI = 57010;
+  private const uint ISCII_PUNJABI = 507011;
 
   private static Encoding[uint] encodings_;
   private static Encoding defaultEncoding_;
   private static Encoding asciiEncoding_;
   private static Encoding utf8Encoding_;
-  private static Encoding utf7Encoding_;
   private static Encoding utf16Encoding_;
 
   protected uint codePage_;
   private CodePageInfo* cpInfo_;
 
   static ~this() {
-    encodings_ = null;
     defaultEncoding_ = null;
     asciiEncoding_ = null;
-    utf7Encoding_ = null;
     utf8Encoding_ = null;
     utf16Encoding_ = null;
+    encodings_ = null;
   }
 
   /**
@@ -384,7 +322,7 @@ public abstract class Encoding {
    *   bytes = The _bytes to _convert.
    * Returns: A byte array containing the results of converting bytes from srcEncoding to destEncoding.
    */
-  public static ubyte[] convert(Encoding sourceEncoding, Encoding destEncoding, ubyte[] bytes) {
+  static ubyte[] convert(Encoding sourceEncoding, Encoding destEncoding, in ubyte[] bytes) {
     return convert(sourceEncoding, destEncoding, bytes, 0, bytes.length);
   }
 
@@ -398,17 +336,8 @@ public abstract class Encoding {
    *   count = The number of _bytes to _convert.
    * Returns: A byte array containing the results of converting bytes from srcEncoding to destEncoding.
    */
-  public static ubyte[] convert(Encoding sourceEncoding, Encoding destEncoding, ubyte[] bytes, int index, int count) {
+  static ubyte[] convert(Encoding sourceEncoding, Encoding destEncoding, in ubyte[] bytes, int index, int count) {
     return destEncoding.encode(sourceEncoding.decode(bytes, index, count));
-  }
-
-  /**
-   * Encodes a set of characters from the specified character array into a sequence of bytes.
-   * Params: chars = The character array containing the set of characters to _encode.
-   * Returns: A byte array containing the results of encoding the specified set of characters.
-   */
-  public ubyte[] encode(char[] chars) {
-    return encode(chars, 0, chars.length);
   }
 
   /**
@@ -419,15 +348,13 @@ public abstract class Encoding {
    *   count = The number of characters to _encode.
    * Returns: A byte array containing the results of encoding the specified set of characters.
    */
-  public abstract ubyte[] encode(char[] chars, int index, int count);
+  abstract ubyte[] encode(in char[] chars, int index, int count);
 
   /**
-   * Decodes a sequence of _bytes from the specified byte array into a set of characters.
-   * Params: bytes = The byte array containing the sequence of _bytes to _decode.
-   * Returns: A character array containing the results of decoding the specified sequence of _bytes.
+   * ditto
    */
-  public char[] decode(ubyte[] bytes) {
-    return decode(bytes, 0, bytes.length);
+  ubyte[] encode(in char[] chars) {
+    return encode(chars, 0, chars.length);
   }
 
   /**
@@ -438,28 +365,21 @@ public abstract class Encoding {
    *   count = The number of _bytes to _decode.
    * Returns: A character array containing the results of decoding the specified sequence of _bytes.
    */
-  public abstract char[] decode(ubyte[] bytes, int index, int count);
+  abstract char[] decode(in ubyte[] bytes, int index, int count);
 
   /**
-   * Calculates the maximum number of bytes produced by encoding the specified number of characters.
-   * Params: chars = The number of characters to encode.
-   * Returns: The maximum number of bytes produced by encoding the specified number of characters.
+   * ditto
    */
-  public abstract int maxBytes(int chars);
-
-  /**
-   * Calculates the maximum number of characters produced by decoding the specified number of _bytes.
-   * Params: bytes = The number of _bytes to encode.
-   * Returns: The maximum number of characters produced by decoding the specified number of _bytes.
-   */
-  public abstract int maxChars(int bytes);
+  char[] decode(in ubyte[] bytes) {
+    return decode(bytes, 0, bytes.length);
+  }
 
   /**
    * Returns an encoding associated with the specified code page identifier.
    * Params: codePage = The code page identifier of the encoding.
    * Returns: The encoding associated with the specified code page.
    */
-  public static Encoding get(uint codePage) {
+  static Encoding get(uint codePage) {
     if (auto value = codePage in encodings_)
       return *value;
 
@@ -467,14 +387,11 @@ public abstract class Encoding {
       Encoding enc = null;
 
       switch (codePage) {
-        case CP_ASCII,
-          CP_OEMCP,
-          CP_MACCP,
-          CP_THREAD_ACP:
-          enc = Encoding.ASCII;
+        case CP_DEFAULT:
+          enc = DEFAULT;
           break;
-        case CP_UTF7:
-          enc = Encoding.UTF7;
+        case CP_ASCII:
+          enc = Encoding.ASCII;
           break;
         case CP_UTF8:
           enc = Encoding.UTF8;
@@ -482,21 +399,24 @@ public abstract class Encoding {
         case CP_UTF16:
           enc = Encoding.UTF16;
           break;
+        case CP_UTF16BE:
+          enc = new Utf16Encoding(true);
+          break;
         case CP_WINDOWS_1252,
-          50227, 54936, 38598, 57002,
-          57003, 57004, 57005, 57006,
-          57007, 57008, 57009, 57010,
-          57011:
+          ISO_SIMPLIFIED_CN, GB18030, ISO_8859_8I, ISCII_DEVANAGARI,
+          ISCII_BENGALI, ISCII_TAMIL, ISCII_TELUGU, ISCII_ASSEMESE,
+          ISCII_ORIYA, ISCII_KANNADA, ISCII_MALAYALAM, ISCII_GUJARATHI,
+          ISCII_PUNJABI:
           enc = new MLangEncoding(codePage);
           break;
         default:
-          CPINFO cpInfo;
-          GetCPInfo(codePage, cpInfo);
-          if (cpInfo.MaxCharSize == 1 || cpInfo.MaxCharSize == 2) {
+          CPINFO cpi;
+          GetCPInfo(codePage, cpi);
+          if (cpi.MaxCharSize == 1 || cpi.MaxCharSize == 2) {
             enc = new MLangEncoding(codePage);
             break;
           }
-          throw new ArgumentException("Not a supported code page.", "codePage");
+          throw new NotSupportedException(format("%s is not a supported code page.", codePage));
       }
 
       return encodings_[codePage] = enc;
@@ -508,31 +428,15 @@ public abstract class Encoding {
    * Params: name = The code page name of the encoding.
    * Returns: The encoding associated with the specified code page.
    */
-  public static Encoding get(string name) {
+  static Encoding get(string name) {
     return Encoding.get(getCodePageFromName(name));
-  }
-
-  /**
-   * Obtains an encoder that converts a sequence of characters into an encoded sequence of bytes.
-   * Returns: An encoder that converts a sequence of characters into an encoded sequence of bytes.
-   */
-  public Encoder getEncoder() {
-    return new DefaultEncoder(this);
-  }
-
-  /**
-   * Obtains a decoder that converts an encoded sequence of bytes into a sequence of characters.
-   * Returns: An decoder that converts an encoded sequence of bytes into a sequence of characters.
-   */
-  public Decoder getDecoder() {
-    return new DefaultDecoder(this);
   }
 
   /**
    * Gets an encoding for the system's ANSI code page.
    * Returns: An encoding for the system's ANSI code page.
    */
-  public static Encoding DEFAULT() {
+  static Encoding DEFAULT() {
     if (defaultEncoding_ is null)
       defaultEncoding_ = Encoding.get(GetACP());
     return defaultEncoding_;
@@ -542,27 +446,17 @@ public abstract class Encoding {
    * Gets an encoding for the ASCII character set.
    * Returns: An encoding for the ASCII character set.
    */
-  public static Encoding ASCII() {
+  static Encoding ASCII() {
     if (asciiEncoding_ is null)
       asciiEncoding_ = new AscIIEncoding;
     return asciiEncoding_;
   }
 
   /**
-   * Gets an encoding for the UTF-7 format.
-   * Returns: An encoding for the UTF-7 format.
-   */
-  public static Encoding UTF7() {
-    if (utf7Encoding_ is null)
-      utf7Encoding_ = new Utf7Encoding;
-    return utf7Encoding_;
-  }
-
-  /**
    * Gets an encoding for the UTF-8 format.
    * Returns: An encoding for the UTF-8 format.
    */
-  public static Encoding UTF8() {
+  static Encoding UTF8() {
     if (utf8Encoding_ is null)
       utf8Encoding_ = new Utf8Encoding;
     return utf8Encoding_;
@@ -572,13 +466,13 @@ public abstract class Encoding {
    * Gets an encoding for the UTF-16 format using the little endian byte order.
    * Returns: An encoding for the UTF-16 format using the little endian byte order.
    */
-  public static Encoding UTF16() {
+  static Encoding UTF16() {
     if (utf16Encoding_ is null)
-      utf16Encoding_ = new Utf16Encoding(false);
+      utf16Encoding_ = new Utf16Encoding;
     return utf16Encoding_;
   }
 
-  public int codePage() {
+  uint codePage() {
     return codePage_;
   }
 
@@ -586,7 +480,7 @@ public abstract class Encoding {
    * Gets a _description of the encoding.
    * Returns: A _description of the encoding.
    */
-  public string description() {
+  string description() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
     return cpInfo_.description;
@@ -596,7 +490,7 @@ public abstract class Encoding {
    * Gets the name registered with the IANA.
    * Returns: The IANA name.
    */
-  public string webName() {
+  string webName() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
     return cpInfo_.webName;
@@ -606,7 +500,7 @@ public abstract class Encoding {
    * Gets a name that can be used with mail agent header tags.
    * Returns: A name that can be used with mail agent header tags.
    */
-  public string headerName() {
+  string headerName() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
     return cpInfo_.headerName;
@@ -616,34 +510,34 @@ public abstract class Encoding {
    * Gets a name that can be used with mail agent body tags.
    * Returns: A name that can be used with mail agent body tags.
    */
-  public string bodyName() {
+  string bodyName() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
     return cpInfo_.bodyName;
   }
 
-  public bool isBrowserDisplay() {
+  bool isBrowserDisplay() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
-    return (cpInfo_.flags & MIMECONTF.MIMECONTF_BROWSER) != 0;
+    return (cpInfo_.flags & MIMECONTF_BROWSER) != 0;
   }
 
-  public bool isMailNewsDisplay() {
+  bool isMailNewsDisplay() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
-    return (cpInfo_.flags & MIMECONTF.MIMECONTF_MAILNEWS) != 0;
+    return (cpInfo_.flags & MIMECONTF_MAILNEWS) != 0;
   }
 
-  public bool isBrowserSave() {
+  bool isBrowserSave() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
-    return (cpInfo_.flags & MIMECONTF.MIMECONTF_SAVABLE_BROWSER) != 0;
+    return (cpInfo_.flags & MIMECONTF_SAVABLE_BROWSER) != 0;
   }
 
-  public bool isMailNewsSave() {
+  bool isMailNewsSave() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
-    return (cpInfo_.flags & MIMECONTF.MIMECONTF_SAVABLE_MAILNEWS) != 0;
+    return (cpInfo_.flags & MIMECONTF_SAVABLE_MAILNEWS) != 0;
   }
 
   /**
@@ -658,23 +552,15 @@ public abstract class Encoding {
 
 private final class MLangEncoding : Encoding {
 
-  private int maxChars_;
-
-  public this(uint codePage) {
+  this(uint codePage) {
     super(codePage == 0 ? GetACP() : codePage);
-    CPINFO cpInfo;
-    if (!GetCPInfo(codePage, cpInfo)) {
-      if (codePage == CP_UTF8)
-        maxChars_ = 4;
-      else if (codePage == CP_UTF7)
-        maxChars_ = 5;
-    }
-    else maxChars_ = cpInfo.MaxCharSize;
   }
 
-  public override ubyte[] encode(char[] chars, int index, int count) {
+  alias Encoding.encode encode;
+
+  override ubyte[] encode(in char[] chars, int index, int count) {
     if (IsConvertINetStringAvailable(CP_UTF8, codePage_) == S_FALSE)
-      return null;
+      throw new ArgumentException("Could not encode.");
 
     uint dwMode;
     uint bytesLength;
@@ -688,9 +574,11 @@ private final class MLangEncoding : Encoding {
     return bytes.dup;
   }
 
-  public override char[] decode(ubyte[] bytes, int index, int count) {
-    if (IsConvertINetStringAvailable(CP_UTF8, codePage_) == S_FALSE)
-      return null;
+  alias Encoding.decode decode;
+
+  override char[] decode(in ubyte[] bytes, int index, int count) {
+    if (IsConvertINetStringAvailable(codePage_, CP_UTF8) == S_FALSE)
+      throw new ArgumentException("Could not decode.");
 
     uint dwMode;
     uint charsLength;
@@ -704,27 +592,19 @@ private final class MLangEncoding : Encoding {
     return chars.dup;
   }
 
-  public override int maxBytes(int chars) {
-    return chars * maxChars_;
-  }
-
-  public override int maxChars(int bytes) {
-    return bytes;
-  }
-
 }
 
 /**
  * Represents an ASCII encoding of characters.
  */
-public class AscIIEncoding : Encoding {
+class AscIIEncoding : Encoding {
 
   private Encoding baseEncoding_;
 
   /**
    * Creates a new instance.
    */
-  public this() {
+  this() {
     super(CP_ASCII);
     baseEncoding_ = new MLangEncoding(CP_ASCII);
   }
@@ -753,99 +633,24 @@ public class AscIIEncoding : Encoding {
     return baseEncoding_.decode(bytes, index, count);
   }
 
-  /**
-   * Calculates the maximum number of bytes produced by encoding the specified number of characters.
-   * Params: chars = The number of characters to encode.
-   * Returns: The maximum number of bytes produced by encoding the specified number of characters.
-   */
-  public override int maxBytes(int chars) {
-    return chars + 1;
-  }
-
-  /**
-   * Calculates the maximum number of characters produced by decoding the specified number of _bytes.
-   * Params: bytes = The number of _bytes to encode.
-   * Returns: The maximum number of characters produced by decoding the specified number of _bytes.
-   */
-  public override int maxChars(int bytes) {
-    return bytes;
-  }
-
-}
-
-/**
- * Represents a UTF-7 encoding of characters.
- */
-public class Utf7Encoding : Encoding {
-
-  private Encoding baseEncoding_;
-
-  /**
-   * Creates a new instance.
-   */
-  public this() {
-    super(CP_UTF7);
-    baseEncoding_ = new MLangEncoding(CP_UTF7);
-  }
-
-  /**
-   * Encodes a set of characters from the specified character array into a sequence of bytes.
-   * Params: 
-   *   chars = The character array containing the set of characters to _encode.
-   *   index = The _index of the first character to _encode.
-   *   count = The number of characters to _encode.
-   * Returns: A byte array containing the results of encoding the specified set of characters.
-   */
-  public override ubyte[] encode(char[] chars, int index, int count) {
-    return baseEncoding_.encode(chars, index, count);
-  }
-
-  /**
-   * Decodes a sequence of _bytes from the specified byte array into a set of characters.
-   * Params:
-   *   bytes = The byte array containing the sequence of _bytes to _decode.
-   *   index = The _index of the first byte to _decode.
-   *   count = The number of _bytes to _decode.
-   * Returns: A character array containing the results of decoding the specified sequence of _bytes.
-   */
-  public override char[] decode(ubyte[] bytes, int index, int count) {
-    return baseEncoding_.decode(bytes, index, count);
-  }
-
-  /**
-   * Calculates the maximum number of bytes produced by encoding the specified number of characters.
-   * Params: chars = The number of characters to encode.
-   * Returns: The maximum number of bytes produced by encoding the specified number of characters.
-   */
-  public override int maxBytes(int chars) {
-    return (chars * 3) + 2;
-  }
-
-  /**
-   * Calculates the maximum number of characters produced by decoding the specified number of _bytes.
-   * Params: bytes = The number of _bytes to encode.
-   * Returns: The maximum number of characters produced by decoding the specified number of _bytes.
-   */
-  public override int maxChars(int bytes) {
-    return (bytes == 0) ? 1 : bytes;
-  }
-
 }
 
 /**
  * Represents a UTF-8 encoding of characters.
  */
-public class Utf8Encoding : Encoding {
+class Utf8Encoding : Encoding {
 
   private Encoding baseEncoding_;
 
   /**
    * Creates a new instance.
    */
-  public this() {
+  this() {
     super(CP_UTF8);
     baseEncoding_ = new MLangEncoding(CP_UTF8);
   }
+
+  alias Encoding.encode encode;
 
   /**
    * Encodes a set of characters from the specified character array into a sequence of bytes.
@@ -855,9 +660,11 @@ public class Utf8Encoding : Encoding {
    *   count = The number of characters to _encode.
    * Returns: A byte array containing the results of encoding the specified set of characters.
    */
-  public override ubyte[] encode(char[] chars, int index, int count) {
+  override ubyte[] encode(in char[] chars, int index, int count) {
     return baseEncoding_.encode(chars, index, count);
   }
+
+  alias Encoding.decode decode;
 
   /**
    * Decodes a sequence of _bytes from the specified byte array into a set of characters.
@@ -867,26 +674,8 @@ public class Utf8Encoding : Encoding {
    *   count = The number of _bytes to _decode.
    * Returns: A character array containing the results of decoding the specified sequence of _bytes.
    */
-  public override char[] decode(ubyte[] bytes, int index, int count) {
+  override char[] decode(in ubyte[] bytes, int index, int count) {
     return baseEncoding_.decode(bytes, index, count);
-  }
-
-  /**
-   * Calculates the maximum number of bytes produced by encoding the specified number of characters.
-   * Params: chars = The number of characters to encode.
-   * Returns: The maximum number of bytes produced by encoding the specified number of characters.
-   */
-  public override int maxBytes(int chars) {
-    return (chars + 1) * 3;
-  }
-
-  /**
-   * Calculates the maximum number of characters produced by decoding the specified number of _bytes.
-   * Params: bytes = The number of _bytes to encode.
-   * Returns: The maximum number of characters produced by decoding the specified number of _bytes.
-   */
-  public override int maxChars(int bytes) {
-    return bytes + 1;
   }
 
 }
@@ -894,7 +683,7 @@ public class Utf8Encoding : Encoding {
 /**
  * Represents a UTF-16 encoding of characters.
  */
-public class Utf16Encoding : Encoding {
+class Utf16Encoding : Encoding {
 
   private Encoding baseEncoding_;
 
@@ -902,10 +691,12 @@ public class Utf16Encoding : Encoding {
    * Creates a new instance.
    * Params: bigEndian = true to use the big-endian byte order, or false to use the little-endian byte order.
    */
-  public this(bool bigEndian = false) {
+  this(bool bigEndian = false) {
     super(bigEndian ? CP_UTF16BE : CP_UTF16);
     baseEncoding_ = new MLangEncoding(codePage_);
   }
+
+  alias Encoding.encode encode;
 
   /**
    * Encodes a set of characters from the specified character array into a sequence of bytes.
@@ -915,9 +706,11 @@ public class Utf16Encoding : Encoding {
    *   count = The number of characters to _encode.
    * Returns: A byte array containing the results of encoding the specified set of characters.
    */
-  public override ubyte[] encode(char[] chars, int index, int count) {
+  override ubyte[] encode(in char[] chars, int index, int count) {
     return baseEncoding_.encode(chars, index, count);
   }
+
+  alias Encoding.decode decode;
 
   /**
    * Decodes a sequence of _bytes from the specified byte array into a set of characters.
@@ -927,26 +720,8 @@ public class Utf16Encoding : Encoding {
    *   count = The number of _bytes to _decode.
    * Returns: A character array containing the results of decoding the specified sequence of _bytes.
    */
-  public override char[] decode(ubyte[] bytes, int index, int count) {
+  override char[] decode(in ubyte[] bytes, int index, int count) {
     return baseEncoding_.decode(bytes, index, count);
-  }
-
-  /**
-   * Calculates the maximum number of bytes produced by encoding the specified number of characters.
-   * Params: chars = The number of characters to encode.
-   * Returns: The maximum number of bytes produced by encoding the specified number of characters.
-   */
-  public override int maxBytes(int chars) {
-    return (chars + 1) << 1;
-  }
-
-  /**
-   * Calculates the maximum number of characters produced by decoding the specified number of _bytes.
-   * Params: bytes = The number of _bytes to encode.
-   * Returns: The maximum number of characters produced by decoding the specified number of _bytes.
-   */
-  public override int maxChars(int bytes) {
-    return (bytes >> 1) + (bytes & 1) + 1;
   }
 
 }
