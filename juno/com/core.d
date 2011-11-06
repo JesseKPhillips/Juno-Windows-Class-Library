@@ -369,14 +369,10 @@ string uuid(string type, string g) {
  * ---
  */
 template uuidof(alias T) {
-  const GUID uuidof = uuidofT!(typeof(T));
-}
-
-/**
- * ditto
- */
-template uuidof(T) {
-  const GUID uuidof = uuidofT!(T);
+    static if(__traits(compiles, typeof(T)))
+        const GUID uuidof = uuidofT!(typeof(T));
+    else
+        const GUID uuidof = uuidofT!(T);
 }
 
 template uuidofT(T : T) {

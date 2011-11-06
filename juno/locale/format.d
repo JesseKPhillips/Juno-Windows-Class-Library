@@ -1619,7 +1619,7 @@ package struct Number {
           currencySymbol = null;
           pos += eaten;
         }
-        else if (!(isWhitespace(c) & (styles & NumberStyles.TrailingWhite) != 0))
+        else if (!((isWhitespace(c) & (styles & NumberStyles.TrailingWhite)) != 0))
           break;
         else pos++;
       }
