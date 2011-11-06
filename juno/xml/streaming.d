@@ -287,7 +287,7 @@ private int createStreamOnFile(string fileName, uint flags, out IStream result) 
       return S_OK;
     }
 
-    int Write(void* pv, uint cb, ref uint pcbWritten) {
+    int Write(const void* pv, uint cb, ref uint pcbWritten) {
       uint bytesWritten;
       uint ret = WriteFile(handle_, pv, cb, bytesWritten, null);
       if (&pcbWritten)
@@ -1174,7 +1174,7 @@ abstract class XmlWriter {
 
   /**
    */
-  abstract void writeChars(char[] buffer, int index, int count);
+  abstract void writeChars(string buffer, int index, int count);
 
   /**
    */
@@ -1244,7 +1244,7 @@ abstract class XmlWriter {
 
   /**
    */
-  abstract void writeRaw(char[] buffer, int index, int count);
+  abstract void writeRaw(string buffer, int index, int count);
 
   /**
    */
@@ -1359,7 +1359,7 @@ private final class XmlLiteWriter : XmlWriter {
     writerImpl_.WriteCharEntity(ch);
   }
 
-  override void writeChars(char[] buffer, int index, int count) {
+  override void writeChars(string buffer, int index, int count) {
     writerImpl_.WriteChars(buffer.toUtf16z(index), count);
   }
 
@@ -1419,7 +1419,7 @@ private final class XmlLiteWriter : XmlWriter {
     writerImpl_.WriteRaw(data.toUtf16z());
   }
 
-  override void writeRaw(char[] buffer, int index, int count) {
+  override void writeRaw(string buffer, int index, int count) {
     writerImpl_.WriteRawChars(buffer.toUtf16z(index), count);
   }
 

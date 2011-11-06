@@ -526,20 +526,20 @@ interface IXMLDOMDocument2 : IXMLDOMDocument {
   // perform runtime validation on the currently loaded XML document
   /*[id(0x000000CB)]*/ int validate(out IXMLDOMParseError errorObj);
   // set the value of the named property
-  /*[id(0x000000CC)]*/ int setProperty(wchar* name, VARIANT value);
+  /*[id(0x000000CC)]*/ int setProperty(in wchar* name, VARIANT value);
   // get the value of the named property
-  /*[id(0x000000CD)]*/ int getProperty(wchar* name, out VARIANT value);
+  /*[id(0x000000CD)]*/ int getProperty(in wchar* name, out VARIANT value);
 }
 
 // XML Schemas Collection
 interface IXMLDOMSchemaCollection : IDispatch {
   mixin(uuid("373984c8-b845-449b-91e7-45ac83036ade"));
   // add a new schema
-  /*[id(0x00000003)]*/ int add(wchar* namespaceURI, VARIANT var);
+  /*[id(0x00000003)]*/ int add(in wchar* namespaceURI, VARIANT var);
   // lookup schema by namespaceURI
-  /*[id(0x00000004)]*/ int get(wchar* namespaceURI, out IXMLDOMNode schemaNode);
+  /*[id(0x00000004)]*/ int get(in wchar* namespaceURI, out IXMLDOMNode schemaNode);
   // remove schema by namespaceURI
-  /*[id(0x00000005)]*/ int remove(wchar* namespaceURI);
+  /*[id(0x00000005)]*/ int remove(in wchar* namespaceURI);
   // number of schemas in collection
   /*[id(0x00000006)]*/ int get_length(out int length);
   // Get namespaceURI for schema by index
@@ -1332,10 +1332,10 @@ interface IMXNamespaceManager : IUnknown {
   /*[id(0x60010003)]*/ int pushContext();
   /*[id(0x60010004)]*/ int pushNodeContext(IXMLDOMNode contextNode, short fDeep);
   /*[id(0x60010005)]*/ int popContext();
-  /*[id(0x60010006)]*/ int declarePrefix(wchar* prefix, wchar* namespaceURI);
+  /*[id(0x60010006)]*/ int declarePrefix(in wchar* prefix, const wchar* namespaceURI);
   /*[id(0x60010007)]*/ int getDeclaredPrefix(int nIndex, wchar* pwchPrefix, ref int pcchPrefix);
-  /*[id(0x60010008)]*/ int getPrefix(wchar* pwszNamespaceURI, int nIndex, wchar* pwchPrefix, ref int pcchPrefix);
-  /*[id(0x60010009)]*/ int getURI(wchar* pwchPrefix, IXMLDOMNode pContextNode, wchar* pwchUri, ref int pcchUri);
+  /*[id(0x60010008)]*/ int getPrefix(const wchar* pwszNamespaceURI, int nIndex, wchar* pwchPrefix, ref int pcchPrefix);
+  /*[id(0x60010009)]*/ int getURI(const wchar* pwchPrefix, IXMLDOMNode pContextNode, wchar* pwchUri, ref int pcchUri);
 }
 
 // CoClasses

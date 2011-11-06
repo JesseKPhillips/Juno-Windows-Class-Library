@@ -170,7 +170,7 @@ abstract final class CMultiLanguage {
 
 extern(Windows)
 alias DllImport!("mlang.dll", "ConvertINetString",
-  int function(uint* lpdwMode, uint dwSrcEncoding, uint dwDstEncoding, ubyte* lpSrcStr, uint* lpnSrcSize, ubyte* lpDstStr, uint* lpnDstSize))
+  int function(uint* lpdwMode, uint dwSrcEncoding, uint dwDstEncoding, const(ubyte)* lpSrcStr, uint* lpnSrcSize, ubyte* lpDstStr, uint* lpnDstSize))
   ConvertINetString;
 
 extern(Windows)
@@ -617,7 +617,7 @@ class AscIIEncoding : Encoding {
    *   count = The number of characters to _encode.
    * Returns: A byte array containing the results of encoding the specified set of characters.
    */
-  public override ubyte[] encode(char[] chars, int index, int count) {
+  public override ubyte[] encode(in char[] chars, int index, int count) {
     return baseEncoding_.encode(chars, index, count);
   }
 
@@ -629,7 +629,7 @@ class AscIIEncoding : Encoding {
    *   count = The number of _bytes to _decode.
    * Returns: A character array containing the results of decoding the specified sequence of _bytes.
    */
-  public override char[] decode(ubyte[] bytes, int index, int count) {
+  public override char[] decode(in ubyte[] bytes, int index, int count) {
     return baseEncoding_.decode(bytes, index, count);
   }
 

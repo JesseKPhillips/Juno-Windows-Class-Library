@@ -659,7 +659,7 @@ int LCMapStringW(uint Locale, uint dwMapFlags, wchar* lpSrcStr, int cchSrc, wcha
 alias LCMapStringW LCMapString;
 
 int MultiByteToWideChar(uint CodePage, uint dwFlags, in char* lpMultiByteStr, int cbMultiByte, wchar* lpWideCharStr, int cchWideChar);
-int WideCharToMultiByte(uint CodePage, uint dwFlags, wchar* lpWideCharStr, int cchWideChar, char* lpMultiByteStr, int cbMultiByte, char* lpDefaultChar, int* lpUseDefaultChar);
+int WideCharToMultiByte(uint CodePage, uint dwFlags, in wchar* lpWideCharStr, int cchWideChar, char* lpMultiByteStr, int cbMultiByte, char* lpDefaultChar, int* lpUseDefaultChar);
 
 struct SECURITY_ATTRIBUTES {
   uint nLength;

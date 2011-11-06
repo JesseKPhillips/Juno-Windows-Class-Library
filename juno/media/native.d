@@ -304,10 +304,10 @@ Status GdipFillClosedCurveI(Handle graphics, Handle brush, Point* points, int co
 Status GdipFillClosedCurve2(Handle graphics, Handle brush, PointF* points, int count, FillMode fillMode, float tension);
 Status GdipFillClosedCurve2I(Handle graphics, Handle brush, Point* points, int count, FillMode fillMode, float tension);
 Status GdipFillRegion(Handle graphics, Handle brush, Handle region);
-Status GdipDrawString(Handle graphics, wchar* string, int length, Handle font, ref RectF layoutRect, Handle stringFormat, Handle brush);
-Status GdipMeasureString(Handle graphics, wchar* string, int length, Handle font, ref RectF layoutRect, Handle stringFormat, ref RectF boundingBox, out int codepointsFitted, out int linesFitted);
+Status GdipDrawString(Handle graphics, in wchar* string, int length, Handle font, ref RectF layoutRect, Handle stringFormat, Handle brush);
+Status GdipMeasureString(Handle graphics, in wchar* string, int length, Handle font, ref RectF layoutRect, Handle stringFormat, ref RectF boundingBox, out int codepointsFitted, out int linesFitted);
 Status GdipGetStringFormatMeasurableCharacterRangeCount(Handle format, out int count);
-Status GdipMeasureCharacterRanges(Handle graphics, wchar* string, int length, Handle font, ref RectF layoutRect, Handle stringFormat, int regionCount, Handle* regions);
+Status GdipMeasureCharacterRanges(Handle graphics, in wchar* string, int length, Handle font, ref RectF layoutRect, Handle stringFormat, int regionCount, Handle* regions);
 Status GdipDrawImage(Handle graphics, Handle image, float x, float y);
 Status GdipDrawImageI(Handle graphics, Handle image, int x, int y);
 Status GdipDrawImageRect(Handle graphics, Handle image, float x, float y, float width, float height);
@@ -474,8 +474,8 @@ Status GdipGetRegionScans(Handle region, RectF* rects, out int count, Handle mat
 
 Status GdipDisposeImage(Handle image);
 Status GdipImageForceValidation(Handle image);
-Status GdipLoadImageFromFileICM(wchar* filename, out Handle image);
-Status GdipLoadImageFromFile(wchar* filename, out Handle image);
+Status GdipLoadImageFromFileICM(in wchar* filename, out Handle image);
+Status GdipLoadImageFromFile(in wchar* filename, out Handle image);
 Status GdipLoadImageFromStreamICM(IStream stream, out Handle image);
 Status GdipLoadImageFromStream(IStream stream, out Handle image);
 Status GdipGetImageRawFormat(Handle image, out GUID format);
@@ -483,7 +483,7 @@ Status GdipGetImageEncodersSize(out int numEncoders, out int size);
 Status GdipGetImageEncoders(int numEncoders, int size, GpImageCodecInfo* encoders);
 Status GdipGetImageDecodersSize(out int numDecoders, out int size);
 Status GdipGetImageDecoders(int numDecoders, int size, GpImageCodecInfo* decoders);
-Status GdipSaveImageToFile(Handle image, wchar* filename, ref GUID clsidEncoder, GpEncoderParameters* encoderParams);
+Status GdipSaveImageToFile(Handle image, in wchar* filename, ref GUID clsidEncoder, GpEncoderParameters* encoderParams);
 Status GdipSaveImageToStream(Handle image, IStream stream, ref GUID clsidEncoder, GpEncoderParameters* encoderParams);
 Status GdipSaveAdd(Handle image, GpEncoderParameters* encoderParams);
 Status GdipSaveAddImage(Handle image, Handle newImage, GpEncoderParameters* encoderParams);
@@ -520,8 +520,8 @@ Status GdipSetImagePalette(Handle image, GpColorPalette* palette);
 Status GdipCreateBitmapFromScan0(int width, int height, int stride, PixelFormat format, ubyte* scan0, out Handle bitmap);
 Status GdipCreateBitmapFromHBITMAP(Handle hbitmap, Handle hpalette, out Handle bitmap);
 Status GdipCreateBitmapFromHICON(Handle hicon, out Handle bitmap);
-Status GdipCreateBitmapFromFileICM(wchar* fileName, out Handle bitmap);
-Status GdipCreateBitmapFromFile(wchar* fileName, out Handle bitmap);
+Status GdipCreateBitmapFromFileICM(in wchar* fileName, out Handle bitmap);
+Status GdipCreateBitmapFromFile(in wchar* fileName, out Handle bitmap);
 Status GdipCreateBitmapFromStreamICM(IStream stream, out Handle bitmap);
 Status GdipCreateBitmapFromStream(IStream stream, out Handle bitmap);
 Status GdipCreateBitmapFromGraphics(int width, int height, Handle graphics, out Handle bitmap);
@@ -544,7 +544,7 @@ Status GdipSetImageAttributesGamma(Handle imageattr, ColorAdjustType type, int e
 Status GdipSetImageAttributesNoOp(Handle imageattr, ColorAdjustType type, int enableFlag);
 Status GdipSetImageAttributesColorKeys(Handle imageattr, ColorAdjustType type, int enableFlag, int colorLow, int colorHigh);
 Status GdipSetImageAttributesOutputChannel(Handle imageattr, ColorAdjustType type, int enableFlag, ColorChannelFlag flags);
-Status GdipSetImageAttributesOutputChannelColorProfile(Handle imageattr, ColorAdjustType type, int enableFlag, wchar* colorProfileFilename);
+Status GdipSetImageAttributesOutputChannelColorProfile(Handle imageattr, ColorAdjustType type, int enableFlag, in wchar* colorProfileFilename);
 Status GdipSetImageAttributesWrapMode(Handle imageattr, WrapMode wrap, int argb, int clamp);
 Status GdipSetImageAttributesRemapTable(Handle imageattr, ColorAdjustType type, int enableFlag, uint mapSize, void* map);
 
@@ -556,10 +556,10 @@ Status GdipPrivateAddMemoryFont(Handle fontCollection, void* memory, int length)
 Status GdipGetFontCollectionFamilyCount(Handle fontCollection, out int numFound);
 Status GdipGetFontCollectionFamilyList(Handle fontCollection, int numSought, Handle* gpfamilies, out int numFound);
 
-Status GdipCreateFontFamilyFromName(wchar* name, Handle fontCollection, out Handle FontFamily);
+Status GdipCreateFontFamilyFromName(in wchar* name, Handle fontCollection, out Handle FontFamily);
 Status GdipDeleteFontFamily(Handle FontFamily);
 Status GdipCloneFontFamily(Handle FontFamily, out Handle clonedFontFamily);
-Status GdipGetFamilyName(Handle family, wchar* name, int language);
+Status GdipGetFamilyName(Handle family, in wchar* name, int language);
 Status GdipGetGenericFontFamilyMonospace(out Handle nativeFamily);
 Status GdipGetGenericFontFamilySerif(out Handle nativeFamily);
 Status GdipGetGenericFontFamilySansSerif(out Handle nativeFamily);
@@ -640,8 +640,8 @@ Status GdipAddPathPieI(Handle path, int x, int y, int width, int height, float s
 Status GdipAddPathPolygon(Handle path, PointF* points, int count);
 Status GdipAddPathPolygonI(Handle path, Point* points, int count);
 Status GdipAddPathPath(Handle path, Handle addingPath, int connect);
-Status GdipAddPathString(Handle path, wchar* string, int length, Handle family, FontStyle style, float emSize, ref RectF layoutRect, Handle format);
-Status GdipAddPathStringI(Handle path, wchar* string, int length, Handle family, FontStyle style, float emSize, ref Rect layoutRect, Handle format);
+Status GdipAddPathString(Handle path, in wchar* str, int length, Handle family, FontStyle style, float emSize, ref RectF layoutRect, Handle format);
+Status GdipAddPathStringI(Handle path, in wchar* str, int length, Handle family, FontStyle style, float emSize, ref Rect layoutRect, Handle format);
 Status GdipTransformPath(Handle path, Handle matrix);
 Status GdipGetPathWorldBounds(Handle path, out RectF bounds, Handle matrix, Handle pen);
 Status GdipFlattenPath(Handle path, Handle matrix, float flatness);

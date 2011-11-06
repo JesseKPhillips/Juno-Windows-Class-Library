@@ -2097,7 +2097,7 @@ private void formatGeneral(ref Number number, ref string dst, int length, char f
   }
 }
 
-private void formatCurrency(ref Number number, ref char[] dst, int length, NumberFormat nf) {
+private void formatCurrency(ref Number number, ref string dst, int length, NumberFormat nf) {
   string format = number.sign ? negativeCurrencyFormats[nf.currencyNegativePattern] : positiveCurrencyFormats[nf.currencyPositivePattern];
 
   foreach (ch; format) {

@@ -1082,7 +1082,7 @@ interface IMalloc : IUnknown {
 
 struct COSERVERINFO {
   uint dwReserved1;
-  wchar* pwszName;
+  const(wchar)* pwszName;
   COAUTHINFO* pAutInfo;
   uint dwReserved2;
 }
@@ -1100,7 +1100,7 @@ interface IMarshal : IUnknown {
 interface ISequentialStream : IUnknown {
   mixin(uuid("0c733a30-2a1c-11ce-ade5-00aa0044773d"));
   int Read(void* pv, uint cb, ref uint pcbRead);
-  int Write(void* pv, uint cb, ref uint pcbWritten);
+  int Write(const void* pv, uint cb, ref uint pcbWritten);
 }
 
 enum : uint {
@@ -1988,11 +1988,11 @@ interface IEnumCATEGORYINFO : IUnknown {
 interface ICatInformation : IUnknown {
   mixin(uuid("0002E013-0000-0000-c000-000000000046"));
   int EnumCategories(uint lcid, out IEnumCATEGORYINFO ppenumCategoryInfo);
-  int GetCategoryDesc(inout GUID rcatid, uint lcid, out wchar* pszDesc);
+  int GetCategoryDesc(ref GUID rcatid, uint lcid, out wchar* pszDesc);
   int EnumClassesOfCategories(uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq, out IEnumGUID ppenumClsid);
-  int IsClassOfCategories(inout GUID rclsid, uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq);
-  int EnumImplCategoriesOfClass(inout GUID rclsid, out IEnumGUID ppenumCatid);
-  int EnumReqCategoriesOfClass(inout GUID rclsid, out IEnumGUID ppenumCatid);
+  int IsClassOfCategories(ref GUID rclsid, uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq);
+  int EnumImplCategoriesOfClass(ref GUID rclsid, out IEnumGUID ppenumCatid);
+  int EnumReqCategoriesOfClass(ref GUID rclsid, out IEnumGUID ppenumCatid);
 }
 
 abstract final class StdComponentCategoriesMgr {
@@ -2190,7 +2190,7 @@ int CoCreateInstance(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, ref
 int CoGetClassObject(ref GUID rclsid, uint dwClsContext, void* pvReserved, ref GUID riid, void** ppv);
 
 struct MULTI_QI {
-  GUID* pIID;
+  const(GUID)* pIID;
   IUnknown pItf;
   int hr;
 }
@@ -2313,16 +2313,16 @@ int VarUI8FromDec(in DECIMAL* pdecIn, out ulong pui64Out);
 int VarI8FromDec(in DECIMAL* pdecIn, out long pi64Out);
 int VarR8FromDec(in DECIMAL* pdecIn, out double pdblOut);
 
-int VarDecAdd(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
-int VarDecSub(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
-int VarDecMul(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
-int VarDecDiv(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
-int VarDecRound(DECIMAL* pdecIn, int cDecimals, DECIMAL* pdecResult);
-int VarDecAbs(DECIMAL* pdecIn, DECIMAL* pdecResult);
-int VarDecFix(DECIMAL* pdecIn, DECIMAL* pdecResult);
-int VarDecInt(DECIMAL* pdecIn, DECIMAL* pdecResult);
-int VarDecNeg(DECIMAL* pdecIn, DECIMAL* pdecResult);
-int VarDecCmp(DECIMAL* pdecLeft, DECIMAL* pdecRight);
+int VarDecAdd(in DECIMAL* pdecLeft, in DECIMAL* pdecRight, DECIMAL* pdecResult);
+int VarDecSub(in DECIMAL* pdecLeft, in DECIMAL* pdecRight, DECIMAL* pdecResult);
+int VarDecMul(in DECIMAL* pdecLeft, in DECIMAL* pdecRight, DECIMAL* pdecResult);
+int VarDecDiv(in DECIMAL* pdecLeft, in DECIMAL* pdecRight, DECIMAL* pdecResult);
+int VarDecRound(in DECIMAL* pdecIn, int cDecimals, DECIMAL* pdecResult);
+int VarDecAbs(in DECIMAL* pdecIn, in DECIMAL* pdecResult);
+int VarDecFix(in DECIMAL* pdecIn, in DECIMAL* pdecResult);
+int VarDecInt(in DECIMAL* pdecIn, in DECIMAL* pdecResult);
+int VarDecNeg(in DECIMAL* pdecIn, in DECIMAL* pdecResult);
+int VarDecCmp(in DECIMAL* pdecLeft, in DECIMAL* pdecRight);
 
 int CreateStreamOnHGlobal(Handle hGlobal, int fDeleteOnRelease, out IStream ppstm);
 
@@ -3016,7 +3016,7 @@ class COMStream : Implements!(IStream) {
     return S_OK;
   }
 
-  int Write(void* pv, uint cb, ref uint pcbWritten) {
+  int Write(const void* pv, uint cb, ref uint pcbWritten) {
     uint ret = stream_.writeBlock(pv, cb);
     if (&pcbWritten)
       pcbWritten = ret;
@@ -3104,13 +3104,13 @@ class StreamFromCOMStream : Stream {
     }
   }
 
-  override uint readBlock(void* buffer, size_t size) {
+  override size_t readBlock(void* buffer, size_t size) {
     uint ret;
     stream_.Read(buffer, size, ret);
     return ret;
   }
 
-  override uint writeBlock(void* buffer, size_t size) {
+  override size_t writeBlock(const void* buffer, size_t size) {
     uint ret;
     stream_.Write(buffer, size, ret);
     return ret;
