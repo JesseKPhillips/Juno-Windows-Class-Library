@@ -1641,7 +1641,7 @@ package struct Number {
         if (length < 0)
           length = nf.numberDecimalDigits;
         round(scale + length);
-        formatNumber(*this, ret, length, nf);
+        formatNumber(this, ret, length, nf);
         break;
       case 'g', 'G':
         if (length < 0)
@@ -1649,13 +1649,13 @@ package struct Number {
         round(scale + length);
         if (sign)
           ret ~= nf.negativeSign;
-        formatGeneral(*this, ret, length, (format == 'g') ? 'e' : 'E', nf);
+        formatGeneral(this, ret, length, (format == 'g') ? 'e' : 'E', nf);
         break;
       case 'c', 'C':
         if (length < 0)
           length = nf.currencyDecimalDigits;
         round(scale + length);
-        formatCurrency(*this, ret, length, nf);
+        formatCurrency(this, ret, length, nf);
         break;
       default:
     }

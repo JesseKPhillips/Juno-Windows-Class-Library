@@ -427,7 +427,7 @@ struct Rect {
   /**
    */
   void intersect(Rect rect) {
-    Rect r = intersect(rect, *this);
+    Rect r = intersect(rect, this);
     x = r.x;
     y = r.y;
     width = r.width;
@@ -596,7 +596,7 @@ struct RectF {
   /**
    */
   void intersect(RectF rect) {
-    RectF r = intersect(rect, *this);
+    RectF r = intersect(rect, this);
     x = r.x;
     y = r.y;
     width = r.width;

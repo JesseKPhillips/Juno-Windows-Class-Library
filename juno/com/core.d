@@ -471,12 +471,12 @@ struct SAFEARRAY {
   }
 
   void destroy() {
-    SafeArrayDestroy(this);
+    SafeArrayDestroy(&this);
   }
 
   void resize(int newSize) {
     auto bound = SAFEARRAYBOUND(newSize);
-    SafeArrayRedim(this, &bound);
+    SafeArrayRedim(&this, &bound);
   }
 
   T[] toArray(T)() {
@@ -522,17 +522,17 @@ struct SAFEARRAY {
   }
 
   void lock() {
-    SafeArrayLock(this);
+    SafeArrayLock(&this);
   }
 
   void unlock() {
-    SafeArrayUnlock(this);
+    SafeArrayUnlock(&this);
   }
 
   int length() {
     int upperBound, lowerBound;
-    SafeArrayGetUBound(this, 1, upperBound);
-    SafeArrayGetLBound(this, 1, lowerBound);
+    SafeArrayGetUBound(&this, 1, upperBound);
+    SafeArrayGetLBound(&this, 1, lowerBound);
     return upperBound - lowerBound + 1;
   }
 
@@ -584,7 +584,7 @@ struct DECIMAL {
   }
 
   int opCmp(DECIMAL d) {
-    return VarDecCmp(this, &d) - 1;
+    return VarDecCmp(&this, &d) - 1;
   }
 
   bool opEquals(DECIMAL d) {
@@ -705,7 +705,7 @@ struct DECIMAL {
 
   hash_t toHash() {
     double d;
-    VarR8FromDec(this, d);
+    VarR8FromDec(&this, d);
     if (d == 0)
       return 0;
     return (cast(int*)&d)[0] ^ (cast(int*)&d)[1];
@@ -713,7 +713,7 @@ struct DECIMAL {
 
   string toString() {
     wchar* str;
-    if (VarBstrFromDec(this, 0, 0, str) != S_OK)
+    if (VarBstrFromDec(&this, 0, 0, str) != S_OK)
       return null;
     return bstr.toString(str);
   }
@@ -977,6 +977,7 @@ struct VARIANT {
     else static if (is(T : IUnknown)) punkVal = value, value.AddRef();
     else static if (is(T : Object)) byref = cast(void*)value;
     else static if (is(T == VARIANT*)) pvarVal = value;
+    else static if (is(T == VARIANT)) this = value;
     else static if (is(T == SAFEARRAY*)) parray = value;
     else static if (isArray!(T)) parray = SAFEARRAY.from(value);
     else static assert(false, "'" ~ T.stringof ~ "' is not one of the allowed types.");
@@ -996,16 +997,16 @@ struct VARIANT {
    */
   void clear() {
     if (isCOMAlive && !(vt == VT_NULL || vt == VT_EMPTY))
-      VariantClear(this);
+      VariantClear(&this);
   }
 
   void copyTo(out VARIANT dest) {
-    VariantCopy(&dest, this);
+    VariantCopy(&dest, &this);
   }
 
   VARIANT changeTo(VARTYPE newType) {
     VARIANT ret;
-    if (FAILED(VariantChangeType(&ret, this, VARIANT_ALPHABOOL, newType)))
+    if (FAILED(VariantChangeType(&ret, &this, VARIANT_ALPHABOOL, newType)))
       throw new InvalidCastException("Invalid cast.");
     return ret;
   }
@@ -1022,7 +1023,7 @@ struct VARIANT {
       return bstr.toString(bstrVal);
 
     VARIANT temp;
-    if (SUCCEEDED(VariantChangeType(&temp, this, VARIANT_ALPHABOOL | VARIANT_LOCALBOOL, VT_BSTR)))
+    if (SUCCEEDED(VariantChangeType(&temp, &this, VARIANT_ALPHABOOL | VARIANT_LOCALBOOL, VT_BSTR)))
       return bstr.toString(temp.bstrVal);
 
     return null;

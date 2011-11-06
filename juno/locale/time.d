@@ -158,7 +158,7 @@ struct TimeSpan {
 
   TimeSpan opAddAssign(TimeSpan ts) {
     ticks_ += ts.ticks_;
-    return *this;
+    return this;
   }
 
   TimeSpan subtract(TimeSpan ts) {
@@ -171,7 +171,7 @@ struct TimeSpan {
 
   TimeSpan opSubAssign(TimeSpan ts) {
     ticks_ -= ts.ticks_;
-    return *this;
+    return this;
   }
 
   TimeSpan negate() {
@@ -183,7 +183,7 @@ struct TimeSpan {
   }
 
   TimeSpan opPos() {
-    return *this;
+    return this;
   }
 
   int compare(TimeSpan other) {
@@ -301,7 +301,7 @@ struct DateTime {
 
   DateTime opAddAssign(TimeSpan value) {
     data_ += value.ticks_;
-    return *this;
+    return this;
   }
 
   DateTime subtract(TimeSpan value) {
@@ -314,7 +314,7 @@ struct DateTime {
 
   DateTime opSubAssign(TimeSpan value) {
     data_ -= cast(ulong)value.ticks_;
-    return *this;
+    return this;
   }
 
   int compare(DateTime other) {
@@ -346,31 +346,31 @@ struct DateTime {
   }
 
   string toString(string format, IFormatProvider provider) {
-    return formatDateTime(*this, format, DateTimeFormat.get(provider));
+    return formatDateTime(this, format, DateTimeFormat.get(provider));
   }
 
   string toString(string format) {
-    return formatDateTime(*this, format, DateTimeFormat.current);
+    return formatDateTime(this, format, DateTimeFormat.current);
   }
 
   string toString() {
-    return formatDateTime(*this, null, DateTimeFormat.current);
+    return formatDateTime(this, null, DateTimeFormat.current);
   }
 
   string toShortDateString() {
-    return formatDateTime(*this, "d", DateTimeFormat.current);
+    return formatDateTime(this, "d", DateTimeFormat.current);
   }
 
   string toLongDateString() {
-    return formatDateTime(*this, "D", DateTimeFormat.current);
+    return formatDateTime(this, "D", DateTimeFormat.current);
   }
 
   string toShortTimeString() {
-    return formatDateTime(*this, "t", DateTimeFormat.current);
+    return formatDateTime(this, "t", DateTimeFormat.current);
   }
 
   string toLongTimeString() {
-    return formatDateTime(*this, "T", DateTimeFormat.current);
+    return formatDateTime(this, "T", DateTimeFormat.current);
   }
 
   static DateTime parse(string s, IFormatProvider provider = null) {
