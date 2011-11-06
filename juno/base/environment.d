@@ -20,7 +20,7 @@ string[] commandLineArgs() {
   wchar** argv = CommandLineToArgv(GetCommandLine(), argc);
   if (argc == 0) return null;
 
-  string* a = cast(string*)std.gc.malloc(argc * string.sizeof);
+  string* a = cast(string*)core.memory.GC.malloc(argc * string.sizeof);
   for (int i = 0; i < argc; i++) {
     a[i] = .toUtf8(argv[i]);
   }

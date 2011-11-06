@@ -2382,7 +2382,7 @@ private void startupCOM() {
 private void shutdownCOM() {
   // Before we shut down COM, give classes a chance to release any COM resources.
   try {
-    std.gc.fullCollect();
+    core.memory.GC.collect();
   }
   finally {
     isCOMAlive = false;
@@ -2732,7 +2732,7 @@ template ReferenceCountImpl() {
         runFinalizer(this); // calls destructor (~this) if implemented.
       }
 
-      std.gc.removeRange(cast(void*)this);
+      core.memory.GC.removeRange(cast(void*)this);
       std.c.stdlib.free(cast(void*)this);
     }
     return refCount;
@@ -2744,9 +2744,9 @@ template ReferenceCountImpl() {
   new(size_t sz) {
     void* p = std.c.stdlib.malloc(sz);
     if (p is null)
-      throw new OutOfMemoryException;
+      throw new OutOfMemoryError;
 
-    std.gc.addRange(p, p + sz);
+    core.memory.GC.addRange(p, sz);
     return p;
   }
 
