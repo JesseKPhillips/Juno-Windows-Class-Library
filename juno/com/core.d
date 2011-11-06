@@ -591,70 +591,37 @@ struct DECIMAL {
     return opCmp(d) == 0;
   }
 
-  DECIMAL opAdd(DECIMAL d) {
+  DECIMAL opBinary(string op)(const inout DECIMAL d) {
     DECIMAL ret;
-    VarDecAdd(this, &d, &ret);
+    static if(op == "+")
+        VarDecAdd(&this, &d, &ret);
+    else static if(op == "-")
+        VarDecSub(&this, &d, &ret);
+    else static if(op == "*")
+        VarDecMul(&this, &d, &ret);
+    else static if(op == "/")
+        VarDecDiv(&this, &d, &ret);
+    else static if(op == "%")
+        return remainder(this, d);
     return ret;
   }
 
-  void opAddAssign(DECIMAL d) {
-    *this = *this + d;
-  }
-
-  DECIMAL opSub(DECIMAL d) {
+  DECIMAL opUnary(string op)() {
     DECIMAL ret;
-    VarDecSub(this, &d, &ret);
+    static if(op == "+")
+        return this;
+    else static if(op == "-")
+        VarDecNeg(this, &ret);
+    else static if(op == "--")
+        return this = this - cast(DECIMAL)1;
+    else static if(op == "++")
+        return this = this + cast(DECIMAL)1;
     return ret;
   }
 
-  void opSubAssign(DECIMAL d) {
-    *this = *this - d;
-  }
-
-  DECIMAL opMul(DECIMAL d) {
-    DECIMAL ret;
-    VarDecMul(this, &d, &ret);
-    return ret;
-  }
-
-  void opMulAssign(DECIMAL d) {
-    *this = *this * d;
-  }
-
-  DECIMAL opDiv(DECIMAL d) {
-    DECIMAL ret;
-    VarDecDiv(this, &d, &ret);
-    return ret;
-  }
-
-  void opDivAssign(DECIMAL d) {
-    *this = *this / d;
-  }
-
-  DECIMAL opMod(DECIMAL d) {
-    return remainder(*this, d);
-  }
-
-  void opModAssign(DECIMAL d) {
-    *this = *this % d;
-  }
-
-  DECIMAL opNeg() {
-    DECIMAL ret;
-    VarDecNeg(this, &ret);
-    return ret;
-  }
-
-  DECIMAL opPos() {
-    return *this;
-  }
-
-  DECIMAL opPostInc() {
-    return *this = *this + cast(DECIMAL)1;
-  }
-
-  DECIMAL opPostDec() {
-    return *this = *this - cast(DECIMAL)1;
+  DECIMAL opOpAssign(string op)(const inout DECIMAL d) {
+    mixin("this = this " ~ op ~ "d;");
+    return this;
   }
 
   static DECIMAL abs(DECIMAL d) {
