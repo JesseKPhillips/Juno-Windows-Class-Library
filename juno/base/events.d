@@ -132,11 +132,11 @@ struct Event(R, T...) {
     }
   }
 
-  bool isEmpty() {
+  bool isEmpty() const {
     return size_ == 0;
   }
 
-  bool opEquals(void*) {
+  const bool opEquals(ref const(void*) a) {
     return isEmpty;
   }
 

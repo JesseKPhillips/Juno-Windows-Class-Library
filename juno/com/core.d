@@ -587,7 +587,7 @@ struct DECIMAL {
     return VarDecCmp(&this, &d) - 1;
   }
 
-  bool opEquals(DECIMAL d) {
+  bool opEquals(const inout DECIMAL d) {
     return opCmp(d) == 0;
   }
 

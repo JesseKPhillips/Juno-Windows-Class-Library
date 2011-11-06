@@ -66,7 +66,7 @@ class Version {
     revision_ = revision;
   }
 
-  override int opEquals(Object other) {
+  override bool opEquals(Object other) {
     if (auto that = cast(Version)other)
       return major_ == that.major_ && minor_ == that.minor_ && build_ == that.build_ && revision_ == that.revision_;
     return false;

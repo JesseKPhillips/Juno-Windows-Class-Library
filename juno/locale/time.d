@@ -198,11 +198,11 @@ struct TimeSpan {
     return compare(other);
   }
 
-  bool equals(TimeSpan other) {
+  bool equals(ref const(TimeSpan) other) const {
     return ticks_ == other.ticks_;
   }
 
-  bool opEquals(TimeSpan other) {
+  bool opEquals(ref const(TimeSpan) other) const {
     return equals(other);
   }
 
@@ -256,7 +256,7 @@ struct TimeSpan {
     return cast(int)((ticks_ / TicksPerSecond) % 60);
   }
 
-  long ticks() {
+  long ticks() const {
     return ticks_;
   }
 
@@ -329,11 +329,11 @@ struct DateTime {
     return compare(other);
   }
 
-  bool equals(DateTime other) {
+  bool equals(ref const(DateTime) other) const {
     return ticks == other.ticks;
   }
 
-  bool opEquals(DateTime other) {
+  bool opEquals(ref const(DateTime) other) const {
     return equals(other);
   }
 
@@ -429,7 +429,7 @@ struct DateTime {
     return getDatePart(ticks, DatePart.Year);
   }
 
-  long ticks() {
+  long ticks() const {
     return cast(long)data_;
   }
 
