@@ -413,8 +413,8 @@ class Culture : IFormatProvider {
     string toLowerAnsi(string s) {
       char[] x = s.dup;
       foreach (ref c; x) {
-        if (c <= 'Z' && c >= 'A')
-          c = c - 'A' + 'a';
+        assert(std.ascii.isASCII(c));
+        c = cast(char)std.ascii.toLower(c);
       }
       return assumeUnique(x);
     }
@@ -546,7 +546,8 @@ class Culture : IFormatProvider {
   }
 
   /**
-   * Gets the culture name in the format "&lt;language&gt; (&lt;region&gt;)" in the language of the culture.
+   * Gets the culture name in the format "&lt;language&gt; (&lt;region&gt;)" in
+   * the language of the culture.
    * Returns: The culture name in the language of the culture.
    */
   string nativeName() {
@@ -554,9 +555,7 @@ class Culture : IFormatProvider {
     if (!isNeutral)
       s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SNATIVECTRYNAME) ~ ")";
     else {
-      int i = s.rfind("(");
-      if (i != -1 && s.rfind(")") != -1)
-        s.length = i - 1;
+      s = removeCountry(s);
     }
     return s;
   }
@@ -570,9 +569,7 @@ class Culture : IFormatProvider {
     if (!isNeutral)
       s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SENGCOUNTRY) ~ ")";
     else {
-      int i = s.rfind("(");
-      if (i != -1 && s.rfind(")") != -1)
-        s.length = i - 1;
+      s = removeCountry(s);
     }
     return s;
   }
@@ -584,21 +581,31 @@ class Culture : IFormatProvider {
   string displayName() {
     string s = getLocaleInfo(cultureId_, LOCALE_SLANGUAGE);
     if (s != null && isNeutral && cultureId_ != LOCALE_INVARIANT) {
-      // Remove country from neutral cultures.
-      int i = s.rfind("(");
-      if (i != -1 && s.rfind(")") != -1)
-        s.length = i - 1;
+      s = removeCountry(s);
     }
 
     if (s != null && !isNeutral && cultureId_ != LOCALE_INVARIANT) {
-      // Add country to specific cultures.
-      if (s.find("(") == -1 && s.find(")") == -1)
-        s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SCOUNTRY) ~ ")";
+      s = addCountry(s);
     }
 
     if (s != null)
       return s;
     return nativeName;
+  }
+
+  // Remove country from neutral cultures.
+  private string removeCountry(string s) {
+      auto s2 = find(s.retro, "(");
+      s2.popFront;
+      return to!string(retro(s2));
+  }
+
+  // Add country to specific cultures.
+  private string addCountry(string s) {
+      if (s.find("(").empty && s.find(")").empty)
+          s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SCOUNTRY) ~ ")";
+
+      return s;
   }
 
   /**
@@ -887,11 +894,11 @@ class Region {
   }
 
   double latitude() {
-    return getGeoInfo(geoId, GEO_LATITUDE).toDouble();
+    return to!double(getGeoInfo(geoId, GEO_LATITUDE));
   }
 
   double longitude() {
-    return getGeoInfo(geoId, GEO_LONGITUDE).toDouble();
+    return to!double(getGeoInfo(geoId, GEO_LONGITUDE));
   }
 
 }

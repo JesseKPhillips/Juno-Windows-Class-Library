@@ -823,10 +823,7 @@ class DateTimeFormat : IFormatProvider {
   private static string getShortTime(uint culture) {
     // There is no LOCALE_SSHORTTIME, so we simulate one based on the long time pattern.
     string s = getLocaleInfo(culture, LOCALE_STIMEFORMAT);
-    int i = s.rfind(getLocaleInfo(culture, LOCALE_STIME));
-    if (i != -1)
-      s.length = i;
-    return s;
+    return s.stripFromEnd(getLocaleInfo(culture, LOCALE_STIME));
   }
 
   private static string[] getLongDates(uint culture, uint calendar) {
@@ -872,17 +869,24 @@ class DateTimeFormat : IFormatProvider {
     }
 
     foreach (ref s; formats) {
-      int i = s.rfind(getLocaleInfo(culture, LOCALE_STIME));
-      int j = -1;
-      if (i != -1)
-        j = s.rfind(' ');
-      if (i != -1 && j != -1) {
-        string temp = s[0 .. j];
-        temp ~= s[j .. $];
-        s = temp;
+      //TODO: This code suggest we only modify if we find a
+      // locale with a space before it. Maybe it was to remove the space?
+      version(none) {
+          int i = s.rfind(getLocaleInfo(culture, LOCALE_STIME));
+          int j = -1;
+          if (i != -1)
+            j = s.rfind(' ');
+          if (i != -1 && j != -1) {
+            string temp = s[0 .. j];
+            temp ~= s[j .. $];
+            s = temp;
+          }
+          else if (i != -1)
+            s.length = i;
       }
-      else if (i != -1)
-        s.length = i;
+
+      // Mimic the behavior shown above
+      s = s.stripFromEnd(" " ~ getLocaleInfo(culture, LOCALE_STIME));
     }
 
     return formats;
@@ -2138,7 +2142,7 @@ private void formatFixed(ref Number number, ref string dst, int length, int[] gr
       // Insert separator at positions specified by groupSizes.
       int end = strlen(p);
       int start = (pos < end) ? pos : end;
-      string separator = groupSeparator.reverse;
+      string separator = to!string(retro(groupSeparator));
       char[] temp;
 
       index = 0;
@@ -2180,6 +2184,14 @@ private void formatFixed(ref Number number, ref string dst, int length, int[] gr
     }
   }
 }
+
+private string stripFromEnd(string s, string rm) {
+    s = to!string(retro(s));
+    findSkip(s, retro(rm));
+    return to!string(retro(s));
+}
+
+
 
 package uint parseUInt(string s, NumberStyles style, NumberFormat nf) {
   Number n;

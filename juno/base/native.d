@@ -914,7 +914,7 @@ private T AddressOfFunction(T)(string dllName, string entryPoint, CharSet charSe
 
   // '#' denotes an ordinal entry.
   if (entryPoint[0] == '#')
-    func = cast(T)GetProcAddress(moduleHandle, cast(char*).toUshort(entryPoint[1 .. $]));
+    func = cast(T)GetProcAddress(moduleHandle, cast(char*).to!ushort(entryPoint[1 .. $]));
   else
     func = cast(T)GetProcAddress(moduleHandle, entryPoint.toUtf8z());
 

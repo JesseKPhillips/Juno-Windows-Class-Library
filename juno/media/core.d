@@ -240,7 +240,7 @@ struct Color {
       return name_;
 
     if ((state_ & STATE_KNOWNCOLOR_VALID) == 0)
-      return .toString(value_, 16u);
+      return format("%x", value_);
 
     if (nameTable_ == null)
       initNameTable();
