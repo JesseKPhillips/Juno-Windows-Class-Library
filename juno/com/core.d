@@ -12,14 +12,16 @@ private import juno.base.core,
   std.stdarg,
   std.string,
   std.utf,
-  std.outofmemory,
   std.stream;
 
 private import bstr = juno.com.bstr;
 
+private import std.algorithm;
+private import std.array;
 private import std.traits;
 private import std.typetuple : IndexOf, NoDuplicates, TypeTuple, MostDerived;
-private static import std.gc, std.c.stdlib;
+private import core.exception;
+private static import core.memory, std.c.stdlib;
 
 debug private import std.stdio;
 

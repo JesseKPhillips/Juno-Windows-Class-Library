@@ -7,7 +7,7 @@ module juno.base.threading;
 
 private import juno.base.native;
 
-private static import std.gc;
+private static import core.memory;
 
 class ThreadLocal(T) {
 

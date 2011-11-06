@@ -15,9 +15,11 @@ private import juno.locale.core :
 private import juno.locale.time : 
   Calendar, GregorianCalendar, DateTime;
 
+private import std.c.string;
+private import std.algorithm;
+private import std.range;
 private import std.utf : toUTF8;
-private import std.string :
-  find, rfind, wcslen, strlen;
+private import std.c.wcharh;
 
 debug private import std.stdio;
 

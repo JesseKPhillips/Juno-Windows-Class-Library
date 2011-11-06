@@ -10,8 +10,8 @@ private import juno.base.core,
   juno.media.constants,
   juno.media.geometry;
 
-private static import std.gc;
-private import std.outofmemory;
+private static import core.memory;
+private import core.exception;
 
 pragma(lib, "user32.lib");
 pragma(lib, "gdi32.lib");

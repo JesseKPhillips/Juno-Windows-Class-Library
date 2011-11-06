@@ -9,7 +9,7 @@ private import juno.base.core,
   juno.base.string,
   juno.base.native;
 
-private static import std.gc;
+private static import core.memory;
 
 string commandLine() {
   return .toUtf8(GetCommandLine());

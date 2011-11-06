@@ -15,8 +15,9 @@ private import juno.base.core,
   juno.com.core,
   juno.xml.core;
 
-private import std.stream : Stream, File, FileMode;
 private import std.base64;
+private import std.exception;
+private import std.stream : Stream, File, FileMode;
 
 debug private import std.stdio;
 

@@ -13,6 +13,10 @@ private import juno.base.core,
 
 private import std.string : icmp;
 
+// Workaround for bug 314
+alias juno.locale.core.IFormatProvider IFormatProvider;
+alias juno.locale.core.NumberFormat NumberFormat;
+
 string toString(T)(T value, string format = null, IFormatProvider provider = null) {
   static if (is(T == ubyte)
     || is(T == ushort)

@@ -15,10 +15,16 @@ private import juno.locale.time : Calendar, GregorianCalendar;
 private import juno.locale.format : NumberFormat, DateTimeFormat;
 private import juno.locale.text : Collator;
 
-private import std.c.stdio : swscanf, sprintf;
-private import std.string : icmp, find, rfind, toupper;
-private import std.conv : toDouble;
+private import std.algorithm;
+private import std.array;
+private import std.c.stdio : sprintf;
+private import std.c.wcharh : swscanf; 
+private import std.conv : to;
+private import std.exception;
+private import std.range;
+private import std.string : icmp, toUpper;
 private import std.utf : toUTF8;
+private static import std.ascii;
 
 private uint[string] nameToLcidMap;
 private string[uint] lcidToNameMap;

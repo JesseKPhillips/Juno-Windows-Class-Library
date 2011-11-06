@@ -19,8 +19,11 @@ private import juno.base.core,
   juno.media.imaging,
   juno.media.native;
 
+//NOTE: Workaround for bug 314
+alias juno.com.core.GUID GUID;
+
 private import std.math : ceil;
-private import std.string : tolower, toString;
+private import std.string : toLower, format;
 private import std.utf : toUTF16z;
 private import std.stream : Stream, SeekPos;
 

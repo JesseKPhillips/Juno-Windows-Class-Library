@@ -9,7 +9,7 @@ private import juno.base.core,
   juno.base.string;
 
 private import std.string : format;
-private import std.conv : toUshort;
+private import std.conv : to;
 private import std.traits, std.typetuple;
 
 private import std.c.windows.windows :

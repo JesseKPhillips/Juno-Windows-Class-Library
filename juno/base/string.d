@@ -9,13 +9,18 @@
  */
 module juno.base.string;
 
-private import juno.locale.constants,
-  juno.locale.text;
+private import juno.locale.core,
+    juno.locale.constants,
+    juno.locale.text;
+
+//NOTE: Workaround for bug 314
+alias juno.locale.core.Culture Culture;
 
 private import std.utf : toUTF8, toUTF16, toUTF16z;
 private import std.string : wcslen, strlen, toStringz;
 private import std.c.string : memcpy;
 private import std.stdarg;
+private import std.exception;
 
 string toUtf8(wchar* s, int index = 0, int count = -1) {
   if (s == null)
