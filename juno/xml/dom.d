@@ -1544,7 +1544,7 @@ class XmlDocumentFragment : XmlNode {
   }
 
   override string name() {
-    return "#document-fragment".dup;
+    return "#document-fragment".idup;
   }
 
   override string localName() {
@@ -2332,7 +2332,7 @@ class XmlDocument : XmlNode {
    * Returns: For XmlDocument nodes, the local name is #document.
    */
   override string localName() {
-    return "#document".dup;
+    return "#document".idup;
   }
 
   /**

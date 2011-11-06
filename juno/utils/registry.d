@@ -391,7 +391,7 @@ final class RegistryKey {
       if (type == REG_SZ || type == REG_EXPAND_SZ) {
         wchar[] b = new wchar[size / wchar.sizeof];
         RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)b.ptr, &size);
-        auto ret = b[0 .. (size / wchar.sizeof) - 1].toUtf8();
+        auto ret = b[0 .. (size / wchar.sizeof) - 1].toUTF8();
 
         if (type == REG_EXPAND_SZ && expandEnvironmentNames)
           ret = expandEnvironmentVariables(ret);
@@ -425,11 +425,11 @@ final class RegistryKey {
 
           if (pos < end) {
             if (pos - index > 0)
-              strings ~= b[index .. pos].toUtf8();
+              strings ~= b[index .. pos].toUTF8();
             else if (pos != end - 1)
               strings ~= "";
           }
-          else strings ~= b[index .. end].toUtf8();
+          else strings ~= b[index .. end].toUTF8();
 
           index = pos + 1;
         }
@@ -593,7 +593,7 @@ final class RegistryKey {
         int ret;
         if ((ret = RegEnumValue(hkey_, i, buffer.ptr, &len, null, null, null, null)) != ERROR_SUCCESS)
           throw new Win32Exception(ret);
-        names[i] = buffer[0 .. len].toUtf8();
+        names[i] = buffer[0 .. len].toUTF8();
       }
     }
 
@@ -625,7 +625,7 @@ final class RegistryKey {
         int ret;
         if ((ret = RegEnumKeyEx(hkey_, i, buffer.ptr, &len, null, null, null, null)) != ERROR_SUCCESS)
           throw new Win32Exception(ret);
-        names[i] = buffer[0 .. len].toUtf8();
+        names[i] = buffer[0 .. len].toUTF8();
       }
     }
 

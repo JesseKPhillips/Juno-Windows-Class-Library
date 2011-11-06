@@ -73,7 +73,7 @@ package string getGeoInfo(uint geoId, uint geoType) {
 package wchar* toUTF16zNls(string s, int offset, int length, out int translated) {
   translated = 0;
 
-  char* pChars = s.ptr + offset;
+  immutable(char)* pChars = s.ptr + offset;
   int cch = MultiByteToWideChar(CP_UTF8, 0, pChars, length, null, 0);
   if (cch == 0) 
     return null;
@@ -92,7 +92,7 @@ package string toUTF8Nls(in wchar* pChars, int cch, out int translated) {
 
   char[] result = new char[cb];
   translated = WideCharToMultiByte(CP_UTF8, 0, pChars, cch, result.ptr, cb, null, null);
-  return result.dup;
+  return result.idup;
 }
 
 private void ensureNameMapping() {
@@ -344,7 +344,7 @@ class Culture : IFormatProvider {
       !findCultureById(culture, cultureName_, cultureId_)) {
       char[100] buffer;
       int len = sprintf(buffer.ptr, "Culture ID %d (0x%04x) is not a supported culture.", culture, culture);
-      throw new ArgumentException(buffer[0 .. len].dup, "culture");
+      throw new ArgumentException(buffer[0 .. len].idup, "culture");
     }
 
     isInherited_ = (typeid(typeof(this)) != typeid(Culture));
@@ -388,7 +388,7 @@ class Culture : IFormatProvider {
     if (ret is null) {
       char[100] buffer;
       int len = sprintf(buffer.ptr, "Culture ID %d (0x%04x) is not a supported culture.", culture, culture);
-      throw new ArgumentException(buffer[0 .. len].dup, "culture");
+      throw new ArgumentException(buffer[0 .. len].idup, "culture");
     }
 
     return ret;
@@ -416,7 +416,7 @@ class Culture : IFormatProvider {
         if (c <= 'Z' && c >= 'A')
           c = c - 'A' + 'a';
       }
-      return x;
+      return assumeUnique(x);
     }
 
     if (name != null)
@@ -813,7 +813,7 @@ class Region {
     if (SUBLANGID(cast(ushort)culture) == 0) {
       char[100] buffer;
       int len = sprintf(buffer.ptr, "Culture ID %d (0x%04X) is a neutral culture; a region cannot be created from it.", culture, culture);
-      throw new ArgumentException(buffer[0 .. len].dup, "culture");
+      throw new ArgumentException(buffer[0 .. len].idup, "culture");
     }
 
     cultureId_ = culture;

@@ -18,7 +18,7 @@ debug private import std.stdio;
 // Check if the name if reserved word such as a keyword or other global symbol.
 bool isReservedWord(string name) {
 
-  final string[] RESERVEDWORDS = [
+  immutable string[] RESERVEDWORDS = [
     "abstract", "alias", "align", "asm", "assert", "auto",
     "body", "bool", "break", "byte",
     "case", "cast", "catch", "cdouble", "cent", "cfloat", "char", "class", "const", "continue", "creal",

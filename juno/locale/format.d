@@ -1848,7 +1848,7 @@ private string ulongToString(ulong value, int digits) {
     value /= 10;
   }
 
-  return buffer[n .. $].dup;
+  return buffer[n .. $].idup;
 }
 
 private string longToString(long value, int digits, string negativeSign) {
@@ -1868,7 +1868,7 @@ private string longToString(long value, int digits, string negativeSign) {
     buffer[n .. n + negativeSign.length] = negativeSign;
   }
 
-  return buffer[n .. $].dup;
+  return buffer[n .. $].idup;
 }
 
 private string intToHexString(uint value, int digits, char format) {
@@ -1879,11 +1879,12 @@ private string intToHexString(uint value, int digits, char format) {
   int n = 100;
   while (--digits >= 0 || value != 0) {
     uint v = value & 0xF;
-    buffer[--n] = (v < 10) ? v + '0' : v + format - ('X' - 'A' + 10);
+    buffer[--n] = cast(char)(
+                      (v < 10) ? v + '0' : v + format - ('X' - 'A' + 10));
     value >>= 4;
   }
 
-  return buffer[n .. $].dup;
+  return buffer[n .. $].idup;
 }
 
 private string longToHexString(ulong value, int digits, char format) {
@@ -1894,11 +1895,12 @@ private string longToHexString(ulong value, int digits, char format) {
   int n = 100;
   while (--digits >= 0 || value != 0) {
     ulong v = value & 0xF;
-    buffer[--n] = (v < 10) ? v + '0' : v + format - ('X' - 'A' + 10);
+    buffer[--n] = cast(char)(
+                      (v < 10) ? v + '0' : v + format - ('X' - 'A' + 10));
     value >>= 4;
   }
 
-  return buffer[n .. $].dup;
+  return buffer[n .. $].idup;
 }
 
 private char parseFormatSpecifier(string format, out int length) {

@@ -111,7 +111,7 @@ private int getDatePart(long ticks, DatePart part) {
   if (part == DatePart.DayOfYear)
     return n + 1;
   bool leap = y1 == 3 && (y4 != 24 || y100 == 3);
-  int[] days = leap ? DaysToMonth366 : DaysToMonth365;
+  const(int[]) days = leap ? DaysToMonth366 : DaysToMonth365;
   int m = n >> 5 + 1;
   while (n >= days[m]) m++;
   if (part == DatePart.Month) return m;
@@ -122,9 +122,9 @@ struct TimeSpan {
 
   private long ticks_;
 
-  static final TimeSpan zero = { 0 };
-  static final TimeSpan min = { long.min };
-  static final TimeSpan max = { long.max };
+  static const TimeSpan zero = TimeSpan(0);
+  static const TimeSpan min =  TimeSpan(long.min);
+  static const TimeSpan max =  TimeSpan(long.max);
 
   static TimeSpan opCall(long ticks) {
     TimeSpan t;

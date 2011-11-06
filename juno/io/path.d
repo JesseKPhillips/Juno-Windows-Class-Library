@@ -12,7 +12,7 @@ private import std.utf : toUTF16z, toUTF8;
 const int MaxPath = MAX_PATH;
 
 string getFullPath(string path) {
-  wchar* p = path.toUTF16z();
+  const(wchar)* p = path.toUTF16z();
 
   wchar[] buffer = new wchar[MaxPath + 1];
   uint bufferLength = GetFullPathName(p, MaxPath + 1, buffer.ptr, null);

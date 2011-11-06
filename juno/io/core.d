@@ -23,7 +23,7 @@ class IOException : Exception {
 
 abstract class Writer {
 
-  protected char[] newLine_ = [ '\r', '\n' ];
+  protected string newLine_ = [ '\r', '\n' ];
 
   protected this() {
   }

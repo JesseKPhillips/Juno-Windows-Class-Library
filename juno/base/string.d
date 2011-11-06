@@ -35,7 +35,7 @@ string toUtf8(char* s, int index = 0, int count = -1) {
     return null;
   if (count == -1)
     count = strlen(s);
-  return s[index .. count].dup;
+  return s[index .. count].idup;
 }
 
 string toUtf8(wstring s, int index = 0, int count = -1) {
@@ -46,7 +46,7 @@ string toUtf8(wstring s, int index = 0, int count = -1) {
   return s[index .. count].toUTF8();
 }
 
-char* toUtf8z(string s, int index = 0, int count = -1) {
+immutable(char)* toUtf8z(string s, int index = 0, int count = -1) {
   if (s == null)
     return null;
   if (s.length == 0 || count == 0)
@@ -64,7 +64,7 @@ wstring toUtf16(string s, int index = 0, int count = -1) {
   return s[index .. count].toUTF16();
 }
 
-wchar* toUtf16z(string s, int index = 0, int count = -1) {
+const(wchar)* toUtf16z(string s, int index = 0, int count = -1) {
   if (count == -1)
     count = s.length;
   if (count == 0)
@@ -305,7 +305,7 @@ bool endsWith(string s, string value, bool ignoreCase = false) {
  */
 string insert(string s, int index, string value) {
   if (value.length == 0 || s.length == 0)
-    return s.dup;
+    return s.idup;
 
   int newLength = s.length + value.length;
   char[] newString = new char[newLength];
@@ -313,7 +313,7 @@ string insert(string s, int index, string value) {
   newString[0 .. index] = s[0 .. index];
   newString[index .. index + value.length] = value;
   newString[index + value.length .. $] = s[index .. $];
-  return newString.dup;
+  return newString.idup;
 }
 
 /**
@@ -328,7 +328,7 @@ string remove(string s, int index, int count) {
   char[] ret = new char[s.length - count];
   memcpy(ret.ptr, s.ptr, index);
   memcpy(ret.ptr + index, s.ptr + (index + count), s.length - (index + count));
-  return ret;
+  return assumeUnique(ret);
 }
 
 /**
@@ -499,7 +499,7 @@ string replace(string s, char oldChar, char newChar) {
   ret.length = len;
   for (int i = firstFound; i < len; i++)
     ret[i] = (s[i] == oldChar) ? newChar : s[i];
-  return ret;
+  return assumeUnique(ret);
 }
 
 /**
@@ -539,7 +539,7 @@ string replace(string s, string oldValue, string newValue) {
   }
   else
     return s;
-  return ret;
+  return assumeUnique(ret);
 }
 
 /**
@@ -556,7 +556,7 @@ string padLeft(string s, int totalWidth, char paddingChar = ' ') {
   char[] ret = new char[totalWidth];
   ret[totalWidth - s.length .. $] = s;
   ret[0 .. totalWidth - s.length] = paddingChar;
-  return ret;
+  return assumeUnique(ret);
 }
 
 /**
@@ -573,7 +573,7 @@ string padRight(string s, int totalWidth, char paddingChar = ' ') {
   char[] ret = s.dup;
   ret.length = totalWidth;
   ret[s.length .. $] = paddingChar;
-  return ret;
+  return assumeUnique(ret);
 }
 
 private enum Trim {
@@ -648,7 +648,7 @@ private string trimHelper(string s, char[] trimChars, Trim trimType) {
     return s;
   if (len == 0)
     return null;
-  return s[left .. right + 1].dup;
+  return s[left .. right + 1].idup;
 }
 
 /**
@@ -668,7 +668,7 @@ string substring(string s, int index, int length) {
 
   char[] ret = new char[length];
   memcpy(ret.ptr, s.ptr + index, length * char.sizeof);
-  return ret;
+  return assumeUnique(ret);
 }
 
 /**
