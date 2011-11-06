@@ -196,7 +196,7 @@ struct GUID {
 
     int hr = CoCreateGuid(self);
     if (FAILED(hr))
-      throw exceptionForHR(hr);
+        throwExceptionForHR(hr);
 
     return self;
   }
@@ -2967,32 +2967,27 @@ class COMException : Exception {
 
 }
 
-Exception exceptionForHR(int errorCode) {
-  switch (errorCode) {
-    case E_NOTIMPL:
-      return new NotImplementedException;
-    case E_NOINTERFACE:
-      return new InvalidCastException;
-    case E_POINTER:
-      return new NullReferenceException;
-    case E_ACCESSDENIED:
-      return new UnauthorizedAccessException;
-    case E_OUTOFMEMORY:
-      return new OutOfMemoryException;
-    case E_INVALIDARG:
-      return new ArgumentException;
-    default:
-  }
-  return new COMException(errorCode);
-}
-
 void throwExceptionForHR(int errorCode)
 in {
-  assert(FAILED(errorCode));
+    assert(FAILED(errorCode));
 }
 body {
-  if (FAILED(errorCode))
-    throw exceptionForHR(errorCode);
+    switch (errorCode) {
+        case E_NOTIMPL:
+            throw new NotImplementedException;
+        case E_NOINTERFACE:
+            throw new InvalidCastException;
+        case E_POINTER:
+            throw new NullReferenceException;
+        case E_ACCESSDENIED:
+            throw new UnauthorizedAccessException;
+        case E_OUTOFMEMORY:
+            throw new OutOfMemoryError;
+        case E_INVALIDARG:
+            throw new ArgumentException;
+        default:
+    }
+    throw new COMException(errorCode);
 }
 
 class COMStream : Implements!(IStream) {
