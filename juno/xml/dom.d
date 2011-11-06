@@ -649,18 +649,18 @@ final class XmlAttributeCollection : XmlNamedNodeMap {
 
 string TypedNode(string type, string field = "typedNodeImpl_") {
   return 
-    "private " ~ type ~ " " ~ field ~ ";"\n
+    "private " ~ type ~ " " ~ field ~ ";\n"
 
-    "package this(IXMLDOMNode nodeImpl) {"\n
-    "  super(nodeImpl);"\n
-    "  " ~ field ~ " = com_cast!(" ~ type ~ ")(nodeImpl);"\n
-    "}"\n
+    "package this(IXMLDOMNode nodeImpl) {\n"
+    "  super(nodeImpl);\n"
+    "  " ~ field ~ " = com_cast!(" ~ type ~ ")(nodeImpl);\n"
+    "}\n"
 
-    "~this() {"\n
-    "  if (" ~ field ~ " !is null) {"\n
-    "    tryRelease(" ~ field ~ ");"\n
-    "    " ~ field ~ " = null;"\n
-    "  }"\n
+    "~this() {\n"
+    "  if (" ~ field ~ " !is null) {\n"
+    "    tryRelease(" ~ field ~ ");\n"
+    "    " ~ field ~ " = null;\n"
+    "  }\n"
     "}";
 }
 
