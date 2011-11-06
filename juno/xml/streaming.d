@@ -1448,7 +1448,8 @@ private final class XmlLiteWriter : XmlWriter {
   }
 
   override void writeBase64(void[] buffer, int index, int count) {
-    writeChars(std.base64.encode(cast(char[])buffer), index, count);
+    auto data = Base64.encode(cast(ubyte[])buffer);
+    writeChars(assumeUnique(data), index, count);
   }
 
 }

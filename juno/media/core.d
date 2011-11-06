@@ -129,7 +129,7 @@ struct Color {
       initNameTable();
 
     foreach (key, value; nameTable_) {
-      if (value.tolower() == name.tolower())
+      if (value.toLower() == name.toLower())
         return fromKnownColor(cast(KnownColor)key);
     }
 

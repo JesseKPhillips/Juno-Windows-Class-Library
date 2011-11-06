@@ -166,7 +166,7 @@ struct GUID {
         s = s[0 .. $ - 1];
     }
 
-    if (s.find('-') == -1)
+    if (s.find('-').empty)
       throw new FormatException("Unrecognised GUID format.");
 
     GUID self;

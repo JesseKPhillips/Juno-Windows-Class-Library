@@ -821,7 +821,7 @@ class Region {
   }
 
   this(string name) {
-    name_ = name.toupper();
+    name_ = name.toUpper();
 
     if (!findCultureFromRegionName(name, cultureId_))
       throw new ArgumentException("Region name '" ~ name ~ "' is not supported.", "name");
