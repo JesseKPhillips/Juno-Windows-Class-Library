@@ -923,7 +923,7 @@ private T AddressOfFunction(T)(string dllName, string entryPoint, CharSet charSe
     if (charSet == CharSet.Auto)
       linkType = ((GetVersion() & 0x80000000) == 0) ? CharSet.Unicode : CharSet.Ansi;
 
-    string entryPointName = entryPoint.dup ~ ((linkType == CharSet.Ansi) ? 'A' : 'W');
+    string entryPointName = entryPoint.idup ~ ((linkType == CharSet.Ansi) ? 'A' : 'W');
 
     func = cast(T)GetProcAddress(moduleHandle, entryPointName.toUtf8z());
 

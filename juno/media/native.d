@@ -779,24 +779,24 @@ private void startupGdiplus() {
 }
 
 private void shutdownGdiplus() {
-  std.gc.fullCollect();
+  core.memory.GC.collect();
   isShutdown = true;
 
   GdiplusShutdown(initToken);
 }
 
-package Exception statusException(Status status) {
+package Throwable statusException(Status status) {
   switch (status) {
     case Status.GenericError:
       return new Exception("A generic error occurred in GDI+.");
     case Status.InvalidParameter:
       return new ArgumentException("Parameter is not valid.");
     case Status.OutOfMemory:
-      return new OutOfMemoryException;
+      return new OutOfMemoryError;
     case Status.ObjectBusy:
       return new InvalidOperationException("Object is currently in use elsewhere.");
     case Status.InsufficientBuffer:
-      return new OutOfMemoryException;
+      return new OutOfMemoryError;
     case Status.NotImplemented:
       return new NotImplementedException("Not implemented.");
     case Status.Win32Error:

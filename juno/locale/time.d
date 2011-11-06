@@ -451,7 +451,7 @@ struct DateTime {
   }
 
   private static long dateToTicks(int year, int month, int day) {
-    int[] days = isLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+    const(int[]) days = isLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
     int y = year - 1;
     int n = y * 365 + y / 4 - y / 100 + y / 400 + days[month - 1] + day - 1;
     return n * TicksPerDay;
