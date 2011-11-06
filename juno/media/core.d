@@ -976,7 +976,7 @@ final class Matrix {
 
   /**
    */
-  void clone() {
+  Matrix clone() {
     Handle cloneMatrix;
     Status status = GdipCloneMatrix(nativeMatrix_, cloneMatrix);
     if (status != Status.OK)
