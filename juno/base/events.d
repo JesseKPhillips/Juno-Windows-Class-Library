@@ -68,10 +68,13 @@ struct Event(R, T...) {
 
     addEventInfo(cast(TEventInfo)d);
 
+//TODO: Understand what is done here
+version(none) {
     // Delegate literals don't have an object, and _d_toObject will cause a crash.
     scope(failure) return;
     if (auto obj = _d_toObject(d.ptr))
       obj.notifyRegister(&release);
+}
   }
 
   void opAddAssign(TFunction f) {
@@ -91,9 +94,12 @@ struct Event(R, T...) {
       if (list_[i].dg is dg) {
         removeFromList(i);
 
+//TODO: Understand what is done
+version(none) {
         scope(failure) break;
         if (auto obj = _d_toObject(dg.ptr))
           obj.notifyUnRegister(&release);
+}
       }
       else
         i++;
@@ -165,7 +171,10 @@ struct Event(R, T...) {
     scope(failure) return;
     foreach (i, ref e; list_) {
       if (i < size_ && _d_toObject(e.dg.ptr) is obj) {
+//TODO: Understand what is done
+version(none) {
         obj.notifyUnRegister(&release);
+}
         e.dg = null;
       }
     }
