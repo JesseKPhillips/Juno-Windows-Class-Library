@@ -3546,9 +3546,9 @@ final class SolidBrush : Brush {
   private Color color_;
   private bool immutable_;
 
-  package this(Color color, bool immutable) {
+  package this(Color color, bool immu) {
     this(color);
-    immutable_ = immutable;
+    immutable_ = immu;
   }
 
   /**
