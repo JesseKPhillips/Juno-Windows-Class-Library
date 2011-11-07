@@ -1,18 +1,7 @@
 /**
- * Copyright: (c) 2008 John Chapman
- *
- * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
- */
-module juno.com.server;
-
-private import juno.base.core,
-  juno.base.string,
-  juno.base.native,
-  juno.com.core;
-
-/*
- * Contains boiler-plate code for creating a COM server (a DLL that exports COM classes).
- * Example:
+ * Contains boiler-plate code for creating a COM _server (a DLL that exports COM classes).
+ * Examples:
+ * ---
  * --- hello.d ---
  * module hello;
  *
@@ -32,7 +21,9 @@ private import juno.base.core,
  *
  *   mixin Interfaces!(ISaysHello);
  * }
+ * ---
  *
+ * ---
  * --- server.d ---
  * module server;
  *
@@ -40,7 +31,7 @@ private import juno.base.core,
  *
  * import juno.com.all, juno.utils.registry, hello;
  *
- * mixin COMExport!(SaysHelloClass);
+ * mixin Export!(SaysHelloClass);
  *
  * // Implements ISaysHello
  * class SaysHelloClass : Implements!(ISaysHello) {
@@ -53,7 +44,9 @@ private import juno.base.core,
  *   }
  *
  * }
+ * ---
  *
+ * ---
  * --- client.d ---
  * module client;
  *
@@ -66,10 +59,11 @@ private import juno.base.core,
  * }
  * ---
  *
- * The COM server needs to be registered with the system. Usually, a CLSID is associated with the DLL in the registry 
+ * The COM _server needs to be registered with the system. Usually, a CLSID is associated with the DLL in the registry 
  * (under HKEY_CLASSES_ROOT\CLSID). On Windows XP and above, an alternative is to deploy an application manifest in the same folder 
  * as the client application. This is an XML file that does the same thing as the registry method. Here's an example:
  *
+ * ---
  * --- client.exe.manifest ---
  * <?xml version="1.0" encoding="utf-8" standalone="yes"?>
  * <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
@@ -79,9 +73,22 @@ private import juno.base.core,
  *  </file>
  * </assembly>
  *
+ * ---
  * Alternatively, define a static register and unregister method on each coclass implementation. If the methods exist, the DLL will 
  * register itself in the registry when 'regsvr32' is executed, and unregister itself on 'regsvr32 /u'.
+ *
+ *
+ * Copyright: (c) 2009 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ *
  */
+module juno.com.server;
+
+import juno.base.core,
+  juno.base.string,
+  juno.base.native,
+  juno.com.core;
 
 extern (C) void gc_init();
 extern (C) void gc_term();
@@ -94,14 +101,17 @@ private Handle moduleHandle_;
 private int lockCount_;
 private string location_;
 
+///
 Handle getHInstance() {
   return moduleHandle_;
 }
 
+///
 void setHInstance(Handle value) {
   moduleHandle_ = value;
 }
 
+///
 string getLocation() {
   if (location_ == null) {
     wchar[MAX_PATH] buffer;
@@ -111,18 +121,22 @@ string getLocation() {
   return location_;
 }
 
+///
 int getLockCount() {
   return lockCount_;
 }
 
+///
 void lock() {
-  InterlockedIncrement(&lockCount_);
+  InterlockedIncrement(lockCount_);
 }
 
+///
 void unlock() {
-  InterlockedDecrement(&lockCount_);
+  InterlockedDecrement(lockCount_);
 }
 
+///
 class ClassFactory(T) : Implements!(IClassFactory) {
 
   int CreateInstance(IUnknown pUnkOuter, ref GUID riid, void** ppvObject) {
@@ -150,7 +164,8 @@ class ClassFactory(T) : Implements!(IClassFactory) {
 
 }
 
-template COMExport(T...) {
+///
+template Export(T...) {
 
   extern(Windows) int DllMain(Handle hInstance, uint dwReason, void* pvReserved) {
     if (dwReason == 1 /*DLL_PROCESS_ATTACH*/) {

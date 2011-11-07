@@ -1,20 +1,20 @@
 /**
- * Contains classes representing ASCII, UTF-8 and UTF-16 character encodings.
+ * Contains classes representing ASCII, UTF-7, UTF-8 and UTF-16 character encodings.
  *
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.base.text;
 
-private import juno.base.core,
+import juno.base.core,
   juno.base.string,
   juno.base.native,
   juno.com.core;
-
-private import std.string : icmp, wcslen, format;
+import std.string : icmp;
 
 // MLang
+// Doesn't support UTF-32 yet.
 
 enum : uint {
   MIMECONTF_MAILNEWS = 0x1,
@@ -74,6 +74,7 @@ struct DetectEncodingInfo {
 
 interface IEnumCodePage : IUnknown {
   mixin(uuid("275c23e3-3747-11d0-9fea-00aa003f8646"));
+
   int Clone(out IEnumCodePage ppEnum);
   int Next(uint celt, MIMECPINFO* rgelt, out uint pceltFetched);
   int Reset();
@@ -82,6 +83,7 @@ interface IEnumCodePage : IUnknown {
 
 interface IEnumRfc1766 : IUnknown {
   mixin(uuid("3dc39d1d-c030-11d0-b81b-00c04fc9b31f"));
+
   int Clone(out IEnumRfc1766 ppEnum);
   int Next(uint celt, RFC1766INFO* rgelt, out uint pceltFetched);
   int Reset();
@@ -90,6 +92,7 @@ interface IEnumRfc1766 : IUnknown {
 
 interface IEnumScript : IUnknown {
   mixin(uuid("AE5F1430-388B-11d2-8380-00C04F8F5DA1"));
+
   int Clone(out IEnumScript ppEnum);
   int Next(uint celt, SCRIPTINFO* rgelt, out uint pceltFetched);
   int Reset();
@@ -98,6 +101,7 @@ interface IEnumScript : IUnknown {
 
 interface IMLangConvertCharset : IUnknown {
   mixin(uuid("d66d6f98-cdaa-11d0-b822-00c04fc9b31f"));
+
   int Initialize(uint uiSrcCodePage, uint uiDstCodePage, uint dwProperty);
   int GetSourceCodePage(out uint puiSrcCodePage);
   int GetDestinationCodePage(out uint puiDstCodePage);
@@ -109,6 +113,7 @@ interface IMLangConvertCharset : IUnknown {
 
 interface IMultiLanguage : IUnknown {
   mixin(uuid("275c23e1-3747-11d0-9fea-00aa003f8646"));
+
   int GetNumberOfCodePageInfo(out uint pcCodePage);
   int GetCodePageInfo(uint uiCodePage, out MIMECPINFO pCodePageInfo);
   int GetFamilyCodePage(uint uiCodePage, out uint puiFamilyCodePage);
@@ -128,6 +133,7 @@ interface IMultiLanguage : IUnknown {
 
 interface IMultiLanguage2 : IUnknown {
   mixin(uuid("DCCFC164-2B38-11d2-B7EC-00C04F8F5D9A"));
+
   int GetNumberOfCodePageInfo(out uint pcCodePage);
   int GetCodePageInfo(uint uiCodePage, ushort LangId, out MIMECPINFO pCodePageInfo);
   int GetFamilyCodePage(uint uiCodePage, out uint puiFamilyCodePage);
@@ -159,18 +165,20 @@ interface IMultiLanguage2 : IUnknown {
 
 interface IMultiLanguage3 : IMultiLanguage2 {
   mixin(uuid("4e5868ab-b157-4623-9acc-6a1d9caebe04"));
+
   int DetectOutboundCodePage(uint dwFlags, wchar* lpWideCharStr, int cchWideChar, uint* puiPreferredCodePages, uint nPreferredCodePages, uint* puiDetectedCodePages, ref uint pnDetectedCodePages, wchar* lpSpecialChar);
   int DetectOutboundCodePageInIStream(uint dwFlags, IStream pStrIn, uint* puiPreferredCodePages, uint nPreferredCodePages, uint* puiDetectedCodePages, wchar* lpSpecialChar);
 }
 
 abstract final class CMultiLanguage {
   mixin(uuid("275c23e2-3747-11d0-9fea-00aa003f8646"));
+
   mixin Interfaces!(IMultiLanguage2);
 }
 
 extern(Windows)
 alias DllImport!("mlang.dll", "ConvertINetString",
-  int function(uint* lpdwMode, uint dwSrcEncoding, uint dwDstEncoding, ubyte* lpSrcStr, uint* lpnSrcSize, ubyte* lpDstStr, uint* lpnDstSize))
+  int function(uint* lpdwMode, uint dwSrcEncoding, uint dwDstEncoding, in ubyte* lpSrcStr, uint* lpnSrcSize, ubyte* lpDstStr, uint* lpnDstSize))
   ConvertINetString;
 
 extern(Windows)
@@ -192,14 +200,20 @@ private CodePageInfo[] codePageInfoTable;
 private CodePageInfo[uint] codePageInfoByCodePage;
 private uint[string] codePageByName;
 
+static ~this() {
+  codePageInfoTable = null;
+  codePageInfoByCodePage = null;
+  codePageByName = null;
+}
+
 private void initCodePageInfo() {
   synchronized {
     if (auto mlang = CMultiLanguage.coCreate!(IMultiLanguage2)) {
-      scope(exit) tryRelease(mlang);
+      scope(exit) mlang.Release();
 
       IEnumCodePage cp;
       if (SUCCEEDED(mlang.EnumCodePages(MIMECONTF_MIME_LATEST, 0, cp))) {
-        scope(exit) tryRelease(cp);
+        scope(exit) cp.Release();
 
         uint num = 0;
         if (SUCCEEDED(mlang.GetNumberOfCodePageInfo(num)) && num > 0) {
@@ -300,6 +314,7 @@ abstract class Encoding {
   private static Encoding[uint] encodings_;
   private static Encoding defaultEncoding_;
   private static Encoding asciiEncoding_;
+  private static Encoding utf7Encoding_;
   private static Encoding utf8Encoding_;
   private static Encoding utf16Encoding_;
 
@@ -309,6 +324,7 @@ abstract class Encoding {
   static ~this() {
     defaultEncoding_ = null;
     asciiEncoding_ = null;
+    utf7Encoding_ = null;
     utf8Encoding_ = null;
     utf16Encoding_ = null;
     encodings_ = null;
@@ -341,6 +357,30 @@ abstract class Encoding {
   }
 
   /**
+   */
+  abstract int encodeLength(in char[] chars, int index, int count);
+
+  /**
+   * ditto
+   */
+  int encodeLength(in char[] chars) {
+    return encodeLength(chars, 0, chars.length);
+  }
+
+  /**
+   */
+  abstract int decodeLength(in ubyte[] bytes, int index, int count);
+
+  /**
+   * ditto
+   */
+  int decodeLength(in ubyte[] bytes) {
+    return decodeLength(bytes, 0, bytes.length);
+  }
+
+  abstract int encode(in char[] chars, int charIndex, int charCount, ubyte[] bytes, int byteIndex);
+
+  /**
    * Encodes a set of characters from the specified character array into a sequence of bytes.
    * Params: 
    *   chars = The character array containing the set of characters to _encode.
@@ -348,7 +388,11 @@ abstract class Encoding {
    *   count = The number of characters to _encode.
    * Returns: A byte array containing the results of encoding the specified set of characters.
    */
-  abstract ubyte[] encode(in char[] chars, int index, int count);
+  ubyte[] encode(in char[] chars, int index, int count) {
+    ubyte[] bytes = new ubyte[encodeLength(chars, index, count)];
+    encode(chars, index, count, bytes, 0);
+    return bytes;
+  }
 
   /**
    * ditto
@@ -358,6 +402,10 @@ abstract class Encoding {
   }
 
   /**
+   */
+  abstract int decode(in ubyte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex);
+  
+  /**
    * Decodes a sequence of _bytes from the specified byte array into a set of characters.
    * Params:
    *   bytes = The byte array containing the sequence of _bytes to _decode.
@@ -365,8 +413,12 @@ abstract class Encoding {
    *   count = The number of _bytes to _decode.
    * Returns: A character array containing the results of decoding the specified sequence of _bytes.
    */
-  abstract char[] decode(in ubyte[] bytes, int index, int count);
-
+  char[] decode(in ubyte[] bytes, int index, int count) {
+    char[] chars = new char[decodeLength(bytes, index, count)];
+    decode(bytes, index, count, chars, 0);
+    return chars;
+  }
+  
   /**
    * ditto
    */
@@ -383,7 +435,7 @@ abstract class Encoding {
     if (auto value = codePage in encodings_)
       return *value;
 
-    synchronized {
+    synchronized (Encoding.classinfo) {
       Encoding enc = null;
 
       switch (codePage) {
@@ -395,6 +447,9 @@ abstract class Encoding {
           break;
         case CP_UTF8:
           enc = Encoding.UTF8;
+          break;
+        case CP_UTF7:
+          enc = Encoding.UTF7;
           break;
         case CP_UTF16:
           enc = Encoding.UTF16;
@@ -416,7 +471,7 @@ abstract class Encoding {
             enc = new MLangEncoding(codePage);
             break;
           }
-          throw new NotSupportedException(format("%s is not a supported code page.", codePage));
+          throw new NotSupportedException(std.string.format("%s is not a supported code page.", codePage));
       }
 
       return encodings_[codePage] = enc;
@@ -450,6 +505,16 @@ abstract class Encoding {
     if (asciiEncoding_ is null)
       asciiEncoding_ = new AscIIEncoding;
     return asciiEncoding_;
+  }
+
+  /**
+   * Gets an encoding for the UTF-7 format.
+   * Returns: An encoding for the UTF-7 format.
+   */
+  static Encoding UTF7() {
+    if (utf7Encoding_ is null)
+      utf7Encoding_ = new Utf7Encoding;
+    return utf7Encoding_;
   }
 
   /**
@@ -556,9 +621,7 @@ private final class MLangEncoding : Encoding {
     super(codePage == 0 ? GetACP() : codePage);
   }
 
-  alias Encoding.encode encode;
-
-  override ubyte[] encode(in char[] chars, int index, int count) {
+  override int encodeLength(in char[] chars, int index, int count) {
     if (IsConvertINetStringAvailable(CP_UTF8, codePage_) == S_FALSE)
       throw new ArgumentException("Could not encode.");
 
@@ -566,17 +629,10 @@ private final class MLangEncoding : Encoding {
     uint bytesLength;
     uint charsLength = count;
     ConvertINetString(&dwMode, CP_UTF8, codePage_, cast(ubyte*)(chars.ptr + index), &charsLength, null, &bytesLength);
-
-    ubyte[] bytes = new ubyte[bytesLength];
-    ConvertINetString(&dwMode, CP_UTF8, codePage_, cast(ubyte*)(chars.ptr + index), &charsLength, bytes.ptr, &bytesLength);
-
-    bytes.length = bytesLength;
-    return bytes.dup;
+    return bytesLength;
   }
 
-  alias Encoding.decode decode;
-
-  override char[] decode(in ubyte[] bytes, int index, int count) {
+  override int decodeLength(in ubyte[] bytes, int index, int count) {
     if (IsConvertINetStringAvailable(codePage_, CP_UTF8) == S_FALSE)
       throw new ArgumentException("Could not decode.");
 
@@ -584,12 +640,29 @@ private final class MLangEncoding : Encoding {
     uint charsLength;
     uint bytesLength = count;
     ConvertINetString(&dwMode, codePage_, CP_UTF8, bytes.ptr + index, &bytesLength, null, &charsLength);
+    return charsLength;
+  }
 
-    char[] chars = new char[charsLength];
-    ConvertINetString(&dwMode, codePage_, CP_UTF8, bytes.ptr + index, &bytesLength, cast(ubyte*)chars.ptr, &charsLength);
+  override int encode(in char[] chars, int charIndex, int charCount, ubyte[] bytes, int byteIndex) {
+    if (IsConvertINetStringAvailable(CP_UTF8, codePage_) == S_FALSE)
+      throw new ArgumentException("Could not encode.");
 
-    chars.length = charsLength;
-    return chars.dup;
+    uint dwMode;
+    uint charsLength = charCount;
+    uint bytesLength = bytes.length - byteIndex;
+    ConvertINetString(&dwMode, CP_UTF8, codePage_, cast(ubyte*)(chars.ptr + charIndex), &charsLength, bytes.ptr + byteIndex, &bytesLength);
+    return bytesLength;
+  }
+
+  override int decode(in ubyte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+    if (IsConvertINetStringAvailable(codePage_, CP_UTF8) == S_FALSE)
+      throw new ArgumentException("Could not decode.");
+
+    uint dwMode;
+    uint bytesLength = byteCount;
+    uint charsLength = chars.length - charIndex;
+    ConvertINetString(&dwMode, codePage_, CP_UTF8, bytes.ptr + byteIndex, &bytesLength, cast(ubyte*)chars.ptr + charIndex, &charsLength);
+    return charsLength;
   }
 
 }
@@ -601,36 +674,71 @@ class AscIIEncoding : Encoding {
 
   private Encoding baseEncoding_;
 
-  /**
-   * Creates a new instance.
-   */
   this() {
     super(CP_ASCII);
     baseEncoding_ = new MLangEncoding(CP_ASCII);
   }
 
-  /**
-   * Encodes a set of characters from the specified character array into a sequence of bytes.
-   * Params: 
-   *   chars = The character array containing the set of characters to _encode.
-   *   index = The _index of the first character to _encode.
-   *   count = The number of characters to _encode.
-   * Returns: A byte array containing the results of encoding the specified set of characters.
-   */
-  public override ubyte[] encode(char[] chars, int index, int count) {
-    return baseEncoding_.encode(chars, index, count);
+  alias Encoding.encodeLength encodeLength;
+
+  override int encodeLength(in char[] chars, int index, int count) {
+    return baseEncoding_.encodeLength(chars, index, count);
   }
 
-  /**
-   * Decodes a sequence of _bytes from the specified byte array into a set of characters.
-   * Params:
-   *   bytes = The byte array containing the sequence of _bytes to _decode.
-   *   index = The _index of the first byte to _decode.
-   *   count = The number of _bytes to _decode.
-   * Returns: A character array containing the results of decoding the specified sequence of _bytes.
-   */
-  public override char[] decode(ubyte[] bytes, int index, int count) {
-    return baseEncoding_.decode(bytes, index, count);
+  alias Encoding.decodeLength decodeLength;
+
+  override int decodeLength(in ubyte[] bytes, int index, int count) {
+    return baseEncoding_.decodeLength(bytes, index, count);
+  }
+  
+  alias Encoding.encode encode;
+
+  override int encode(in char[] chars, int charIndex, int charCount, ubyte[] bytes, int byteIndex) {
+    return baseEncoding_.encode(chars, charIndex, charCount, bytes, byteIndex);
+  }
+
+  alias Encoding.decode decode;
+
+  override int decode(in ubyte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+    return baseEncoding_.decode(bytes, byteIndex, byteCount, chars, charIndex);
+  }
+
+}
+
+/**
+ * Represents a UTF-7 encoding of characters.
+ */
+class Utf7Encoding : Encoding {
+
+  private Encoding baseEncoding_;
+
+  this() {
+    super(CP_UTF7);
+    baseEncoding_ = new MLangEncoding(CP_UTF7);
+  }
+
+  alias Encoding.encodeLength encodeLength;
+
+  override int encodeLength(in char[] chars, int index, int count) {
+    return baseEncoding_.encodeLength(chars, index, count);
+  }
+
+  alias Encoding.decodeLength decodeLength;
+
+  override int decodeLength(in ubyte[] bytes, int index, int count) {
+    return baseEncoding_.decodeLength(bytes, index, count);
+  }
+  
+  alias Encoding.encode encode;
+
+  override int encode(in char[] chars, int charIndex, int charCount, ubyte[] bytes, int byteIndex) {
+    return baseEncoding_.encode(chars, charIndex, charCount, bytes, byteIndex);
+  }
+
+  alias Encoding.decode decode;
+
+  override int decode(in ubyte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+    return baseEncoding_.decode(bytes, byteIndex, byteCount, chars, charIndex);
   }
 
 }
@@ -642,40 +750,33 @@ class Utf8Encoding : Encoding {
 
   private Encoding baseEncoding_;
 
-  /**
-   * Creates a new instance.
-   */
   this() {
     super(CP_UTF8);
     baseEncoding_ = new MLangEncoding(CP_UTF8);
   }
 
+  alias Encoding.encodeLength encodeLength;
+
+  override int encodeLength(in char[] chars, int index, int count) {
+    return baseEncoding_.encodeLength(chars, index, count);
+  }
+
+  alias Encoding.decodeLength decodeLength;
+
+  override int decodeLength(in ubyte[] bytes, int index, int count) {
+    return baseEncoding_.decodeLength(bytes, index, count);
+  }
+  
   alias Encoding.encode encode;
 
-  /**
-   * Encodes a set of characters from the specified character array into a sequence of bytes.
-   * Params: 
-   *   chars = The character array containing the set of characters to _encode.
-   *   index = The _index of the first character to _encode.
-   *   count = The number of characters to _encode.
-   * Returns: A byte array containing the results of encoding the specified set of characters.
-   */
-  override ubyte[] encode(in char[] chars, int index, int count) {
-    return baseEncoding_.encode(chars, index, count);
+  override int encode(in char[] chars, int charIndex, int charCount, ubyte[] bytes, int byteIndex) {
+    return baseEncoding_.encode(chars, charIndex, charCount, bytes, byteIndex);
   }
 
   alias Encoding.decode decode;
 
-  /**
-   * Decodes a sequence of _bytes from the specified byte array into a set of characters.
-   * Params:
-   *   bytes = The byte array containing the sequence of _bytes to _decode.
-   *   index = The _index of the first byte to _decode.
-   *   count = The number of _bytes to _decode.
-   * Returns: A character array containing the results of decoding the specified sequence of _bytes.
-   */
-  override char[] decode(in ubyte[] bytes, int index, int count) {
-    return baseEncoding_.decode(bytes, index, count);
+  override int decode(in ubyte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+    return baseEncoding_.decode(bytes, byteIndex, byteCount, chars, charIndex);
   }
 
 }
@@ -687,41 +788,33 @@ class Utf16Encoding : Encoding {
 
   private Encoding baseEncoding_;
 
-  /**
-   * Creates a new instance.
-   * Params: bigEndian = true to use the big-endian byte order, or false to use the little-endian byte order.
-   */
   this(bool bigEndian = false) {
     super(bigEndian ? CP_UTF16BE : CP_UTF16);
     baseEncoding_ = new MLangEncoding(codePage_);
   }
 
+  alias Encoding.encodeLength encodeLength;
+
+  override int encodeLength(in char[] chars, int index, int count) {
+    return baseEncoding_.encodeLength(chars, index, count);
+  }
+
+  alias Encoding.decodeLength decodeLength;
+
+  override int decodeLength(in ubyte[] bytes, int index, int count) {
+    return baseEncoding_.decodeLength(bytes, index, count);
+  }
+  
   alias Encoding.encode encode;
 
-  /**
-   * Encodes a set of characters from the specified character array into a sequence of bytes.
-   * Params: 
-   *   chars = The character array containing the set of characters to _encode.
-   *   index = The _index of the first character to _encode.
-   *   count = The number of characters to _encode.
-   * Returns: A byte array containing the results of encoding the specified set of characters.
-   */
-  override ubyte[] encode(in char[] chars, int index, int count) {
-    return baseEncoding_.encode(chars, index, count);
+  override int encode(in char[] chars, int charIndex, int charCount, ubyte[] bytes, int byteIndex) {
+    return baseEncoding_.encode(chars, charIndex, charCount, bytes, byteIndex);
   }
 
   alias Encoding.decode decode;
 
-  /**
-   * Decodes a sequence of _bytes from the specified byte array into a set of characters.
-   * Params:
-   *   bytes = The byte array containing the sequence of _bytes to _decode.
-   *   index = The _index of the first byte to _decode.
-   *   count = The number of _bytes to _decode.
-   * Returns: A character array containing the results of decoding the specified sequence of _bytes.
-   */
-  override char[] decode(in ubyte[] bytes, int index, int count) {
-    return baseEncoding_.decode(bytes, index, count);
+  override int decode(in ubyte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex) {
+    return baseEncoding_.decode(bytes, byteIndex, byteCount, chars, charIndex);
   }
 
 }

@@ -1,21 +1,19 @@
 /**
  * Provides supprt for Extensible Stylesheet Transformation (XSLT) transforms.
  *
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.xml.xsl;
 
-private import juno.base.core,
+import juno.base.core,
+  juno.base.string,
   juno.com.core,
   juno.xml.core,
   juno.xml.dom,
-  juno.xml.msxml;
-private import bstr = juno.com.bstr;
-
-private import std.string : format;
-private import std.stream : File, FileMode;
+  juno.xml.msxml,
+  std.stream;
 
 /**
  * The exception thrown when an error occurs while processing an XSLT transformation.
@@ -66,7 +64,7 @@ class XsltException : Exception {
   private static string createMessage(string s, int lineNumber, int linePosition) {
     string result = s;
     if (lineNumber != 0)
-      result ~= format(" Line %s, position %s.", lineNumber, linePosition);
+      result ~= format(" Line {0}, position {1}.", lineNumber, linePosition);
     return result;
   }
 
@@ -82,6 +80,11 @@ final class XsltSettings {
 
   /// Indicates whether to enable support for embedded script blocks.
   bool enableScript;
+
+  this(bool enableDocumentFunction = false, bool enableScript = false) {
+    this.enableDocumentFunction = enableDocumentFunction;
+    this.enableScript = enableScript;
+  }
 
 }
 
@@ -206,7 +209,7 @@ final class XsltArgumentList {
 
 /**
  * Transforms XML data using an XSLT style sheet.
- * Examples:
+ * Examples::
  * ---
  * // Load the style sheet.
  * scope stylesheet = new XslTransform;
@@ -250,26 +253,28 @@ final class XslTransform {
       }
     }
 
-    private void execute(Stream stream) {
+    private void execute(Stream results) {
       if (args_ !is null) {
         foreach (qname, param; args_.parameters_) {
-          wchar* bstrName = bstr.fromString(qname.name);
-          wchar* bstrNs = bstr.fromString(qname.namespace);
+          wchar* bstrName = toBstr(qname.name);
+          wchar* bstrNs = toBstr(qname.namespace);
 
-          if (param.vt == VT_BYREF && param.byref != null)
-            param.bstrVal = bstr.fromString((cast(Object)param.byref).toString());
+          if (param.vt == VT_BYREF && param.byref != null) {
+            if (auto obj = cast(Object)param.byref)
+              param.bstrVal = toBstr(obj.toString());
+          }
 
           processor_.addParameter(bstrName, param, bstrNs);
 
-          bstr.free(bstrName);
-          bstr.free(bstrNs);
+          freeBstr(bstrName);
+          freeBstr(bstrNs);
         }
 
         foreach (name, extension; args_.extensions_) {
           if (auto disp = cast(IDispatch)extension) {
-            wchar* bstrNs = bstr.fromString(name);
+            wchar* bstrNs = toBstr(name);
             processor_.addObject(disp, bstrNs);
-            bstr.free(bstrNs);
+            freeBstr(bstrNs);
           }
         }
       }
@@ -278,8 +283,9 @@ final class XslTransform {
       scope(exit) input.clear();
 
       if (processor_.put_input(input) == S_OK) {
-        VARIANT output = new COMStream(stream);
+        VARIANT output = new COMStream(results);
         scope(exit) output.clear();
+
         processor_.put_output(output);
 
         VARIANT_BOOL success;
@@ -302,7 +308,7 @@ final class XslTransform {
 
     stylesheet_.put_async(VARIANT_FALSE);
     stylesheet_.put_validateOnParse(VARIANT_FALSE);
-    stylesheet_.setProperty("NewParser", VARIANT(true));
+    stylesheet_.setProperty(cast(wchar*)"NewParser", VARIANT(true));
   }
 
   ~this() {
@@ -323,8 +329,8 @@ final class XslTransform {
     if (settings is null)
       settings = new XsltSettings;
 
-    stylesheet_.setProperty("AllowDocumentFunction", VARIANT(settings.enableDocumentFunction));
-    stylesheet_.setProperty("AllowXsltScript", VARIANT(settings.enableScript));
+    stylesheet_.setProperty(cast(wchar*)"AllowDocumentFunction", VARIANT(settings.enableDocumentFunction));
+    stylesheet_.setProperty(cast(wchar*)"AllowXsltScript", VARIANT(settings.enableScript));
 
     VARIANT source = stylesheetUri;
     scope(exit) source.clear();
@@ -352,7 +358,7 @@ final class XslTransform {
    *   inputUri = The URI of the input document.
    *   arguments = The namespace-qualified arguments used as input to the _transform.
    *   results = The stream to output.
-   * Examples:
+   * Examples::
    *   The following example shows how to write the _results to an XmlDocument.
    * ---
    * // The resulting document.
@@ -394,6 +400,8 @@ final class XslTransform {
   private void parsingException() {
     IXMLDOMParseError errorObj;
     if (stylesheet_.get_parseError(errorObj) == S_OK) {
+      scope(exit) errorObj.Release();
+
       wchar* bstrReason, bstrUrl;
       int line, position;
 
@@ -402,13 +410,11 @@ final class XslTransform {
       errorObj.get_line(line);
       errorObj.get_linepos(position);
 
-      errorObj.Release();
-
-      string reason = bstr.toString(bstrReason);
+      string reason = fromBstr(bstrReason);
       if (reason[$ - 1] == '\n')
         reason = reason[0 .. $ - 2];
 
-      throw new XsltException(reason, line, position, bstr.toString(bstrUrl));
+      throw new XsltException(reason, line, position, fromBstr(bstrUrl));
     }
   }
 

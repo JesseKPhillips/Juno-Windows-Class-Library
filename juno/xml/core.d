@@ -1,33 +1,32 @@
 /**
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.xml.core;
 
-private import std.string : format;
+import juno.base.string;
 
-/**
- */
+/// Specifies the type of the node.
 enum XmlNodeType {
-  None,
-  Element,
-  Attribute,
-  Text,
-  CDATA,
-  EntityReference,
-  Entity,
-  ProcessingInstruction,
-  Comment,
-  Document,
-  DocumentType,
-  DocumentFragment,
-  Notation,
-  Whitespace,
-  SignificantWhitespace,
-  EndElement,
-  EndEntity,
-  XmlDeclaration
+  None,                   /// An unsupported node.
+  Element,                /// An element (for example, <code>&lt;item&gt;</code>).
+  Attribute,              /// An attribute (for example, <code>id='123'</code>).
+  Text,                   /// The text content of a node.
+  CDATA,                  /// A _CDATA section (for example, <code>&lt;![_CDATA[my escaped text]]&gt;</code>).
+  EntityReference,        /// A reference to an entity (for example, <code>&num;</code>).
+  Entity,                 /// An entity declaration (for example, <code>&lt;!ENTITY...&gt;</code>).
+  ProcessingInstruction,  /// A processing instruction (for example, <code>&lt;?pi test?&gt;</code>).
+  Comment,                /// A comment (for example, <code>&lt;!-- my comment --&gt;</code>).
+  Document,               /// A document object that provides access to the entire XML document.
+  DocumentType,           /// The doucment type declaration (for example, <code>&lt;!DOCTYPE...&gt;</code>).
+  DocumentFragment,       /// A document fragment.
+  Notation,               /// A notation in the document type declaration (for example, <code>&lt;!NOTATION...&gt;</code>).
+  Whitespace,             /// White space between markup.
+  SignificantWhitespace,  /// White space between markup in a mixed content model.
+  EndElement,             /// An end element tag (for example, <code>&lt;/item&gt;</code>).
+  EndEntity,              /// The end of an entity.
+  XmlDeclaration          /// The XML declaration (for example, <code>&lt;?xml version='1.0'?&gt;</code>).
 }
 
 string[XmlNodeType.max + 1] XmlNodeTypeString = [
@@ -68,12 +67,18 @@ enum XmlStandalone {
   No
 }
 
+/**
+ * Detailed information about the last exception.
+ */
 class XmlException : Exception {
 
   private int lineNumber_;
   private int linePosition_;
   private string sourceUri_;
 
+  /**
+   * Initializes a new instance with a specified error _message, line number, line position and XML file location.
+   */
   public this(string message = null, int lineNumber = 0, int linePosition = 0, string sourceUri = null) {
     super(createMessage(message, lineNumber, linePosition));
     lineNumber_ = lineNumber;
@@ -81,10 +86,16 @@ class XmlException : Exception {
     sourceUri_ = sourceUri;
   }
 
+  /**
+   * Gets the line number indicating where the error occurred.
+   */
   final int lineNumber() {
     return lineNumber_;
   }
 
+  /**
+   * Gets the line position indicating where the error occurred.
+   */
   final int linePosition() {
     return linePosition_;
   }
@@ -92,7 +103,7 @@ class XmlException : Exception {
   private static string createMessage(string s, int lineNumber, int linePosition) {
     string result = s;
     if (lineNumber != 0)
-      result ~= format(" Line %s, position %s.", lineNumber, linePosition);
+      result ~= format(" Line {0}, position {1}.", lineNumber, linePosition);
     return result;
   }
 
@@ -108,7 +119,7 @@ class XmlQualifiedName {
     ns_ = ns;
   }
 
-  override int opEquals(Object other) {
+  override typeof(super.opEquals(Object)) opEquals(Object other) {
     if (this is other)
       return true;
     if (auto qname = cast(XmlQualifiedName)other) {

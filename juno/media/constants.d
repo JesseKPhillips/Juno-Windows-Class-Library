@@ -1,113 +1,308 @@
 /**
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.media.constants;
 
+/// Specifies the known system colors.
+enum KnownColor {
+  ActiveBorder = 1,        /// A system-defined color.
+  ActiveCaption,           /// ditto
+  ActiveCaptionText,       /// ditto
+  AppWorkspace,            /// ditto
+  Control,                 /// ditto
+  ControlDark,             /// ditto
+  ControlDarkDark,         /// ditto
+  ControlLight,            /// ditto
+  ControlLightLight,       /// ditto
+  ControlText,             /// ditto
+  Desktop,                 /// ditto
+  GrayText,                /// ditto
+  Highlight,               /// ditto
+  HighlightText,           /// ditto
+  HotTrack,                /// ditto
+  InactiveBorder,          /// ditto
+  InactiveCaption,         /// ditto
+  InactiveCaptionText,     /// ditto
+  Info,                    /// ditto
+  InfoText,                /// ditto
+  Menu,                    /// ditto
+  MenuText,                /// ditto
+  ScrollBar,               /// ditto
+  Window,                  /// ditto
+  WindowFrame,             /// ditto
+  WindowText,              /// ditto
+  Transparent,             /// ditto
+  AliceBlue,               /// ditto
+  AntiqueWhite,            /// ditto
+  Aqua,                    /// ditto
+  Aquamarine,              /// ditto
+  Azure,                   /// ditto
+  Beige,                   /// ditto
+  Bisque,                  /// ditto
+  Black,                   /// ditto
+  BlanchedAlmond,          /// ditto
+  Blue,                    /// ditto
+  BlueViolet,              /// ditto
+  Brown,                   /// ditto
+  BurlyWood,               /// ditto
+  CadetBlue,               /// ditto
+  Chartreuse,              /// ditto
+  Chocolate,               /// ditto
+  Coral,                   /// ditto
+  CornflowerBlue,          /// ditto
+  Cornsilk,                /// ditto
+  Crimson,                 /// ditto
+  Cyan,                    /// ditto
+  DarkBlue,                /// ditto
+  DarkCyan,                /// ditto
+  DarkGoldenrod,           /// ditto
+  DarkGray,                /// ditto
+  DarkGreen,               /// ditto
+  DarkKhaki,               /// ditto
+  DarkMagenta,             /// ditto
+  DarkOliveGreen,          /// ditto
+  DarkOrange,              /// ditto
+  DarkOrchid,              /// ditto
+  DarkRed,                 /// ditto
+  DarkSalmon,              /// ditto
+  DarkSeaGreen,            /// ditto
+  DarkSlateBlue,           /// ditto
+  DarkSlateGray,           /// ditto
+  DarkTurquoise,           /// ditto
+  DarkViolet,              /// ditto
+  DeepPink,                /// ditto
+  DeepSkyBlue,             /// ditto
+  DimGray,                 /// ditto
+  DodgerBlue,              /// ditto
+  Firebrick,               /// ditto
+  FloralWhite,             /// ditto
+  ForestGreen,             /// ditto
+  Fuchsia,                 /// ditto
+  Gainsboro,               /// ditto
+  GhostWhite,              /// ditto
+  Gold,                    /// ditto
+  Goldenrod,               /// ditto
+  Gray,                    /// ditto
+  Green,                   /// ditto
+  GreenYellow,             /// ditto
+  Honeydew,                /// ditto
+  HotPink,                 /// ditto
+  IndianRed,               /// ditto
+  Indigo,                  /// ditto
+  Ivory,                   /// ditto
+  Khaki,                   /// ditto
+  Lavender,                /// ditto
+  LavenderBlush,           /// ditto
+  LawnGreen,               /// ditto
+  LemonChiffon,            /// ditto
+  LightBlue,               /// ditto
+  LightCoral,              /// ditto
+  LightCyan,               /// ditto
+  LightGoldenrodYellow,    /// ditto
+  LightGray,               /// ditto
+  LightGreen,              /// ditto
+  LightPink,               /// ditto
+  LightSalmon,             /// ditto
+  LightSeaGreen,           /// ditto
+  LightSkyBlue,            /// ditto
+  LightSlateGray,          /// ditto
+  LightSteelBlue,          /// ditto
+  LightYellow,             /// ditto
+  Lime,                    /// ditto
+  LimeGreen,               /// ditto
+  Linen,                   /// ditto
+  Magenta,                 /// ditto
+  Maroon,                  /// ditto
+  MediumAquamarine,        /// ditto
+  MediumBlue,              /// ditto
+  MediumOrchid,            /// ditto
+  MediumPurple,            /// ditto
+  MediumSeaGreen,          /// ditto
+  MediumSlateBlue,         /// ditto
+  MediumSpringGreen,       /// ditto
+  MediumTurquoise,         /// ditto
+  MediumVioletRed,         /// ditto
+  MidnightBlue,            /// ditto
+  MintCream,               /// ditto
+  MistyRose,               /// ditto
+  Moccasin,                /// ditto
+  NavajoWhite,             /// ditto
+  Navy,                    /// ditto
+  OldLace,                 /// ditto
+  Olive,                   /// ditto
+  OliveDrab,               /// ditto
+  Orange,                  /// ditto
+  OrangeRed,               /// ditto
+  Orchid,                  /// ditto
+  PaleGoldenrod,           /// ditto
+  PaleGreen,               /// ditto
+  PaleTurquoise,           /// ditto
+  PaleVioletRed,           /// ditto
+  PapayaWhip,              /// ditto
+  PeachPuff,               /// ditto
+  Peru,                    /// ditto
+  Pink,                    /// ditto
+  Plum,                    /// ditto
+  PowderBlue,              /// ditto
+  Purple,                  /// ditto
+  Red,                     /// ditto
+  RosyBrown,               /// ditto
+  RoyalBlue,               /// ditto
+  SaddleBrown,             /// ditto
+  Salmon,                  /// ditto
+  SandyBrown,              /// ditto
+  SeaGreen,                /// ditto
+  SeaShell,                /// ditto
+  Sienna,                  /// ditto
+  Silver,                  /// ditto
+  SkyBlue,                 /// ditto
+  SlateBlue,               /// ditto
+  SlateGray,               /// ditto
+  Snow,                    /// ditto
+  SpringGreen,             /// ditto
+  SteelBlue,               /// ditto
+  Tan,                     /// ditto
+  Teal,                    /// ditto
+  Thistle,                 /// ditto
+  Tomato,                  /// ditto
+  Turquoise,               /// ditto
+  Violet,                  /// ditto
+  Wheat,                   /// ditto
+  White,                   /// ditto
+  WhiteSmoke,              /// ditto
+  Yellow,                  /// ditto
+  YellowGreen,             /// ditto
+  ButtonFace,              /// ditto
+  ButtonHighlight,         /// ditto
+  ButtonShadow,            /// ditto
+  GradientActiveCaption,   /// ditto
+  GradientInactiveCaption, /// ditto
+  MenuBar,                 /// ditto
+  MenuHighlight            /// ditto
+}
+
+enum ImageType {
+  Unknown,
+  Bitmap,
+  Metafile
+}
+
+/// Specifies how different clipping regions can be combined.
 enum CombineMode {
-  Replace,
-  Intersect,
-  Union,
-  Xor,
-  Exclude,
-  Complement
+  Replace,    /// One clipping region is replaced by another.
+  Intersect,  /// Two clipping regions are combined by taking their intersection.
+  Union,      /// Two clipping regions are combined by taking the union of both.
+  Xor,        /// Two clipping regions are combined by taking only the areas enclosed by one or other region.
+  Exclude,    /// The existing region is excluded from the new region.
+  Complement  /// The new region is excluded from the existing region.
 }
 
+/// Specifies whether commands in the graphics stack are flushed immediately.
 enum FlushIntention {
-  Flush,
-  Sync
+  Flush, /// The stack of all graphics operations in flushed immediately.
+  Sync   /// All graphics operations on the stack are executed as soon as possible, thus synchronizing the graphics state.
 }
 
+/// Specifies the order for matrix transform operations.
 enum MatrixOrder {
-  Prepend,
-  Append
+  Prepend,  /// The new operation is applied before the old operation.
+  Append    /// The new operation is applied after the old operation.
 }
 
+/// Specifies the unit of measure for given data.
 enum GraphicsUnit {
-  World,
-  Display,
-  Pixel,
-  Point,
-  Inch,
-  Document,
-  Millimeter
+  World,      /// Specifies the world unit as the unit of measure.
+  Display,    /// Specifies 1/75 inch as the unit of measure.
+  Pixel,      /// Specifies a device pixel as the unit of measure.
+  Point,      /// Specifies a printer's point (1/72 inch) as the unit of measure.
+  Inch,       /// Specifies the inch as the unit of measure.
+  Document,   /// Specifies the document unit (1/300 inch) as the unit of measure.
+  Millimeter  /// Specifies the millimeter as the unit of measure.
 }
 
+/// Specifies the quality when rendering GDI+ objects.
 enum QualityMode {
-  Invalid = -1,
-  Default,
-  Low,
-  High
+  Invalid = -1, /// Specifies an invalid mode.
+  Default,      /// Specifies the default mode.
+  Low,          /// Specifies low quality, high speed rendering.
+  High          /// Specifies high quality, low speed rendering.
 }
 
+/// Specifies whether smoothing (antialiasing) is applied to lines, curves and the edges of filled areas.
 enum SmoothingMode {
-  Invalid = QualityMode.Invalid,
-  Default = QualityMode.Default,
-  HighSpeed,
-  HighQuality,
-  None,
-  AntiAlias
+  Invalid = QualityMode.Invalid,  /// Specifies an invalid mode.
+  Default = QualityMode.Default,  /// Specifies the default mode.
+  HighSpeed,                      /// Specifies high speed, low quality rendering.
+  HighQuality,                    /// Specifies high quality, low speed rendering.
+  None,                           /// Specifies no antialiasing.
+  AntiAlias                       /// Specifies antialiased rendering.
 }
 
+/// Specifies how data is interpolated between endpoints.
 enum InterpolationMode {
-  Invalid = QualityMode.Invalid,
-  Default = QualityMode.Default,
-  Low = QualityMode.Low,
-  High = QualityMode.High,
-  Bilinear,
-  Bicubic,
-  NearestNeighbor,
-  HighQualityBilinear,
-  HighQualityBicubic
+  Invalid = QualityMode.Invalid,  /// Specifies an invalid mode.
+  Default = QualityMode.Default,  /// Specifies the default mode.
+  Low = QualityMode.Low,          /// Specifies low quality interpolation.
+  High = QualityMode.High,        /// Specifies high quality interpolation.
+  Bilinear,                       /// Specifies bilinear interpolation.
+  Bicubic,                        /// Specifies bicubic interpolation.
+  NearestNeighbor,                /// Specifies nearest-neighbor interpolation.
+  HighQualityBilinear,            /// Specifies high quality bilinear interpolation.
+  HighQualityBicubic              /// Specifies high quality bicubic interpolation.
 }
 
+/// Specifies how the source colors are combined with the background colors.
 enum CompositingMode {
-  SourceOver,
-  SourceCopy
+  SourceOver, /// Specifies that the color is blended with the background color.
+  SourceCopy  /// Specifies that the color overwrites the background color.
 }
 
+/// Specifies the quality level to use during compositing.
 enum CompositingQuality {
-  Invalid = QualityMode.Invalid,
-  Default = QualityMode.Default,
-  HighSpeed = QualityMode.Low,
-  HighQuality = QualityMode.High,
-  GammaCorrected,
-  AssumeLinear
+  Invalid = QualityMode.Invalid,  /// Invalid quality.
+  Default = QualityMode.Default,  /// Default quality.
+  HighSpeed = QualityMode.Low,    /// High speed, low quality.
+  HighQuality = QualityMode.High, /// High quality, low speed.
+  GammaCorrected,                 /// Gamma correction is used.
+  AssumeLinear                    /// Assume linear values.
 }
 
+/// Specifies how pixels are offset during rendering.
 enum PixelOffsetMode {
-  Invalid = QualityMode.Invalid,
-  Default = QualityMode.Default,
-  HighSpeed = QualityMode.Low,
-  HighQuality = QualityMode.High,
-  None,
-  Half
+  Invalid = QualityMode.Invalid,  /// Specifies an invalid mode.
+  Default = QualityMode.Default,  /// Specifies the default mode.
+  HighSpeed = QualityMode.Low,    /// Specifies high speed, low quality rendering.
+  HighQuality = QualityMode.High, /// Specifies high quality, low speed rendering.
+  None,                           /// Specifies no pixel offset.
+  Half                            /// Specifies that pixels are offset by -.5 units for high speed antialiasing.
 }
 
+/// Specifies the format of the color data for each pixel in the image.
 enum PixelFormat {
-  Undefined = 0,
-  DontCare = 0,
-  Indexed = 0x00010000,
-  Gdi = 0x00020000,
-  Alpha = 0x00040000,
-  PAlpha = 0x00080000,
-  Extended = 0x00100000,
-  Canonical = 0x00200000,
-  Format1bppIndexed = 1 | (1 << 8) | Indexed | Gdi,
-  Format4bppIndexed = 2 | (4 << 8) | Indexed | Gdi,
-  Format8bppIndexed = 3 | (8 << 8) | Indexed | Gdi,
-  Format16bppGrayScale = 4 | (16 << 8) | Extended,
-  Format16bppRgb555 = 5 | (16 << 8) | Gdi,
-  Format16bppRgb565 = 6 | (16 << 8) | Gdi,
-  Format16bppArgb1555 = 7 | (16 << 8) | Alpha | Gdi,
-  Format24bppRgb = 8 | (24 << 8) | Gdi,
-  Format32bppRgb = 9 | (32 << 8) | Gdi,
-  Format32bppArgb = 10 | (32 << 8) | Alpha | Gdi | Canonical,
-  Format32bppPArgb = 11 | (32 << 8) | Alpha | PAlpha | Gdi,
-  Format48bppRgb = 12 | (48 << 8) | Extended,
-  Format64bppArgb = 13 | (64 << 8) | Alpha | Canonical | Extended,
-  Format64bppPArgb = 14 | (64 << 8) | Alpha | PAlpha | Extended
+  Undefined = 0,                                                    /// The pixel format is undefined.
+  DontCare = 0,                                                     /// No pixel format is specified.
+  Indexed = 0x00010000,                                             /// The pixel data contains color-indexed values.
+  Gdi = 0x00020000,                                                 /// The pixel data contains GDI colors.
+  Alpha = 0x00040000,                                               /// The pixel data contains alpha values that are not premultiplied.
+  PAlpha = 0x00080000,                                              /// The pixel data contains premultiplied alpha values.
+  Extended = 0x00100000,                                            /// Reserved.
+  Canonical = 0x00200000,                                           /// Reserved.
+  Format1bppIndexed = 1 | (1 << 8) | Indexed | Gdi,                 /// Specifies that the pixel format is 1 bit per pixel and that it uses indexed color.
+  Format4bppIndexed = 2 | (4 << 8) | Indexed | Gdi,                 /// Specifies that the format is 4 bits per pixel, indexed.
+  Format8bppIndexed = 3 | (8 << 8) | Indexed | Gdi,                 /// Specifies that the format is 8 bits per pixel, indexed.
+  Format16bppGrayScale = 4 | (16 << 8) | Extended,                  /// The pixel format is 16 bits per pixel. The color information specifies 65536 shades of gray.
+  Format16bppRgb555 = 5 | (16 << 8) | Gdi,                          /// Specifies that the format is 16 bits per pixel; 5 bits each are used for the red, green, and blue components.
+  Format16bppRgb565 = 6 | (16 << 8) | Gdi,                          /// Specifies that the format is 16 bits per pixel; 5 bits are used for the red component, 6 bits are used for the green component, and 5 bits are used for the blue component.
+  Format16bppArgb1555 = 7 | (16 << 8) | Alpha | Gdi,                /// The pixel format is 16 bits per pixel. The color information specifies 32,768 shades of color, of which 5 bits are red, 5 bits are green, 5 bits are blue, and 1 bit is alpha.
+  Format24bppRgb = 8 | (24 << 8) | Gdi,                             /// Specifies that the format is 24 bits per pixel; 8 bits each are used for the red, green, and blue components.
+  Format32bppRgb = 9 | (32 << 8) | Gdi,                             /// Specifies that the format is 32 bits per pixel; 8 bits each are used for the red, green, and blue components.
+  Format32bppArgb = 10 | (32 << 8) | Alpha | Gdi | Canonical,       /// Specifies that the format is 32 bits per pixel; 8 bits each are used for the alpha, red, green, and blue components.
+  Format32bppPArgb = 11 | (32 << 8) | Alpha | PAlpha | Gdi,         /// Specifies that the format is 32 bits per pixel; 8 bits each are used for the alpha, red, green, and blue components. The red, green, and blue components are premultiplied according to the alpha component.
+  Format48bppRgb = 12 | (48 << 8) | Extended,                       /// Specifies that the format is 48 bits per pixel; 16 bits each are used for the red, green, and blue components.
+  Format64bppArgb = 13 | (64 << 8) | Alpha | Canonical | Extended,  /// Specifies that the format is 64 bits per pixel; 16 bits each are used for the alpha, red, green, and blue components.
+  Format64bppPArgb = 14 | (64 << 8) | Alpha | PAlpha | Extended     /// Specifies that the format is 64 bits per pixel; 16 bits each are used for the alpha, red, green, and blue components. The red, green, and blue components are premultiplied according to the alpha component.
 }
 
 enum RotateFlipType {
@@ -250,6 +445,21 @@ enum EncoderParameterValueType {
   ValueTypeRationalRange
 }
 
+enum MetafileFrameUnit {
+  Pixel = 2,
+  Point = 3,
+  Inch = 4,
+  Document = 5,
+  Millimeter = 6,
+  GdiCompatible = 7
+}
+
+enum EmfType {
+  EmfOnly = 3,
+  EmfPlusOnly = 4,
+  EmfPlusDual = 5
+}
+
 enum GenericFontFamilies {
   Serif,
   SansSerif,
@@ -369,7 +579,7 @@ enum LinearGradientMode {
   BackwardDiagonal
 }
 
-enum PaletteFlags : uint {
+enum PaletteFlags {
   HasAlpha = 0x1,
   GrayScale = 0x2,
   Halftone = 0x4
@@ -380,7 +590,7 @@ enum ColorMapType {
   Brush
 }
 
-enum ImageFlags : uint {
+enum ImageFlags {
   None = 0x0,
   Scalable = 0x1,
   HasAlpha = 0x2,
@@ -397,179 +607,8 @@ enum ImageFlags : uint {
   Caching = 0x20000
 }
 
-enum KnownColor : uint {
-  ActiveBorder = 1,
-  ActiveCaption,
-  ActiveCaptionText,
-  AppWorkspace,
-  Control,
-  ControlDark,
-  ControlDarkDark,
-  ControlLight,
-  ControlLightLight,
-  ControlText,
-  Desktop,
-  GrayText,
-  Highlight,
-  HighlightText,
-  HotTrack,
-  InactiveBorder,
-  InactiveCaption,
-  InactiveCaptionText,
-  Info,
-  InfoText,
-  Menu,
-  MenuText,
-  ScrollBar,
-  Window,
-  WindowFrame,
-  WindowText,
-  Transparent,
-  AliceBlue,
-  AntiqueWhite,
-  Aqua,
-  Aquamarine,
-  Azure,
-  Beige,
-  Bisque,
-  Black,
-  BlanchedAlmond,
-  Blue,
-  BlueViolet,
-  Brown,
-  BurlyWood,
-  CadetBlue,
-  Chartreuse,
-  Chocolate,
-  Coral,
-  CornflowerBlue,
-  Cornsilk,
-  Crimson,
-  Cyan,
-  DarkBlue,
-  DarkCyan,
-  DarkGoldenrod,
-  DarkGray,
-  DarkGreen,
-  DarkKhaki,
-  DarkMagenta,
-  DarkOliveGreen,
-  DarkOrange,
-  DarkOrchid,
-  DarkRed,
-  DarkSalmon,
-  DarkSeaGreen,
-  DarkSlateBlue,
-  DarkSlateGray,
-  DarkTurquoise,
-  DarkViolet,
-  DeepPink,
-  DeepSkyBlue,
-  DimGray,
-  DodgerBlue,
-  Firebrick,
-  FloralWhite,
-  ForestGreen,
-  Fuchsia,
-  Gainsboro,
-  GhostWhite,
-  Gold,
-  Goldenrod,
-  Gray,
-  Green,
-  GreenYellow,
-  Honeydew,
-  HotPink,
-  IndianRed,
-  Indigo,
-  Ivory,
-  Khaki,
-  Lavender,
-  LavenderBlush,
-  LawnGreen,
-  LemonChiffon,
-  LightBlue,
-  LightCoral,
-  LightCyan,
-  LightGoldenrodYellow,
-  LightGray,
-  LightGreen,
-  LightPink,
-  LightSalmon,
-  LightSeaGreen,
-  LightSkyBlue,
-  LightSlateGray,
-  LightSteelBlue,
-  LightYellow,
-  Lime,
-  LimeGreen,
-  Linen,
-  Magenta,
-  Maroon,
-  MediumAquamarine,
-  MediumBlue,
-  MediumOrchid,
-  MediumPurple,
-  MediumSeaGreen,
-  MediumSlateBlue,
-  MediumSpringGreen,
-  MediumTurquoise,
-  MediumVioletRed,
-  MidnightBlue,
-  MintCream,
-  MistyRose,
-  Moccasin,
-  NavajoWhite,
-  Navy,
-  OldLace,
-  Olive,
-  OliveDrab,
-  Orange,
-  OrangeRed,
-  Orchid,
-  PaleGoldenrod,
-  PaleGreen,
-  PaleTurquoise,
-  PaleVioletRed,
-  PapayaWhip,
-  PeachPuff,
-  Peru,
-  Pink,
-  Plum,
-  PowderBlue,
-  Purple,
-  Red,
-  RosyBrown,
-  RoyalBlue,
-  SaddleBrown,
-  Salmon,
-  SandyBrown,
-  SeaGreen,
-  SeaShell,
-  Sienna,
-  Silver,
-  SkyBlue,
-  SlateBlue,
-  SlateGray,
-  Snow,
-  SpringGreen,
-  SteelBlue,
-  Tan,
-  Teal,
-  Thistle,
-  Tomato,
-  Turquoise,
-  Violet,
-  Wheat,
-  White,
-  WhiteSmoke,
-  Yellow,
-  YellowGreen,
-  ButtonFace,
-  ButtonHighlight,
-  ButtonShadow,
-  GradientActiveCaption,
-  GradientInactiveCaption,
-  MenuBar,
-  MenuHighlight
+enum HotkeyPrefix {
+  None,
+  Show,
+  Hide
 }

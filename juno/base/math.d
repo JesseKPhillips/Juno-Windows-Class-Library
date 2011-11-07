@@ -1,5 +1,5 @@
 /**
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
@@ -8,6 +8,16 @@ module juno.base.math;
 private import std.math : isnan, abs;
 private import std.c.windows.windows : GetTickCount;
 
+version(D_Version2) {
+}
+else {
+/**
+ * Returns the smaller of two numbers.
+ * Params:
+ *   val1 = The first number to compare.
+ *   val2 = The second number to compare.
+ * Returns: Parameter val1 or val2, whichever is smaller.
+ */
 T min(T)(T val1, T val2) {
   static if (is(T == ubyte) ||
     is(T == byte) ||
@@ -19,12 +29,21 @@ T min(T)(T val1, T val2) {
     is(T == long)) {
     return (val1 > val2) ? val2 : val1;
   }
-  else static if (is(T == float) ||
-    is(T == double)) {
+  else static if (is(T == float)
+    || is(T == double)) {
     return (val1 < val2) ? val1 : isnan(val1) ? val1 : val2;
   }
+  else
+    static assert(false);
 }
 
+/**
+ * Returns the larger of two numbers.
+ * Params:
+ *   val1 = The first number to compare.
+ *   val2 = The second number to compare.
+ * Returns: Parameter val1 or val2, whichever is larger.
+ */
 T max(T)(T val1, T val2) {
   static if (is(T == ubyte) ||
     is(T == byte) ||
@@ -36,10 +55,13 @@ T max(T)(T val1, T val2) {
     is(T == long)) {
     return (val1 < val2) ? val2 : val1;
   }
-  else static if (is(T == float) ||
-    is(T == double)) {
+  else static if (is(T == float) 
+    || is(T == double)) {
     return (val1 > val2) ? val1 : isnan(val1) ? val1 : val2;
   }
+  else
+    static assert(false);
+}
 }
 
 double random() {

@@ -3,22 +3,33 @@
  *
  * For detailed information, refer to MSDN's documentation for the $(LINK2 http://msdn2.microsoft.com/en-us/library/system.drawing.imaging.aspx, System.Drawing.Imaging) namespace.
  *
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.media.imaging;
 
-private import juno.base.core,
+import juno.base.core,
   juno.base.string,
   juno.base.native,
+  juno.com.core,
   juno.media.constants,
   juno.media.core,
   juno.media.native;
 
-private import juno.com.core : GUID;
+/**
+ * Specifies the attributes of a bitmap image.
+ */
+final class BitmapData {
 
-debug private import std.stdio;
+  int width;               /// Gets or sets the pixel _width of the Bitmap object.
+  int height;              /// Gets of sets the pixel _height of the Bitmap object.
+  int stride;              /// Gets or sets the _stride width of the Bitmap object.
+  PixelFormat pixelFormat; /// Gets or sets the format of the pixel information in the Bitmap object.
+  void* scan0;             /// Gets or sets the address of the first pixel data in the Bitmap object.
+  int reserved;            /// Reserved. Do not use.
+
+}
 
 /**
  */
@@ -27,20 +38,7 @@ final class PropertyItem {
   int id;         ///
   uint len;       ///
   ushort type;    ///
-  ubyte[] value;  ///
-
-}
-
-/**
- */
-final class BitmapData {
-
-  int width;                ///
-  int height;               ///
-  int stride;               ///
-  PixelFormat pixelFormat;  ///
-  void* scan0;              ///
-  int reserved;             ///
+  ubyte[] value;  //
 
 }
 
@@ -59,17 +57,17 @@ final class ImageFormat {
   private static ImageFormat exif_;
   private static ImageFormat icon_;
 
-  private GUID guid_;
+  private Guid guid_;
 
   /**
    */
-  this(GUID guid) {
+  this(Guid guid) {
     guid_ = guid;
   }
 
   /**
    */
-  GUID guid() {
+  Guid guid() {
     return guid_;
   }
 
@@ -77,7 +75,7 @@ final class ImageFormat {
    */
   static ImageFormat memoryBmp() {
     if (memoryBmp_ is null)
-      memoryBmp_ = new ImageFormat(GUID(0xb96b3caa, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      memoryBmp_ = new ImageFormat(Guid(0xb96b3caa, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return memoryBmp_;
   }
 
@@ -85,7 +83,7 @@ final class ImageFormat {
    */
   static ImageFormat bmp() { 
     if (bmp_ is null)
-      bmp_ = new ImageFormat(GUID(0xb96b3cab, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      bmp_ = new ImageFormat(Guid(0xb96b3cab, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
    return bmp_; 
   }
 
@@ -93,7 +91,7 @@ final class ImageFormat {
    */
   static ImageFormat emf() {
     if (emf_ is null)
-      emf_ = new ImageFormat(GUID(0xb96b3cac, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      emf_ = new ImageFormat(Guid(0xb96b3cac, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return emf_;
   }
 
@@ -101,7 +99,7 @@ final class ImageFormat {
    */
   static ImageFormat wmf() { 
     if (wmf_ is null)
-      wmf_ = new ImageFormat(GUID(0xb96b3cad, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      wmf_ = new ImageFormat(Guid(0xb96b3cad, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return wmf_; 
   }
 
@@ -109,7 +107,7 @@ final class ImageFormat {
    */
   static ImageFormat jpeg() {
     if (jpeg_ is null)
-      jpeg_ = new ImageFormat(GUID(0xb96b3cae, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      jpeg_ = new ImageFormat(Guid(0xb96b3cae, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return jpeg_; 
   }
 
@@ -117,7 +115,7 @@ final class ImageFormat {
    */
   static ImageFormat png() {
     if (png_ is null)
-      png_ = new ImageFormat(GUID(0xb96b3caf, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      png_ = new ImageFormat(Guid(0xb96b3caf, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return png_; 
   }
 
@@ -125,7 +123,7 @@ final class ImageFormat {
    */
   static ImageFormat gif() { 
     if (gif_ is null)
-      gif_ = new ImageFormat(GUID(0xb96b3cb0, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      gif_ = new ImageFormat(Guid(0xb96b3cb0, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return gif_; 
   }
 
@@ -133,7 +131,7 @@ final class ImageFormat {
    */
   static ImageFormat tiff() { 
     if (tiff_ is null)
-      tiff_ = new ImageFormat(GUID(0xb96b3cb1, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      tiff_ = new ImageFormat(Guid(0xb96b3cb1, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return tiff_; 
   }
 
@@ -141,7 +139,7 @@ final class ImageFormat {
    */
   static ImageFormat exif() { 
     if (exif_ is null)
-      exif_ = new ImageFormat(GUID(0xb96b3cb2, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      exif_ = new ImageFormat(Guid(0xb96b3cb2, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return exif_; 
   }
 
@@ -149,18 +147,18 @@ final class ImageFormat {
    */
   static ImageFormat icon() { 
     if (icon_ !is null)
-      icon_ = new ImageFormat(GUID(0xb96b3cb5, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
+      icon_ = new ImageFormat(Guid(0xb96b3cb5, 0x0728, 0x11d3, 0x9d, 0x7b, 0x00, 0x00, 0xf8, 0x1e, 0xf3, 0x2e));
     return icon_; 
   }
 
 }
 
-/**
+/** 
  */
 final class ImageCodecInfo {
 
-  GUID clsid;                     ///
-  GUID formatId;                  ///
+  Guid clsid;                     ///
+  Guid formatId;                  ///
   string codecName;               ///
   string dllName;                 ///
   string formatDescription;       ///
@@ -191,11 +189,11 @@ final class ImageCodecInfo {
         with (pCodecs[i]) {
           clsid = Clsid;
           formatId = FormatID;
-          codecName = .toUtf8(CodecName);
-          dllName = .toUtf8(DllName);
-          formatDescription = .toUtf8(FormatDescription);
-          filenameExtension = .toUtf8(FilenameExtension);
-          mimeType = .toUtf8(MimeType);
+          if (CodecName) codecName = .toUtf8(CodecName);
+          if (DllName) dllName = .toUtf8(DllName);
+          if (FormatDescription) formatDescription = .toUtf8(FormatDescription);
+          if (FilenameExtension) filenameExtension = .toUtf8(FilenameExtension);
+          if (MimeType) mimeType = .toUtf8(MimeType);
           flags = cast(ImageCodecFlags)Flags;
 
           signaturePatterns.length = SigCount;
@@ -203,8 +201,8 @@ final class ImageCodecInfo {
           for (int j = 0; j < SigCount; j++) {
             signaturePatterns[j].length = SigSize;
             signatureMasks[j].length = SigSize;
-            memcpy(signaturePatterns[j].ptr, SigPattern + (j * SigSize), SigSize);
-            memcpy(signatureMasks[j].ptr, SigMask + (j * SigSize), SigSize);
+            std.c.string.memcpy(signaturePatterns[j].ptr, SigPattern + (j * SigSize), SigSize);
+            std.c.string.memcpy(signatureMasks[j].ptr, SigMask + (j * SigSize), SigSize);
           }
         }
       }
@@ -237,10 +235,10 @@ final class ImageCodecInfo {
           clsid = Clsid;
           formatId = FormatID;
           codecName = .toUtf8(CodecName);
-          dllName = .toUtf8(DllName);
-          formatDescription = .toUtf8(FormatDescription);
-          filenameExtension = .toUtf8(FilenameExtension);
-          mimeType = .toUtf8(MimeType);
+          if (DllName) dllName = .toUtf8(DllName);
+          if (FormatDescription) formatDescription = .toUtf8(FormatDescription);
+          if (FilenameExtension) filenameExtension = .toUtf8(FilenameExtension);
+          if (MimeType) mimeType = .toUtf8(MimeType);
           flags = cast(ImageCodecFlags)Flags;
 
           signaturePatterns.length = SigCount;
@@ -248,8 +246,8 @@ final class ImageCodecInfo {
           for (int j = 0; j < SigCount; j++) {
             signaturePatterns[j].length = SigSize;
             signatureMasks[j].length = SigSize;
-            memcpy(signaturePatterns[j].ptr, SigPattern + (j * SigSize), SigSize);
-            memcpy(signatureMasks[j].ptr, SigMask + (j * SigSize), SigSize);
+            std.c.string.memcpy(signaturePatterns[j].ptr, SigPattern + (j * SigSize), SigSize);
+            std.c.string.memcpy(signatureMasks[j].ptr, SigMask + (j * SigSize), SigSize);
           }
         }
       }
@@ -277,17 +275,17 @@ final class Encoder {
   private static Encoder chrominanceTable_;
   private static Encoder saveFlag_;
 
-  private GUID guid_;
+  private Guid guid_;
 
   /**
    */
-  this(GUID guid) {
+  this(Guid guid) {
     guid_ = guid;
   }
 
   /**
    */
-  GUID guid() {
+  Guid guid() {
     return guid_;
   }
 
@@ -295,7 +293,7 @@ final class Encoder {
    */
   static Encoder compression() {
     if (compression_ is null)
-      compression_ = new Encoder(GUID(0xe09d739d, 0xccd4, 0x44ee, 0x8e, 0xba, 0x3f, 0xbf, 0x8b, 0xe4, 0xfc, 0x58));
+      compression_ = new Encoder(Guid(0xe09d739d, 0xccd4, 0x44ee, 0x8e, 0xba, 0x3f, 0xbf, 0x8b, 0xe4, 0xfc, 0x58));
     return compression_;
   }
 
@@ -303,7 +301,7 @@ final class Encoder {
    */
   static Encoder colorDepth() {
     if (colorDepth_ is null)
-      colorDepth_ = new Encoder(GUID(0x66087055, 0xad66, 0x4c7c, 0x9a, 0x18, 0x38, 0xa2, 0x31, 0x0b, 0x83, 0x37));
+      colorDepth_ = new Encoder(Guid(0x66087055, 0xad66, 0x4c7c, 0x9a, 0x18, 0x38, 0xa2, 0x31, 0x0b, 0x83, 0x37));
     return colorDepth_;
   }
 
@@ -311,7 +309,7 @@ final class Encoder {
    */
   static Encoder scanMethod() {
     if (scanMethod_ is null)
-      scanMethod_ = new Encoder(GUID(0x3a4e2661, 0x3109, 0x4e56, 0x85, 0x36, 0x42, 0xc1, 0x56, 0xe7, 0xdc, 0xfa));
+      scanMethod_ = new Encoder(Guid(0x3a4e2661, 0x3109, 0x4e56, 0x85, 0x36, 0x42, 0xc1, 0x56, 0xe7, 0xdc, 0xfa));
     return scanMethod_;
   }
 
@@ -319,7 +317,7 @@ final class Encoder {
    */
   static Encoder _version() {
     if (version_ is null)
-      version_ = new Encoder(GUID(0x24d18c76, 0x814a, 0x41a4, 0xbf, 0x53, 0x1c, 0x21, 0x9c, 0xcc, 0xf7, 0x97));
+      version_ = new Encoder(Guid(0x24d18c76, 0x814a, 0x41a4, 0xbf, 0x53, 0x1c, 0x21, 0x9c, 0xcc, 0xf7, 0x97));
     return version_;
   }
 
@@ -327,7 +325,7 @@ final class Encoder {
    */
   static Encoder renderMethod() {
     if (renderMethod_ is null)
-      renderMethod_ = new Encoder(GUID(0x6d42c53a, 0x229a, 0x4825, 0x8b, 0xb7, 0x5c, 0x99, 0xe2, 0xb9, 0xa8, 0xb8));
+      renderMethod_ = new Encoder(Guid(0x6d42c53a, 0x229a, 0x4825, 0x8b, 0xb7, 0x5c, 0x99, 0xe2, 0xb9, 0xa8, 0xb8));
     return renderMethod_;
   }
 
@@ -335,7 +333,7 @@ final class Encoder {
    */
   static Encoder quality() {
     if (quality_ is null)
-      quality_ = new Encoder(GUID(0x1d5be4b5, 0xfa4a, 0x452d, 0x9c, 0xdd, 0x5d, 0xb3, 0x51, 0x05, 0xe7, 0xeb));
+      quality_ = new Encoder(Guid(0x1d5be4b5, 0xfa4a, 0x452d, 0x9c, 0xdd, 0x5d, 0xb3, 0x51, 0x05, 0xe7, 0xeb));
     return quality_;
   }
 
@@ -343,7 +341,7 @@ final class Encoder {
    */
   static Encoder transformation() {
     if (transformation_ is null)
-      transformation_ = new Encoder(GUID(0x8d0eb2d1, 0xa58e, 0x4ea8, 0xaa, 0x14, 0x10, 0x80, 0x74, 0xb7, 0xb6, 0xf9));
+      transformation_ = new Encoder(Guid(0x8d0eb2d1, 0xa58e, 0x4ea8, 0xaa, 0x14, 0x10, 0x80, 0x74, 0xb7, 0xb6, 0xf9));
     return transformation_;
   }
 
@@ -351,7 +349,7 @@ final class Encoder {
    */
   static Encoder luminanceTable() {
     if (luminanceTable_ is null)
-      luminanceTable_ = new Encoder(GUID(0xedb33bce, 0x0266, 0x4a77, 0xb9, 0x04, 0x27, 0x21, 0x60, 0x99, 0xe7, 0x17));
+      luminanceTable_ = new Encoder(Guid(0xedb33bce, 0x0266, 0x4a77, 0xb9, 0x04, 0x27, 0x21, 0x60, 0x99, 0xe7, 0x17));
     return luminanceTable_;
   }
 
@@ -359,7 +357,7 @@ final class Encoder {
    */
   static Encoder chrominanceTable() {
     if (chrominanceTable_ is null)
-      chrominanceTable_ = new Encoder(GUID(0xf2e455dc, 0x09b3, 0x4316, 0x82, 0x60, 0x67, 0x6a, 0xda, 0x32, 0x48, 0x1c));
+      chrominanceTable_ = new Encoder(Guid(0xf2e455dc, 0x09b3, 0x4316, 0x82, 0x60, 0x67, 0x6a, 0xda, 0x32, 0x48, 0x1c));
     return chrominanceTable_;
   }
 
@@ -367,7 +365,7 @@ final class Encoder {
    */
   static Encoder saveFlag() {
     if (saveFlag_ is null)
-      saveFlag_ = new Encoder(GUID(0x292266fc, 0xac40, 0x47bf, 0x8c,  0xfc,  0xa8,  0x5b,  0x89,  0xa6,  0x55,  0xde));
+      saveFlag_ = new Encoder(Guid(0x292266fc, 0xac40, 0x47bf, 0x8c,  0xfc,  0xa8,  0x5b,  0x89,  0xa6,  0x55,  0xde));
     return saveFlag_;
   }
 
@@ -464,68 +462,23 @@ final class EncoderParameters {
 
 }
 
-/**
- */
-final class ColorPalette {
-
-  private PaletteFlags flags_;
-  private Color[] entries_;
-
-  package this(int count) {
-    entries_.length = count;
-  }
-
-  package this(GpColorPalette* p) {
-    flags_ = p.Flags;
-    entries_.length = p.Count;
-    for (uint i = 0; i < p.Count; i++) {
-      entries_[i] = Color.fromArgb(p.Entries[i]);
-    }
-  }
-
-  package GpColorPalette* forGDIplus() {
-    GpColorPalette* p = cast(GpColorPalette*)LocalAlloc(LMEM_FIXED, 4 * (entries_.length + 2));
-    p.Flags = flags_;
-    p.Count = entries_.length;
-    for (uint i = 0; i < entries_.length; i++) {
-      p.Entries[i] = entries_[i].toArgb();
-    }
-    return p;
-  }
-
-  /**
-   */
-  PaletteFlags flags() {
-    return flags_;
-  }
-
-  /**
-   */
-  Color[] entries() {
-    return entries_;
-  }
-
-}
-
-/**
- */
 final class FrameDimension {
 
   private static FrameDimension time_;
   private static FrameDimension resolution_;
   private static FrameDimension page_;
 
-  private GUID guid_;
+  private Guid guid_;
 
   /**
    */
-  this(GUID guid) {
+  this(Guid guid) {
     guid_ = guid;
   }
 
   /**
    */
-  GUID guid() {
+  Guid guid() {
     return guid_;
   }
 
@@ -533,7 +486,7 @@ final class FrameDimension {
    */
   static FrameDimension time() {
     if (time_ is null)
-      time_ = new FrameDimension(GUID(0x6aedbd6d, 0x3fb5, 0x418a, 0x83, 0xa6, 0x7f, 0x45, 0x22, 0x9d, 0xc8, 0x72));
+      time_ = new FrameDimension(Guid(0x6aedbd6d, 0x3fb5, 0x418a, 0x83, 0xa6, 0x7f, 0x45, 0x22, 0x9d, 0xc8, 0x72));
     return time_;
   }
 
@@ -541,7 +494,7 @@ final class FrameDimension {
    */
   static FrameDimension resolution() {
     if (resolution_ is null)
-      resolution_ = new FrameDimension(GUID(0x84236f7b, 0x3bd3, 0x428f, 0x8d, 0xab, 0x4e, 0xa1, 0x43, 0x9c, 0xa3, 0x15));
+      resolution_ = new FrameDimension(Guid(0x84236f7b, 0x3bd3, 0x428f, 0x8d, 0xab, 0x4e, 0xa1, 0x43, 0x9c, 0xa3, 0x15));
     return resolution_;
   }
 
@@ -549,7 +502,7 @@ final class FrameDimension {
    */
   static FrameDimension page() {
     if (page_ is null)
-      page_ = new FrameDimension(GUID(0x7462dc86, 0x6180, 0x4c7e, 0x8e, 0x3f, 0xee, 0x73, 0x33, 0xa7, 0xa4, 0x83));
+      page_ = new FrameDimension(Guid(0x7462dc86, 0x6180, 0x4c7e, 0x8e, 0x3f, 0xee, 0x73, 0x33, 0xa7, 0xa4, 0x83));
     return page_;
   }
 
@@ -590,200 +543,6 @@ final class ColorMatrix {
    */
   float opIndex(int row, int column) {
     return matrix_[row][column];
-  }
-
-}
-
-/** 
- */
-final class ColorMap {
-
-  Color oldColor; ///
-  Color newColor; ///
-
-}
-
-/**
- */
-final class ImageAttributes {
-
-  private Handle nativeImageAttributes_;
-
-  /**
-   */
-  this() {
-    Status status = GdipCreateImageAttributes(nativeImageAttributes_);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  ~this() {
-    dispose();
-  }
-  
-  /**
-   */
-  void dispose() {
-    if (nativeImageAttributes_ != Handle.init) {
-      GdipDisposeImageAttributesSafe(nativeImageAttributes_);
-      nativeImageAttributes_ = Handle.init;
-    }
-  }
-
-  /**
-   */
-  void setColorKey(Color colorLow, Color colorHigh, ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesColorKeys(nativeImageAttributes_, type, 1, colorLow.toArgb(), colorHigh.toArgb());
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void clearColorKey(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesColorKeys(nativeImageAttributes_, type, 0, 0, 0);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void setColorMatrix(ColorMatrix newColorMatrix, ColorMatrixFlag mode = ColorMatrixFlag.Default, ColorAdjustType type = ColorAdjustType.Default) {
-    GpColorMatrix m;
-    for (int j = 0; j < 5; j++) {
-      for (int i = 0; i < 5; i++)
-        m.m[j][i] = newColorMatrix[j, i];
-    }
-
-    Status status = GdipSetImageAttributesColorMatrix(nativeImageAttributes_, type, 1, &m, null, mode);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void clearColorMatrix(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesColorMatrix(nativeImageAttributes_, type, 0, null, null, ColorMatrixFlag.Default);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void setThreshold(float threshold, ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesThreshold(nativeImageAttributes_, type, 1, threshold);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void clearThreshold(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesThreshold(nativeImageAttributes_, type, 0, 0);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void setGamma(float gamma, ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesGamma(nativeImageAttributes_, type, 1, gamma);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void clearGamma(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesGamma(nativeImageAttributes_, type, 0, 0);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void setNoOp(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesNoOp(nativeImageAttributes_, type, 1);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void clearNoOp(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesNoOp(nativeImageAttributes_, type, 0);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void setOutputChannel(ColorChannelFlag flags, ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesOutputChannel(nativeImageAttributes_, type, 1, flags);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void clearOutputChannel(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesOutputChannel(nativeImageAttributes_, type, 0, ColorChannelFlag.ColorChannelLast);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void setOutputChannelColorProfile(string colorProfileFileName, ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesOutputChannelColorProfile(nativeImageAttributes_, type, 1, colorProfileFileName.toUTF16z());
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void clearOutputChannelColorProfile(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesOutputChannelColorProfile(nativeImageAttributes_, type, 0, null);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void setWrapMode(WrapMode mode, Color color = Color.init, bool clamp = false) {
-    Status status = GdipSetImageAttributesWrapMode(nativeImageAttributes_, mode, color.toArgb(), (clamp ? 1 : 0));
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  /**
-   */
-  void setRemapTable(ColorMap[] map, ColorAdjustType type = ColorAdjustType.Default) {
-    void* mem = LocalAlloc(LMEM_FIXED, map.length * 4 * 2);
-    for (int i = 0; i < map.length; i++) {
-      uint oldColor = map[i].oldColor.toArgb();
-      uint newColor = map[i].newColor.toArgb();
-      memcpy(mem + i * 4 * 2, &oldColor, 4);
-      memcpy(mem + i * 4 * 2 + 4, &newColor, 4);
-    }
-
-    Status status = GdipSetImageAttributesRemapTable(nativeImageAttributes_, type, 1, map.length, mem);
-    if (status != Status.OK)
-      throw statusException(status);
-
-    LocalFree(cast(Handle)mem);
-  }
-
-  /**
-   */
-  void clearRemapTable(ColorAdjustType type = ColorAdjustType.Default) {
-    Status status = GdipSetImageAttributesRemapTable(nativeImageAttributes_, type, 0, 0, null);
-    if (status != Status.OK)
-      throw statusException(status);
-  }
-
-  package Handle nativeImageAttributes() {
-    return nativeImageAttributes_;
   }
 
 }

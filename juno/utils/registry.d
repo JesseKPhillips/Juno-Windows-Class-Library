@@ -1,34 +1,39 @@
-﻿/**
+/**
  * Contains classes that manipulate the Windows _registry.
  *
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.utils.registry;
 
-private import juno.base.core,
+import juno.base.core,
   juno.base.string,
-  juno.locale.convert,
-  juno.base.environment,
-  juno.base.native;
+  juno.base.native,
+  std.utf;
+static import std.c.stdlib;
 
-private import std.string : format;
-private import std.format : FormatError;
-
-debug private import std.stdio;
-
-/**
- * Specifies the data types to use when storing values in the registry.
- */
+/// Specifies the data types to use when storing values in the registry.
 enum RegistryValueKind {
-  Unknown           = 0,  /// Indicates an unsupported registry data type.
-  String            = 1,  /// Specifies a string. Equivalent to REG_SZ.
-  ExpandString      = 2,  /// Specifies a string containing references to environment vaariables. Equivalent to REG_EXPAND_SZ.
-  Binary            = 3,  /// Specifies binary data in any form. Equivalent to REG_BINARY.
-  DWord             = 4,  /// Specifies a 32-bit binary number. Equivalent to REG_DWORD.
-  MultiString       = 7,  /// Specifies an array of strings. Equivalent to REG_MULTI_SZ.
-  QWord             = 11  /// Specifies a 64-bit binary number. Equivalent to REG_QWORD.
+  Unknown      = 0,  /// Indicates an unsupported registry data type.
+  String       = 1,  /// Specifies a string. Equivalent to REG_SZ.
+  ExpandString = 2,  /// Specifies a string containing references to environment vaariables. Equivalent to REG_EXPAND_SZ.
+  Binary       = 3,  /// Specifies binary data in any form. Equivalent to REG_BINARY.
+  DWord        = 4,  /// Specifies a 32-bit binary number. Equivalent to REG_DWORD.
+  MultiString  = 7,  /// Specifies an array of strings. Equivalent to REG_MULTI_SZ.
+  QWord        = 11  /// Specifies a 64-bit binary number. Equivalent to REG_QWORD.
+}
+
+///
+enum RegistryValueOptions {
+  None,                       ///
+  DoNotExpandEnvironmentNames ///
+}
+
+///
+enum RegistryOptions {
+  None,    ///
+  Volatile ///
 }
 
 /**
@@ -74,14 +79,7 @@ final class RegistryKey {
   private static RegistryKey users_;
   private static RegistryKey performanceData_;
   private static RegistryKey currentConfig_;
-  private static RegistryKey dynData_;
-
-  private Handle hkey_;
-  private string name_;
-  private bool writable_;
-  private bool systemKey_;
-  private bool perfData_;
-  private bool dirty_;
+  private static RegistryKey dynData_; // Win9x only
 
   static ~this() {
     classesRoot_ = null;
@@ -92,6 +90,13 @@ final class RegistryKey {
     currentConfig_ = null;
     dynData_ = null;
   }
+
+  private Handle hkey_;
+  private string name_;
+  private bool writable_;
+  private bool systemKey_;
+  private bool perfData_;
+  private bool dirty_;
 
   /// Defines the types of documents and properties associated with those types. Reads HKEY_CLASSES_ROOT.
   static RegistryKey classesRoot() {
@@ -113,28 +118,28 @@ final class RegistryKey {
       localMachine_ = getSystemKey(HKEY_LOCAL_MACHINE);
     return localMachine_;
   }
-
+  
   /// Contains information about the default user configuration. Reads HKEY_USERS.
   static RegistryKey users() {
     if (users_ is null)
       users_ = getSystemKey(HKEY_USERS);
     return users_;
   }
-
+  
   /// Contains performance information for software components. Reads HKEY_PERFORMANCE_DATA.
   static RegistryKey performanceData() {
     if (performanceData_ is null)
       performanceData_ = getSystemKey(HKEY_PERFORMANCE_DATA);
     return performanceData_;
   }
-
+  
   /// Contains configuration information about hardware that is not specifiec to the user. Reads HKEY_CURRENT_CONFIG.
   static RegistryKey currentConfig() {
     if (currentConfig_ is null)
       currentConfig_ = getSystemKey(HKEY_CURRENT_CONFIG);
     return currentConfig_;
   }
-
+  
   /// Contains dynamic registry data. Reads HKEY_DYN_DATA.
   static RegistryKey dynData() {
     if (dynData_ is null)
@@ -143,12 +148,12 @@ final class RegistryKey {
   }
 
   private static RegistryKey getSystemKey(Handle hkey) {
-    auto key = new RegistryKey(hkey, true, true, hkey == HKEY_PERFORMANCE_DATA);
+    auto key = new RegistryKey(hkey, true, true, (hkey == HKEY_PERFORMANCE_DATA));
     key.name_ = keyNames_[cast(int)hkey & 0x0FFFFFFF];
     return key;
   }
 
-  private this(Handle hkey, bool writable, bool systemKey = false, bool perfData = false) {
+  private this(Handle hkey, bool writable, bool systemKey = false, bool remoteKey = false, bool perfData = false) {
     hkey_ = hkey;
     writable_ = writable;
     systemKey_ = systemKey;
@@ -157,6 +162,12 @@ final class RegistryKey {
 
   ~this() {
     close();
+  }
+
+  /**
+   */
+  static RegistryKey fromHandle(Handle handle) {
+    return new RegistryKey(handle, true);
   }
 
   /**
@@ -170,7 +181,7 @@ final class RegistryKey {
       }
     }
   }
-
+  
   /**
    * Writes all attributes of the current key into the registry.
    */
@@ -181,15 +192,6 @@ final class RegistryKey {
     }
   }
 
-  /+/**
-   * Saves the current key and all of its subkeys and values to a file.
-   * Params: fileName = The name of the file to which the key and subkeys are to be saved.
-   * See_Also: $(LINK2 http://msdn2.microsoft.com/en-us/library/ms724917.aspx, RegSaveKey).
-   */
-  void save(string fileName) {
-    int ret = RegSaveKey(hkey_, fileName.toUtf16z(), null);
-  }+/
-
   /**
    * Retrieves a subkey.
    * Params:
@@ -198,6 +200,8 @@ final class RegistryKey {
    * Returns: The subkey requested, or null if the operation failed.
    */
   RegistryKey openSubKey(string name, bool writable = false) {
+    name = fixName(name);
+
     Handle result;
     int ret = RegOpenKeyEx(hkey_, name.toUtf16z(), 0, (writable ? (KEY_READ | KEY_WRITE) : KEY_READ), result);
 
@@ -219,20 +223,22 @@ final class RegistryKey {
    *   writable = true if you need write access to the key.
    * Returns: The newly created subkey.
    */
-  RegistryKey createSubKey(string name, bool writable) {
-    if (auto key = openSubKey(name, writable))
-      return key;
+  RegistryKey createSubKey(string name, bool writable, RegistryOptions options = RegistryOptions.None) {
+    checkOptions(options);
 
+    name = fixName(name);
+
+    uint disposition;
     Handle result;
-    uint disp;
-    int ret = RegCreateKeyEx(hkey_, name.toUtf16z(), 0, null, 0, (writable ? (KEY_READ | KEY_WRITE) : KEY_READ), null, result, &disp);
+    int ret = RegCreateKeyEx(hkey_, name.toUtf16z(), 0, null, cast(uint)options, (writable ? (KEY_READ | KEY_WRITE) : KEY_READ), null, result, disposition);
 
     if (ret == ERROR_SUCCESS && result != INVALID_HANDLE_VALUE) {
       auto key = new RegistryKey(result, writable, false);
+
       if (name.length == 0)
-        key.name_ = name_;
+        key.name_ = name;
       else
-        key.name_ = name_ ~ "\\" ~ name;
+        key.name_ ~= "\\" ~ name;
       return key;
     }
     else if (ret != ERROR_SUCCESS)
@@ -300,8 +306,8 @@ final class RegistryKey {
     if (auto key = openSubKey(name)) {
       try {
         if (key.subKeyCount > 0) {
-          foreach (s; key.subKeyNames) {
-            key.deleteSubKeyTreeImpl(s);
+          foreach (subKey; key.subKeyNames) {
+            key.deleteSubKeyTreeImpl(subKey);
           }
         }
       }
@@ -340,9 +346,6 @@ final class RegistryKey {
   RegistryValueKind getValueKind(string name) {
     uint type;
     int ret = RegQueryValueEx(hkey_, name.toUtf16z(), null, &type, null, null);
-    if (ret != ERROR_SUCCESS)
-      throw new Win32Exception(ret);
-
     return cast(RegistryValueKind)type;
   }
 
@@ -354,9 +357,9 @@ final class RegistryKey {
    *   expandEnvironmentNames = Specify true to expand environment values.
    * Returns: The value associated with name, or defaultValue if name is not found.
    */
-  T getValue(T)(string name, T defaultValue = T.init, bool expandEnvironmentNames = true) {
+  T getValue(T)(string name, T defaultValue = T.init, RegistryValueOptions options = RegistryValueOptions.None) {
 
-    /*string expandEnvironmentVariables(string name) {
+    string expandEnvironmentVariables(string name) {
       auto src = name.toUtf16z();
       int size = ExpandEnvironmentStrings(src, null, 0);
 
@@ -364,53 +367,44 @@ final class RegistryKey {
       size = ExpandEnvironmentStrings(src, dst.ptr, dst.length);
       if (size == 0)
         throw new Win32Exception(GetLastError());
+      return .toUtf8(dst[0 .. size - 1].ptr);
+    }
 
-      return dst[0 .. size - 1].toUtf8();
-    }*/
-
+    bool expandEnvironmentNames = (options != RegistryValueOptions.DoNotExpandEnvironmentNames);
     auto lpName = name.toUtf16z();
 
     uint type, size;
-    RegQueryValueEx(hkey_, lpName, null, &type, null, &size);
+    int ret = RegQueryValueEx(hkey_, lpName, null, &type, null, &size);
 
     static if (is(T : uint)) {
       if (type == REG_DWORD) {
         uint b;
-        RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)&b, &size);
+        ret = RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)&b, &size);
         return cast(T)b;
       }
     }
     else static if (is(T : ulong)) {
       if (type == REG_QWORD) {
         ulong b;
-        RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)&b, &size);
+        ret = RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)&b, &size);
         return cast(T)b;
       }
     }
     else static if (is(T : string)) {
       if (type == REG_SZ || type == REG_EXPAND_SZ) {
         wchar[] b = new wchar[size / wchar.sizeof];
-        RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)b.ptr, &size);
-        auto ret = b[0 .. (size / wchar.sizeof) - 1].toUtf8();
+        ret = RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)b.ptr, &size);
+        auto data = .toUtf8(b[0 .. (size / wchar.sizeof) - 1].ptr);
 
         if (type == REG_EXPAND_SZ && expandEnvironmentNames)
-          ret = expandEnvironmentVariables(ret);
+          data = expandEnvironmentVariables(data);
 
-        return ret;
+        return data;
       }
-      // Convert to a string
-      else if (type == REG_DWORD)
-        return .toString(getValue!(uint)(name));
-      else if (type == REG_QWORD)
-        return .toString(getValue!(ulong)(name));
-      else if (type == REG_MULTI_SZ)
-        return .join(", ", getValue!(string[])(name));
-      else if (type == REG_BINARY)
-        return .format("%s", getValue!(ubyte[])(name));
     }
     else static if (is(T : string[])) {
       if (type == REG_MULTI_SZ) {
-        string[] strings;
+        string[] data;
 
         wchar[] b = new wchar[size / wchar.sizeof];
         RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)b.ptr, &size);
@@ -420,27 +414,28 @@ final class RegistryKey {
 
         while (index < end) {
           uint pos = index;
-          while (pos < end && b[pos] != '\0')
+          while (pos < end && b[pos] != 0)
             pos++;
 
           if (pos < end) {
             if (pos - index > 0)
-              strings ~= b[index .. pos].toUtf8();
+              data ~= .toUtf8(b[index .. end].ptr);
             else if (pos != end - 1)
-              strings ~= "";
+              data ~= "";
           }
-          else strings ~= b[index .. end].toUtf8();
+          else
+            data ~= .toUtf8(b[index .. end].ptr);
 
           index = pos + 1;
         }
 
-        return strings;
+        return data;
       }
     }
     else static if (is(T : ubyte[])) {
       if (type == REG_BINARY || type == REG_DWORD_BIG_ENDIAN) {
         ubyte[] b = new ubyte[size];
-        RegQueryValueEx(hkey_, lpName, null, &type, b.ptr, &size);
+        ret = RegQueryValueEx(hkey_, lpName, null, &type, b.ptr, &size);
         return b;
       }
     }
@@ -455,46 +450,48 @@ final class RegistryKey {
    *   value = The data to be stored.
    *   valueKind = The registry data type to use when storing the data.
    */
-  void setValue(T)(string name, T value, RegistryValueKind kind = RegistryValueKind.Unknown) {
+  void setValue(T)(string name, T value, RegistryValueKind valueKind = RegistryValueKind.Unknown) {
     if (!writable_)
       throw new UnauthorizedAccessException("Cannot write to the registry key.");
 
-    if (kind == RegistryValueKind.Unknown) {
-      static if (is(T == int) || is(T == uint)) kind = RegistryValueKind.DWord;
-      else static if (is(T == long) || is(T == ulong)) kind = RegistryValueKind.QWord;
-      else static if (is(T : string)) kind = RegistryValueKind.String;
-      else static if (is(T : string[])) kind = RegistryValueKind.MultiString;
-      else static if (is(T == ubyte[])) kind = RegistryValueKind.Binary;
-      else kind = RegistryValueKind.String;
+    if (valueKind == RegistryValueKind.Unknown) {
+      static if (is(T == int) || is(T == uint))
+        valueKind = RegistryValueKind.DWord;
+      else static if (is(T == long) || is(T == ulong))
+        valueKind = RegistryValueKind.QWord;
+      else static if (is(T : string))
+        valueKind = RegistryValueKind.String;
+      else static if (is(T : string[]))
+        valueKind = RegistryValueKind.MultiString;
+      else static if (is(T == ubyte[]))
+        valueKind = RegistryValueKind.Binary;
+      else
+        valueKind = RegistryValueKind.String;
     }
 
-    wchar* lpName = name.toUtf16z();
+    auto lpName = name.toUtf16z();
 
     int ret = ERROR_SUCCESS;
     try {
-      switch (kind) {
+      switch (valueKind) {
         case RegistryValueKind.DWord:
           uint data;
           static if (is(T : uint))
             data = cast(uint)value;
-          else static if (is(T : string))
-            data = parse!(uint)(value);
           else
             throw new InvalidCastException;
 
-          ret = RegSetValueEx(hkey_, lpName, 0, REG_DWORD, cast(ubyte*)&data, uint.sizeof);
+          ret = RegSetValueEx(hkey_, lpName, 0, cast(uint)valueKind, cast(ubyte*)&data, uint.sizeof);
           break;
 
         case RegistryValueKind.QWord:
           ulong data;
           static if (is(T : ulong))
             data = cast(ulong)value;
-          else static if (is(T : string))
-            data = parse!(ulong)(value);
           else
             throw new InvalidCastException;
 
-          ret = RegSetValueEx(hkey_, lpName, 0, REG_QWORD, cast(ubyte*)&data, ulong.sizeof);
+          ret = RegSetValueEx(hkey_, lpName, 0, cast(uint)valueKind, cast(ubyte*)&data, ulong.sizeof);
           break;
 
         case RegistryValueKind.String, RegistryValueKind.ExpandString:
@@ -502,30 +499,31 @@ final class RegistryKey {
           static if (is(T : string))
             data = value;
           else
-            data = format("%s", value);
+            data = std.string.format("%s", value);
 
-          ret = RegSetValueEx(hkey_, lpName, 0, REG_SZ, cast(ubyte*)data.toUtf16z(), (data.length * wchar.sizeof) + 2);
+          ret = RegSetValueEx(hkey_, lpName, 0, cast(uint)valueKind, cast(ubyte*)data.toUtf16z(), (data.length * wchar.sizeof) + 2);
           break;
 
         case RegistryValueKind.MultiString:
           static if (is(T : string[])) {
             uint size;
-            foreach (s; value)
-              size += (s.length + 1) * wchar.sizeof;
-
-            wchar[] buffer = new wchar[size];
-            int cur;
             foreach (s; value) {
-              wstring ws = .toUtf16(s);
-
-              int pos = cur + ws.length;
-              buffer[cur .. pos] = ws;
-              buffer[pos] = '\0';
-
-              cur = pos + 1;
+              size += (s.length + 1) * wchar.sizeof;
             }
 
-            ret = RegSetValueEx(hkey_, lpName, 0, REG_MULTI_SZ, cast(ubyte*)buffer.ptr, buffer.length);
+            wchar[] buffer = new wchar[size];
+            int index;
+            foreach (s; value) {
+              wstring ws = s.toUtf16();
+
+              int pos = index + ws.length;
+              buffer[index .. pos] = ws;
+              buffer[pos] = '\0';
+
+              index = pos + 1;
+            }
+
+            ret = RegSetValueEx(hkey_, lpName, 0, cast(uint)valueKind, cast(ubyte*)buffer.ptr, buffer.length);
           }
           else
             throw new InvalidCastException;
@@ -533,16 +531,13 @@ final class RegistryKey {
 
         case RegistryValueKind.Binary:
           static if (is(T : ubyte[]))
-            ret = RegSetValueEx(hkey_, lpName, 0, REG_BINARY, (cast(ubyte[])value).ptr, value.length);
+            ret = RegSetValueEx(hkey_, lpName, 0, cast(uint)valueKind, (cast(ubyte[])value).ptr, value.length);
           else
             throw new InvalidCastException;
           break;
 
         default:
       }
-    }
-    catch (FormatError) {
-      throw new ArgumentException("The type of the value argument did not match the specified RegistryValueKind or the value could not be properly converted.");
     }
     catch (InvalidCastException) {
       throw new ArgumentException("The type of the value argument did not match the specified RegistryValueKind or the value could not be properly converted.");
@@ -572,28 +567,28 @@ final class RegistryKey {
    * Retrieves the count of values in the key.
    */
   uint valueCount() {
-    uint value;
-    int ret = RegQueryInfoKey(hkey_, null, null, null, null, null, null, &value, null, null, null, null);
+    uint values;
+    int ret = RegQueryInfoKey(hkey_, null, null, null, null, null, null, &values, null, null, null, null);
     if (ret != ERROR_SUCCESS)
       throw new Win32Exception(ret);
-    return value;
+    return values;
   }
 
   /**
    * Retrieves an array of strings containing all the value names.
    */
   string[] valueNames() {
-    uint count = valueCount;
-    string[] names = new string[count];
+    uint values = valueCount;
+    string[] names = new string[values];
 
-    if (count > 0) {
-      wchar[256] buffer;
-      for (uint i = 0; i < count; i++) {
-        uint len = buffer.length;
-        int ret;
-        if ((ret = RegEnumValue(hkey_, i, buffer.ptr, &len, null, null, null, null)) != ERROR_SUCCESS)
+    if (values > 0) {
+      wchar[256] name;
+      for (auto i = 0; i < values; i++) {
+        uint nameLen = name.length;
+        int ret = RegEnumValue(hkey_, i, name.ptr, nameLen, null, null, null, null);
+        if (ret != ERROR_SUCCESS)
           throw new Win32Exception(ret);
-        names[i] = buffer[0 .. len].toUtf8();
+        names[i] = .toUtf8(name[0 .. nameLen].ptr);
       }
     }
 
@@ -604,32 +599,82 @@ final class RegistryKey {
    * Retrieves the count of subkeys of the current key.
    */
   uint subKeyCount() {
-    uint value;
-    int ret = RegQueryInfoKey(hkey_, null, null, null, &value, null, null, null, null, null, null, null);
+    uint subKeys;
+    int ret = RegQueryInfoKey(hkey_, null, null, null, &subKeys, null, null, null, null, null, null, null);
     if (ret != ERROR_SUCCESS)
       throw new Win32Exception(ret);
-    return value;
+    return subKeys;
   }
 
   /**
    * Retrieves an array of strings containing all the subkey names.
    */
   string[] subKeyNames() {
-    uint count = subKeyCount;
-    string[] names = new string[count];
+    uint values = subKeyCount;
+    string[] names = new string[values];
 
-    if (count > 0) {
-      wchar[256] buffer;
-      for (uint i = 0; i < count; i++) {
-        uint len = buffer.length;
-        int ret;
-        if ((ret = RegEnumKeyEx(hkey_, i, buffer.ptr, &len, null, null, null, null)) != ERROR_SUCCESS)
+    if (values > 0) {
+      wchar[256] name;
+      for (auto i = 0; i < values; i++) {
+        uint nameLen = name.length;
+        int ret = RegEnumKeyEx(hkey_, i, name.ptr, nameLen, null, null, null, null);
+        if (ret != ERROR_SUCCESS)
           throw new Win32Exception(ret);
-        names[i] = buffer[0 .. len].toUtf8();
+        names[i] = .toUtf8(name[0 .. nameLen].ptr);
       }
     }
 
     return names;
+  }
+
+  /**
+   */
+  Handle handle() {
+    if (!systemKey_)
+      return hkey_;
+
+    Handle hkey;
+    switch (name_) {
+      case "HKEY_CLASSES_ROOT":
+        hkey = HKEY_CLASSES_ROOT;
+        break;
+      case "HKEY_CURRENT_USER":
+        hkey = HKEY_CURRENT_USER;
+        break;
+      case "HKEY_LOCAL_MACHINE":
+        hkey = HKEY_LOCAL_MACHINE;
+        break;
+      case "HKEY_USERS":
+        hkey = HKEY_USERS;
+        break;
+      case "HKEY_PERFORMANCE_DATA":
+        hkey = HKEY_PERFORMANCE_DATA;
+        break;
+      case "HKEY_CURRENT_CONFIG":
+        hkey = HKEY_CURRENT_CONFIG;
+        break;
+      case "HKEY_DYN_DATA":
+        hkey = HKEY_DYN_DATA;
+        break;
+      default:
+        throw new Win32Exception(ERROR_INVALID_HANDLE);
+    }
+    Handle result;
+    uint ret = RegOpenKeyEx(hkey, null, 0, (writable_ ? (KEY_READ | KEY_WRITE) : KEY_READ), result);
+    if (ret == ERROR_SUCCESS && result != INVALID_HANDLE_VALUE)
+      return result;
+    throw new Win32Exception(ret);
+  }
+
+  private static string fixName(string name) {
+    if (name[name.length - 1] == '\\')
+      name.length = name.length - 1;
+    return name;
+  }
+
+  private static void checkOptions(RegistryOptions options) {
+    if (options < RegistryOptions.None || options > RegistryOptions.Volatile)
+      throw new ArgumentException("The specified RegistryOptions value is invalid", "options");
   }
 
 }

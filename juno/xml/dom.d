@@ -1,23 +1,21 @@
 /**
  * Provides standards-based support for processing XML.
  *
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.xml.dom;
 
-private import juno.base.core,
+import juno.base.core,
   juno.base.string,
   juno.com.core,
   juno.xml.core,
-  juno.xml.msxml;
-private import bstr = juno.com.bstr;
+  juno.xml.msxml,
+  std.stream,
+  std.utf;
 
-private import std.stream : Stream;
-private import std.utf : toUTF16z;
-
-debug private import std.stdio : writefln;
+debug import std.stdio : writefln;
 
 /**
  * Adds namespaces to a collection and provides scope management.
@@ -142,7 +140,7 @@ package XmlNode getNodeShim(IXMLDOMNode node) {
   bool isXmlDeclaration(IXMLDOMNode node) {
     wchar* bstrName;
     if (node.get_nodeName(bstrName) == S_OK)
-      return (bstr.toString(bstrName) == "xml");
+      return (fromBstr(bstrName) == "xml");
     return false; 
   }
 
@@ -152,7 +150,7 @@ package XmlNode getNodeShim(IXMLDOMNode node) {
       string value;
       IXMLDOMNode namedItem;
 
-      wchar* bstrName = bstr.fromString(name);
+      wchar* bstrName = toBstr(name);
       if (attrs.getNamedItem(bstrName, namedItem) == S_OK) {
         scope(exit) tryRelease(namedItem);
         VARIANT var;
@@ -161,7 +159,7 @@ package XmlNode getNodeShim(IXMLDOMNode node) {
           value = var.toString();
         }
       }
-      bstr.free(bstrName);
+      freeBstr(bstrName);
       return value;
     }
 
@@ -242,7 +240,7 @@ abstract class XmlNodeList {
   abstract XmlNode item(int index);
 
   /**
-   * Ditto
+   * ditto
    */
   XmlNode opIndex(int i) {
     return item(i);
@@ -405,8 +403,8 @@ private class DocumentXPathNavigator : XPathNavigator {
   }
 
   override bool matches(string xpath) {
-    wchar* bstrExpression = bstr.fromString(xpath);
-    scope(exit) bstr.free(bstrExpression);
+    wchar* bstrExpression = toBstr(xpath);
+    scope(exit) freeBstr(bstrExpression);
 
     IXMLDOMNodeList nodeList;
     int hr;
@@ -424,12 +422,13 @@ private class DocumentXPathNavigator : XPathNavigator {
   }
 
   XmlNodeList select(string xpath) { 
-    wchar* bstrExpression = bstr.fromString(xpath);
-    scope(exit) bstr.free(bstrExpression);
+    wchar* bstrExpression = toBstr(xpath);
+    scope(exit) freeBstr(bstrExpression);
 
     IXMLDOMNodeList nodeList;
     int hr;
-    if (SUCCEEDED(hr = document_.nodeImpl_.selectNodes(bstrExpression, nodeList)))
+    //if (SUCCEEDED(hr = document_.nodeImpl_.selectNodes(bstrExpression, nodeList)))
+    if (SUCCEEDED(hr = node_.nodeImpl_.selectNodes(bstrExpression, nodeList)))
       return new XPathNodeList(cast(IXMLDOMSelection)nodeList);
     else
       throw xpathException(hr);
@@ -445,7 +444,7 @@ private class DocumentXPathNavigator : XPathNavigator {
 
           wchar* bstrDesc;
           errorInfo.GetDescription(bstrDesc);
-          string msg = bstr.toString(bstrDesc);
+          string msg = fromBstr(bstrDesc);
           if (msg[$ - 1] == '\n')
             msg = msg[0 .. $ - 2];
           return new XPathException(msg);
@@ -472,9 +471,9 @@ class XmlNamedNodeMap {
   XmlNode getNamedItem(string name) {
     IXMLDOMNode node;
 
-    wchar* bstrName = bstr.fromString(name);
+    wchar* bstrName = toBstr(name);
     int hr = mapImpl_.getNamedItem(bstrName, node);
-    bstr.free(bstrName);
+    freeBstr(bstrName);
 
     return (hr == S_OK) ? getNodeShim(node) : null;
   }
@@ -489,13 +488,13 @@ class XmlNamedNodeMap {
   XmlNode getNamedItem(string localName, string namespaceURI) {
     IXMLDOMNode node;
 
-    wchar* bstrName = bstr.fromString(localName);
-    wchar* bstrNs = bstr.fromString(namespaceURI);
+    wchar* bstrName = toBstr(localName);
+    wchar* bstrNs = toBstr(namespaceURI);
 
     int hr = mapImpl_.getQualifiedItem(bstrName, bstrNs, node);
 
-    bstr.free(bstrName);
-    bstr.free(bstrNs);
+    freeBstr(bstrName);
+    freeBstr(bstrNs);
 
     return (hr == S_OK) ? getNodeShim(node) : null;
   }
@@ -508,9 +507,9 @@ class XmlNamedNodeMap {
   XmlNode removeNamedItem(string name) {
     IXMLDOMNode node;
 
-    wchar* bstrName = bstr.fromString(name);
+    wchar* bstrName = toBstr(name);
     int hr = mapImpl_.removeNamedItem(bstrName, node);
-    bstr.free(bstrName);
+    freeBstr(bstrName);
 
     return (hr == S_OK) ? getNodeShim(node) : null;
   }
@@ -525,13 +524,13 @@ class XmlNamedNodeMap {
   XmlNode removeNamedItem(string localName, string namespaceURI) {
     IXMLDOMNode node;
 
-    wchar* bstrName = bstr.fromString(localName);
-    wchar* bstrNs = bstr.fromString(namespaceURI);
+    wchar* bstrName = toBstr(localName);
+    wchar* bstrNs = toBstr(namespaceURI);
 
     int hr = mapImpl_.removeQualifiedItem(bstrName, bstrNs, node);
 
-    bstr.free(bstrName);
-    bstr.free(bstrNs);
+    freeBstr(bstrName);
+    freeBstr(bstrNs);
 
     return (hr == S_OK) ? getNodeShim(node) : null;
   }
@@ -649,18 +648,18 @@ final class XmlAttributeCollection : XmlNamedNodeMap {
 
 string TypedNode(string type, string field = "typedNodeImpl_") {
   return 
-    "private " ~ type ~ " " ~ field ~ ";"\n
+    "private " ~ type ~ " " ~ field ~ ";\n"
 
-    "package this(IXMLDOMNode nodeImpl) {"\n
-    "  super(nodeImpl);"\n
-    "  " ~ field ~ " = com_cast!(" ~ type ~ ")(nodeImpl);"\n
-    "}"\n
+    "package this(IXMLDOMNode nodeImpl) {\n"
+    "  super(nodeImpl);\n"
+    "  " ~ field ~ " = com_cast!(" ~ type ~ ")(nodeImpl);\n"
+    "}\n"
 
-    "~this() {"\n
-    "  if (" ~ field ~ " !is null) {"\n
-    "    tryRelease(" ~ field ~ ");"\n
-    "    " ~ field ~ " = null;"\n
-    "  }"\n
+    "~this() {\n"
+    "  if (" ~ field ~ " !is null) {\n"
+    "    tryRelease(" ~ field ~ ");\n"
+    "    " ~ field ~ " = null;\n"
+    "  }\n"
     "}";
 }
 
@@ -840,7 +839,7 @@ class XmlNode {
         if (auto doc2 = com_cast!(IXMLDOMDocument2)(doc)) {
           scope(exit) tryRelease(doc2);
 
-          doc2.setProperty("SelectionNamespaces", selectionNs);
+          doc2.setProperty(cast(wchar*)"SelectionNamespaces", selectionNs);
         }
       }
     }
@@ -872,7 +871,7 @@ class XmlNode {
   abstract string localName() {
     wchar* bstrName;
     if (nodeImpl_.get_baseName(bstrName) == S_OK)
-      return bstr.toString(bstrName);
+      return fromBstr(bstrName);
     return null;
   }
 
@@ -883,7 +882,7 @@ class XmlNode {
   abstract string name() {
     wchar* bstrName;
     if (nodeImpl_.get_nodeName(bstrName) == S_OK)
-      return bstr.toString(bstrName);
+      return fromBstr(bstrName);
     return null;
   }
 
@@ -900,20 +899,20 @@ class XmlNode {
    * Returns: The values of the node and its child nodes.
    */
   void text(string value) {
-    wchar* bstrValue = bstr.fromString(value);
+    wchar* bstrValue = toBstr(value);
     if (bstrValue != null) {
       nodeImpl_.put_text(bstrValue);
-      bstr.free(bstrValue);
+      freeBstr(bstrValue);
     }
   }
 
   /**
-   * Ditto
+   * ditto
    */
   string text() {
     wchar* bstrValue;
     if (nodeImpl_.get_text(bstrValue) == S_OK)
-      return bstr.toString(bstrValue);
+      return fromBstr(bstrValue);
     return null;
   }
 
@@ -926,12 +925,12 @@ class XmlNode {
   }
 
   /**
-   * Ditto
+   * ditto
    */
   string xml() {
     wchar* bstrXml;
     nodeImpl_.get_xml(bstrXml);
-    return bstr.toString(bstrXml).trim();
+    return fromBstr(bstrXml).trim();
   }
 
   /**
@@ -942,7 +941,7 @@ class XmlNode {
   }
 
   /**
-   * Ditto
+   * ditto
    */
   string value() {
     return null;
@@ -1120,7 +1119,7 @@ class XmlAttribute : XmlNode {
   override string namespaceURI() {
     wchar* bstrNs;
     if (nodeImpl_.get_namespaceURI(bstrNs) == S_OK)
-      return bstr.toString(bstrNs);
+      return fromBstr(bstrNs);
     return string.init;
   }
 
@@ -1191,9 +1190,9 @@ abstract class XmlCharacterData : XmlLinkedNode {
    * Params: strData = The string to append to the existing string.
    */
   void appendData(string strData) {
-    wchar* bstrValue = bstr.fromString(strData);
+    wchar* bstrValue = toBstr(strData);
     typedNodeImpl_.appendData(bstrValue);
-    bstr.free(bstrValue);
+    freeBstr(bstrValue);
   }
 
   /**
@@ -1203,9 +1202,9 @@ abstract class XmlCharacterData : XmlLinkedNode {
    *   strData = The string data that is to be inserted into the existing string.
    */
   void insertData(int offset, string strData) {
-    wchar* bstrValue = bstr.fromString(strData);
+    wchar* bstrValue = toBstr(strData);
     typedNodeImpl_.insertData(offset, bstrValue);
-    bstr.free(bstrValue);
+    freeBstr(bstrValue);
   }
   
   /**
@@ -1216,9 +1215,9 @@ abstract class XmlCharacterData : XmlLinkedNode {
    *   strData = The new data that replaces the old data.
    */
   void replaceData(int offset, int count, string strData) {
-    wchar* bstrValue = bstr.fromString(strData);
+    wchar* bstrValue = toBstr(strData);
     typedNodeImpl_.replaceData(offset, count, bstrValue);
-    bstr.free(bstrValue);
+    freeBstr(bstrValue);
   }
 
   /**
@@ -1240,7 +1239,7 @@ abstract class XmlCharacterData : XmlLinkedNode {
   string substring(int offset, int count) {
     wchar* bstrValue;
     if (typedNodeImpl_.substringData(offset, count, bstrValue) == S_OK)
-      return bstr.toString(bstrValue);
+      return fromBstr(bstrValue);
     return "";
   }
 
@@ -1259,18 +1258,18 @@ abstract class XmlCharacterData : XmlLinkedNode {
    * Returns: The _data of the node.
    */
   void data(string value) {
-    wchar* bstrValue = bstr.fromString(value);
+    wchar* bstrValue = toBstr(value);
     typedNodeImpl_.put_data(bstrValue);
-    bstr.free(bstrValue);
+    freeBstr(bstrValue);
   }
 
   /**
-   * Ditto
+   * ditto
    */
   string data() {
     wchar* bstrValue;
     if (typedNodeImpl_.get_data(bstrValue) == S_OK)
-      return bstr.toString(bstrValue);
+      return fromBstr(bstrValue);
     return "";
   }
 
@@ -1431,7 +1430,7 @@ class XmlEntity : XmlNode {
   final string notationName() {
     wchar* bstrName;
     if (typedNodeImpl_.get_notationName(bstrName) == S_OK)
-      return bstr.toString(bstrName);
+      return fromBstr(bstrName);
     return null;
   }
 
@@ -1501,7 +1500,7 @@ class XmlDocumentType : XmlLinkedNode {
   override string name() {
     wchar* bstrName;
     typedNodeImpl_.get_name(bstrName);
-    return bstr.toString(bstrName);
+    return fromBstr(bstrName);
   }
 
   override string localName() {
@@ -1544,7 +1543,12 @@ class XmlDocumentFragment : XmlNode {
   }
 
   override string name() {
-    return "#document-fragment".dup;
+    version(D_Version2) {
+      return "#document-fragment".idup;
+    }
+    else {
+      return "#document-fragment".dup;
+    }
   }
 
   override string localName() {
@@ -1574,8 +1578,8 @@ class XmlElement : XmlLinkedNode {
    * Returns: The value of the specified attribute.
    */
   string getAttribute(string name) {
-    wchar* bstrName = bstr.fromString(name);
-    scope(exit) bstr.free(bstrName);
+    wchar* bstrName = toBstr(name);
+    scope(exit) freeBstr(bstrName);
 
     VARIANT value;
     elementImpl_.getAttribute(bstrName, value);
@@ -1646,8 +1650,8 @@ class XmlElement : XmlLinkedNode {
    *   value = The _value to set for the attribute.
    */
   void setAttribute(string name, string value) {
-    wchar* bstrName = bstr.fromString(name);
-    scope(exit) bstr.free(bstrName);
+    wchar* bstrName = toBstr(name);
+    scope(exit) freeBstr(bstrName);
 
     VARIANT v = value;
     elementImpl_.setAttribute(bstrName, v);
@@ -1728,9 +1732,9 @@ class XmlElement : XmlLinkedNode {
    * Returns: An XmlNodeList containing a list of matching nodes.
    */
   XmlNodeList getElementsByTagName(string name) {
-    wchar* bstrName = bstr.fromString(name);
+    wchar* bstrName = toBstr(name);
     if (bstrName != null) {
-      scope (exit) bstr.free(bstrName);
+      scope (exit) freeBstr(bstrName);
       IXMLDOMNodeList nodeList;
       if (SUCCEEDED(elementImpl_.getElementsByTagName(bstrName, nodeList)))
         return new XmlChildNodes(nodeList);
@@ -1774,7 +1778,7 @@ class XmlElement : XmlLinkedNode {
   override string namespaceURI() {
     wchar* bstrNs;
     if (SUCCEEDED(nodeImpl_.get_namespaceURI(bstrNs)))
-      return bstr.toString(bstrNs);
+      return fromBstr(bstrNs);
     return string.init;
   }
 
@@ -1841,7 +1845,7 @@ class XmlDeclaration : XmlLinkedNode {
   }
 
   /**
-   * Ditto
+   * ditto
    */
   final string encoding() {
     return encoding_;
@@ -1857,7 +1861,7 @@ class XmlDeclaration : XmlLinkedNode {
   }
 
   /**
-   * Ditto
+   * ditto
    */
   final string standalone() {
     return standalone_;
@@ -1898,11 +1902,11 @@ class XmlImplementation {
   final bool hasFeature(string strFeature, string strVersion) {
     VARIANT_BOOL result;
 
-    wchar* bstrFeature = bstr.fromString(strFeature);
-    wchar* bstrVersion = bstr.fromString(strVersion);
+    wchar* bstrFeature = toBstr(strFeature);
+    wchar* bstrVersion = toBstr(strVersion);
     impl_.hasFeature(bstrFeature, bstrVersion, result);
-    bstr.free(bstrFeature);
-    bstr.free(bstrVersion);
+    freeBstr(bstrFeature);
+    freeBstr(bstrVersion);
 
     return result == VARIANT_TRUE;
   }
@@ -1932,6 +1936,8 @@ class XmlDocument : XmlNode {
    * Initializes a new instance.
    */
   this() {
+    // MSXML 6.0 is the preferred implementation. According to MSDN, MSXML 4.0 is only suitable for legacy code, but we'll use if 
+    // it's available on the system. MSXML 5.0 was part of Office 2003.
     IXMLDOMDocument2 doc;
     if ((doc = DOMDocument60.coCreate!(IXMLDOMDocument3)) !is null)
       msxmlVersion_ = 6;
@@ -1941,13 +1947,13 @@ class XmlDocument : XmlNode {
       msxmlVersion_ = 3;
 
     if (msxmlVersion_ >= 4)
-      doc.setProperty("NewParser", VARIANT(true));
+      doc.setProperty(cast(wchar*)"NewParser", VARIANT(true)); // Faster and more reliable; lacks async support and DTD validation (we don't support either, so that's OK).
     if (msxmlVersion_ >= 6)
-      doc.setProperty("MultipleErrorMessages", VARIANT(true));
+      doc.setProperty(cast(wchar*)"MultipleErrorMessages", VARIANT(true));
     if (msxmlVersion_ < 4) {
       VARIANT var = "XPath";
       scope(exit) var.clear();
-      doc.setProperty("SelectionLanguage", var);
+      doc.setProperty(cast(wchar*)"SelectionLanguage", var); // In MSXML 3.0, "SelectionLanguage" was "XPattern".
     }
 
     doc.put_async(VARIANT_FALSE);
@@ -2036,11 +2042,11 @@ class XmlDocument : XmlNode {
   XmlElement createElement(string qualifiedName, string namespaceURI) {
     IXMLDOMNode node;
 
-    wchar* bstrName = bstr.fromString(qualifiedName);
-    wchar* bstrNs = bstr.fromString(namespaceURI);
+    wchar* bstrName = toBstr(qualifiedName);
+    wchar* bstrNs = toBstr(namespaceURI);
     docImpl_.createNode(VARIANT(DOMNodeType.NODE_ELEMENT), bstrName, bstrNs, node);
-    bstr.free(bstrName);
-    bstr.free(bstrNs);
+    freeBstr(bstrName);
+    freeBstr(bstrNs);
 
     return cast(XmlElement)getNodeShim(node);
   }
@@ -2078,11 +2084,11 @@ class XmlDocument : XmlNode {
   XmlAttribute createAttribute(string qualifiedName, string namespaceURI) {
     IXMLDOMNode node;
 
-    wchar* bstrName = bstr.fromString(qualifiedName);
-    wchar* bstrNs = bstr.fromString(namespaceURI);
+    wchar* bstrName = toBstr(qualifiedName);
+    wchar* bstrNs = toBstr(namespaceURI);
     docImpl_.createNode(VARIANT(DOMNodeType.NODE_ATTRIBUTE), bstrName, bstrNs, node);
-    bstr.free(bstrName);
-    bstr.free(bstrNs);
+    freeBstr(bstrName);
+    freeBstr(bstrNs);
 
     return cast(XmlAttribute)getNodeShim(node);
   }
@@ -2107,9 +2113,9 @@ class XmlDocument : XmlNode {
   XmlCDataSection createCDataSection(string data) {
     IXMLDOMCDATASection node;
 
-    wchar* bstrValue = bstr.fromString(data);
+    wchar* bstrValue = toBstr(data);
     docImpl_.createCDATASection(bstrValue, node);
-    bstr.free(bstrValue);
+    freeBstr(bstrValue);
 
     return cast(XmlCDataSection)getNodeShim(node);
   }
@@ -2122,9 +2128,9 @@ class XmlDocument : XmlNode {
   XmlComment createComment(string data) {
     IXMLDOMComment node;
 
-    wchar* bstrValue = bstr.fromString(data);
+    wchar* bstrValue = toBstr(data);
     docImpl_.createComment(bstrValue, node);
-    bstr.free(bstrValue);
+    freeBstr(bstrValue);
 
     return cast(XmlComment)getNodeShim(node);
   }
@@ -2137,9 +2143,9 @@ class XmlDocument : XmlNode {
   XmlText createTextNode(string text) {
     IXMLDOMText node = null;
 
-    wchar* bstrValue = bstr.fromString(text);
+    wchar* bstrValue = toBstr(text);
     docImpl_.createTextNode(bstrValue, node);
-    bstr.free(bstrValue);
+    freeBstr(bstrValue);
 
     return cast(XmlText)getNodeShim(node);
   }
@@ -2154,11 +2160,11 @@ class XmlDocument : XmlNode {
   XmlProcessingInstruction createProcessingInstruction(string target, string data) {
     IXMLDOMProcessingInstruction node;
 
-    wchar* bstrTarget = bstr.fromString(target);
-    wchar* bstrData = bstr.fromString(data);
+    wchar* bstrTarget = toBstr(target);
+    wchar* bstrData = toBstr(data);
     docImpl_.createProcessingInstruction(bstrTarget, bstrData, node);
-    bstr.free(bstrTarget);
-    bstr.free(bstrData);
+    freeBstr(bstrTarget);
+    freeBstr(bstrData);
 
     return cast(XmlProcessingInstruction)getNodeShim(node);
   }
@@ -2180,11 +2186,11 @@ class XmlDocument : XmlNode {
 
     IXMLDOMProcessingInstruction node;
 
-    wchar* bstrTarget = bstr.fromString("xml");
-    wchar* bstrData = bstr.fromString(data);
+    wchar* bstrTarget = toBstr("xml");
+    wchar* bstrData = toBstr(data);
     docImpl_.createProcessingInstruction(bstrTarget, bstrData, node);
-    bstr.free(bstrTarget);
-    bstr.free(bstrData);
+    freeBstr(bstrTarget);
+    freeBstr(bstrData);
 
     return cast(XmlDeclaration)getNodeShim(node);
   }
@@ -2197,9 +2203,9 @@ class XmlDocument : XmlNode {
   XmlEntityReference createEntityReference(string name) {
     IXMLDOMEntityReference node;
 
-    wchar* bstrName = bstr.fromString(name);
+    wchar* bstrName = toBstr(name);
     docImpl_.createEntityReference(bstrName, node);
-    bstr.free(bstrName);
+    freeBstr(bstrName);
 
     return cast(XmlEntityReference)getNodeShim(node);
   }
@@ -2255,9 +2261,9 @@ class XmlDocument : XmlNode {
   void loadXml(string xml) {
     VARIANT_BOOL success;
 
-    wchar* bstrXml = bstr.fromString(xml);
+    wchar* bstrXml = toBstr(xml);
     docImpl_.loadXML(bstrXml, success);
-    bstr.free(bstrXml);
+    freeBstr(bstrXml);
 
     if (success == VARIANT_FALSE)
       parsingException();
@@ -2302,9 +2308,9 @@ class XmlDocument : XmlNode {
   XmlElement getElementByTagId(string elementId) {
     IXMLDOMNode node;
 
-    wchar* bstrId = bstr.fromString(elementId);
+    wchar* bstrId = toBstr(elementId);
     docImpl_.nodeFromID(bstrId, node);
-    bstr.free(bstrId);
+    freeBstr(bstrId);
 
     return cast(XmlElement)getNodeShim(node);
   }
@@ -2332,7 +2338,12 @@ class XmlDocument : XmlNode {
    * Returns: For XmlDocument nodes, the local name is #document.
    */
   override string localName() {
-    return "#document".dup;
+    version(D_Version2) {
+      return "#document".idup;
+    }
+    else {
+      return "#document".dup;
+    }
   }
 
   /**
@@ -2368,10 +2379,27 @@ class XmlDocument : XmlNode {
   }
 
   /**
-   * Ditto
+   * ditto
    */
   override string xml() {
     return super.xml;
+  }
+
+  /**
+   * Gets or sets a _value indicating whether to preserve white space in element content.
+   * Params: value = true to preserve white space; otherwise, false.
+   */
+  final void preserveWhitespace(bool value) {
+    docImpl_.put_preserveWhiteSpace(value ? VARIANT_TRUE : VARIANT_FALSE);
+  }
+
+  /**
+   * ditto
+   */
+  final bool preserveWhitespace() {
+    VARIANT_BOOL value;
+    docImpl_.get_preserveWhiteSpace(value);
+    return value == VARIANT_TRUE;
   }
 
   protected XPathNavigator createNavigator(XmlNode node) {
@@ -2400,11 +2428,11 @@ class XmlDocument : XmlNode {
       errorObj.get_line(lineNumber);
       errorObj.get_linepos(linePosition);
 
-      string reason = bstr.toString(bstrReason);
+      string reason = fromBstr(bstrReason);
       if (reason[$ - 1] == '\n')
         reason = reason[0 .. $ - 2];
 
-      throw new XmlException(reason, lineNumber, linePosition, bstr.toString(bstrUrl));
+      throw new XmlException(reason, lineNumber, linePosition, fromBstr(bstrUrl));
     }
   }
 

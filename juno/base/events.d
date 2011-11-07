@@ -1,13 +1,31 @@
 /**
- * Copyright: (c) 2008 John Chapman
+ * Provides a mechanism for a handling _events.
+ *
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.base.events;
 
-extern(C) private Object _d_toObject(void*);
+debug import std.stdio : writefln;
 
-private struct EventInfo(R, T...) {
+extern(C) Object _d_toObject(void*);
+
+alias void delegate(Object) DisposeEvent;
+version(D_Version2) {
+  extern(C) void rt_attachDisposeEvent(Object, DisposeEvent);
+  extern(C) void rt_detachDisposeEvent(Object, DisposeEvent);
+}
+else {
+  void rt_attachDisposeEvent(Object obj, DisposeEvent dispose) {
+    obj.notifyRegister(dispose);
+  }
+  void rt_detachDisposeEvent(Object obj, DisposeEvent dispose) {
+    obj.notifyUnRegister(dispose);
+  }
+}
+
+struct EventInfo(R, T...) {
 
   alias R delegate(T) TDelegate;
   alias R function(T) TFunction;
@@ -24,20 +42,20 @@ private struct EventInfo(R, T...) {
   Type type;
 
   static EventInfo opCall(TDelegate dg) {
-    EventInfo e;
-    e.type = Type.Delegate;
-    e.dg = dg;
-    return e;
+    EventInfo self;
+    self.dg = dg;
+    self.type = Type.Delegate;
+    return self;
   }
 
   static EventInfo opCall(TFunction fn) {
-    EventInfo e;
-    e.type = Type.Function;
-    e.fn = fn;
-    return e;
+    EventInfo self;
+    self.fn = fn;
+    self.type = Type.Function;
+    return self;
   }
 
-  R opCall(T args) {
+  R invoke(T args) {
     if (type == Type.Function && fn !is null)
       return fn(args);
     else if (type == Type.Delegate && dg !is null)
@@ -57,52 +75,51 @@ struct Event(R, T...) {
   private TEventInfo[] list_;
   private uint size_;
 
-  void delegate() adding;
-  void delegate() removing;
-
   alias opAddAssign add;
 
-  void opAddAssign(TDelegate d) {
-    if (adding !is null)
-      adding();
+  void opAddAssign(TDelegate dg) {
+    if (dg is null)
+      return;
 
-    addEventInfo(cast(TEventInfo)d);
+    addToList(TEventInfo(dg));
 
-    // Delegate literals don't have an object, and _d_toObject will cause a crash.
-    scope(failure) return;
-    if (auto obj = _d_toObject(d.ptr))
-      obj.notifyRegister(&release);
+    if (auto obj = _d_toObject(dg.ptr)) {
+      // Tends to crash when delegate bodies attempt to access the parent frame.
+      // std.signals exhibits the same problem.
+      rt_attachDisposeEvent(obj, &release);
+    }
   }
 
-  void opAddAssign(TFunction f) {
-    if (adding !is null)
-      adding();
+  void opAddAssign(TFunction fn) {
+    if (fn is null)
+      return;
 
-    addEventInfo(cast(TEventInfo)f);
+    addToList(TEventInfo(fn));
   }
 
   alias opSubAssign remove;
 
   void opSubAssign(TDelegate dg) {
-    if (removing !is null)
-      removing();
+    if (dg is null)
+      return;
 
     for (uint i = 0; i < size_;) {
       if (list_[i].dg is dg) {
         removeFromList(i);
 
-        scope(failure) break;
-        if (auto obj = _d_toObject(dg.ptr))
-          obj.notifyUnRegister(&release);
+        if (auto obj = _d_toObject(dg.ptr)) {
+          rt_detachDisposeEvent(obj, &release);
+        }
       }
-      else
+      else {
         i++;
+      }
     }
   }
 
   void opSubAssign(TFunction fn) {
-    if (removing !is null)
-      removing();
+    if (fn is null)
+      return;
 
     for (uint i = 0; i < size_;) {
       if (list_[i].fn is fn)
@@ -121,26 +138,31 @@ struct Event(R, T...) {
     }
     else {
       static if (!is(R == void)) {
-        for (uint i = 0; i < size_ - 1; i++)
-          list_[i](args);
-        return list_[size_ - 1](args);
+        for (int i = 0; i < size_ - 1; i++)
+          list_[i].invoke(args);
+        return list_[size_ - 1].invoke(args);
       }
       else {
-        for (uint i = 0; i < size_; i++)
-          list_[i](args);
+        for (int i = 0; i < size_; i++)
+          list_[i].invoke(args);
       }
     }
   }
 
+  void clear() {
+    list_ = null;
+    size_ = 0;
+  }
+
   bool isEmpty() {
-    return size_ == 0;
+    return (size_ == 0);
   }
 
-  bool opEquals(void*) {
-    return isEmpty;
+  uint count() {
+    return size_;
   }
 
-  private void addEventInfo(TEventInfo e) {
+  private void addToList(TEventInfo e) {
     uint n = list_.length;
 
     if (n == 0)
@@ -162,10 +184,9 @@ struct Event(R, T...) {
   }
 
   private void release(Object obj) {
-    scope(failure) return;
     foreach (i, ref e; list_) {
       if (i < size_ && _d_toObject(e.dg.ptr) is obj) {
-        obj.notifyUnRegister(&release);
+        rt_detachDisposeEvent(obj, &release);
         e.dg = null;
       }
     }
@@ -173,32 +194,48 @@ struct Event(R, T...) {
 
 }
 
+/**
+ * The base class for classes containing event data.
+ */
 class EventArgs {
 
-  private static EventArgs empty;
+  /// Represents an event with no data.
+  static EventArgs empty;
 
   static this() {
     empty = new EventArgs;
   }
 
-  this() {
-  }
-
 }
 
+/**
+ * Provides data for a cancellable event.
+ */
 class CancelEventArgs : EventArgs {
 
+  /// A value indicating whether the event should be cancelled.
   bool cancel;
 
+  /**
+   * Initializes a new instance.
+   * Params: cancel = true to _cancel the event; otherwise, false.
+   */
   this(bool cancel = false) {
     this.cancel = cancel;
   }
 
 }
 
+/**
+ * A template that can be used to declare an event handler.
+ * Examples:
+ * ---
+ * alias TEventHandler!(MyEventArgs) MyEventHandler;
+ * ---
+ */
 template TEventHandler(TEventArgs = EventArgs) {
   alias Event!(void, Object, TEventArgs) TEventHandler;
 }
 
-alias TEventHandler!() EventHandler;
-alias TEventHandler!(CancelEventArgs) CancelEventHandler;
+alias TEventHandler!() EventHandler; /// Represents the method that handles an event with no event data.
+alias TEventHandler!(CancelEventArgs) CancelEventHandler; /// Represents the method that handles a cancellable event.

@@ -1,24 +1,24 @@
 /**
- * Copyright: (c) 2008 John Chapman
+ * Contains types that retrieve information about type libraries.
+ *
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.com.reflect;
 
-private import juno.base.core,
-  bstr = juno.com.bstr,
+import juno.base.core,
+  juno.base.environment,
+  juno.base.string,
   juno.com.core,
   juno.utils.registry;
 
-private import std.utf : toUTF16z;
-private import std.string : format;
-
-debug private import std.stdio;
+debug import std.stdio : writefln;
 
 // Check if the name if reserved word such as a keyword or other global symbol.
 bool isReservedWord(string name) {
 
-  final string[] RESERVEDWORDS = [
+  const string[] RESERVEDWORDS = [
     "abstract", "alias", "align", "asm", "assert", "auto",
     "body", "bool", "break", "byte",
     "case", "cast", "catch", "cdouble", "cent", "cfloat", "char", "class", "const", "continue", "creal",
@@ -29,15 +29,16 @@ bool isReservedWord(string name) {
     "idouble", "if", "ifloat", "import", "in", "inout", "int", "interface", "invariant", "ireal", "is",
     "lazy", "long",
     "macro", "mixin", "module",
-    "new", "null",
+    "new", "nothrow", "null",
     "out", "override", "Object",
-    "package", "pragma", "private", "protected", "public",
+    "package", "pragma", "private", "protected", "public", "pure",
     "real", "ref", "return",
-    "scope", "short", "static", "struct", "super", "switch", "synchronized",
+    "scope", "shared", "short", "static", "struct", "super", "switch", "synchronized",
     "template", "this", "throw", "true", "try", "typedef", "typeid", "typeof",
     "ubyte", "ucent", "uint", "ulong", "union", "unittest", "ushort",
     "version", "void", "volatile",
-    "wchar", "while", "with"
+    "wchar", "while", "with",
+    "__FILE__", "__LINE__", "__thread", "__traits", "__gshared"
   ];
 
   foreach (word; RESERVEDWORDS) {
@@ -52,86 +53,11 @@ private void checkHResult(int hr) {
     throw new COMException(hr);
 }
 
-class Version {
-
-  private int major_;
-  private int minor_;
-  private int build_;
-  private int revision_;
-
-  this(int major = 0, int minor = 0, int build = -1, int revision = -1) {
-    major_ = major;
-    minor_ = minor;
-    build_ = build;
-    revision_ = revision;
-  }
-
-  override int opEquals(Object other) {
-    if (auto that = cast(Version)other)
-      return major_ == that.major_ && minor_ == that.minor_ && build_ == that.build_ && revision_ == that.revision_;
-    return false;
-  }
-
-  override int opCmp(Object other) {
-    if (other is null)
-      return 1;
-
-    if (auto that = cast(Version)other) {
-      if (major_ != that.major_)
-        return (major_ > that.major_) ? 1 : -1;
-      if (minor_ != that.minor_)
-        return (minor_ > that.minor_) ? 1 : -1;
-      if (build_ != that.build_)
-        return (build_ > that.build_) ? 1 : -1;
-      if (revision_ != that.revision_)
-        return (revision_ > that.revision_) ? 1 : -1;
-      return 0;
-    }
-
-    throw new ArgumentException("Object must be of type Version.");
-  }
-
-  override hash_t toHash() {
-    hash_t hash = (major_ & 0x0000000F) << 28;
-    hash |= (minor_ & 0x000000FF) << 20;
-    hash |= (build_ & 0x000000FF) << 12;
-    hash |= revision_ & 0x00000FFF;
-    return hash;
-  }
-
-  override string toString() {
-    string s = format("%s.%s", major_, minor_);
-    if (build_ != -1) {
-      s ~= format(".%s", build_);
-      if (revision_ != -1)
-        s ~= format(".%s", revision_);
-    }
-    return s;
-  }
-
-  int major() {
-    return major_;
-  }
-
-  int minor() {
-    return minor_;
-  }
-
-  int build() {
-    return build_;
-  }
-
-  int revision() {
-    return revision_;
-  }
-
-}
-
-class TypeLibraryInfo {
+class Reference {
 
   private string name_;
-  private string doc_;
-  private GUID guid_;
+  private string help_;
+  private Guid guid_;
   private string location_;
   private Version version_;
 
@@ -139,11 +65,11 @@ class TypeLibraryInfo {
     return name_;
   }
 
-  string documentation() {
-    return doc_;
+  string help() {
+    return help_;
   }
 
-  GUID guid() {
+  Guid guid() {
     return guid_;
   }
 
@@ -158,9 +84,9 @@ class TypeLibraryInfo {
   private this() {
   }
 
-  private this(string name, string doc, GUID guid, string location, Version ver) {
+  private this(string name, string help, Guid guid, string location, Version ver) {
     name_ = name;
-    doc_ = doc;
+    help_ = help;
     guid_ = guid;
     location_ = location;
     version_ = ver;
@@ -168,16 +94,18 @@ class TypeLibraryInfo {
 
 }
 
+/**
+ */
 class TypeLibrary {
 
   private string name_;
   private string help_;
-  private GUID guid_;
+  private Guid guid_;
   private Version version_;
   private string location_;
   private Type[] types_;
   private Module[] modules_;
-  private TypeLibraryInfo[] references_;
+  private Reference[] references_;
 
   private ITypeLib typeLib_;
 
@@ -187,13 +115,14 @@ class TypeLibrary {
 
     wchar* bstrName, bstrHelp;
     if (SUCCEEDED(typeLib_.GetDocumentation(-1, &bstrName, &bstrHelp, null, null))) {
-      name_ = bstr.toString(bstrName);
-      help_ = bstr.toString(bstrHelp);
+      name_ = fromBstr(bstrName);
+      help_ = fromBstr(bstrHelp);
     }
 
     TLIBATTR* attr;
     if (SUCCEEDED(typeLib_.GetLibAttr(attr))) {
       scope(exit) typeLib_.ReleaseTLibAttr(attr);
+
       guid_ = attr.guid;
       version_ = new Version(attr.wMajorVerNum, attr.wMinorVerNum);
     }
@@ -206,40 +135,53 @@ class TypeLibrary {
     }
 
     types_ = null;
+    modules_ = null;
+    references_ = null;
   }
 
+  /**
+   */
   string name() {
     return name_;
   }
 
+  /**
+   */
   string help() {
     return help_;
   }
 
-  GUID guid() {
+  /**
+   */
+  Guid guid() {
     return guid_;
   }
 
+  /**
+   */
   string location() {
     return location_;
   }
 
+  /**
+   */
   Version getVersion() {
     return version_;
   }
 
+  /**
+   */
   static TypeLibrary load(string fileName) {
     if (fileName == null)
-      throw new ArgumentNullException("File name cannot be null.");
+      throw new ArgumentException("File name cannot be null", "fileName");
 
     ITypeLib typeLib = null;
-    // Try to load the type library from filename.
-    int hr = LoadTypeLib(fileName.toUTF16z(), typeLib);
+    // Try to load the library from fileName.
+    int hr = LoadTypeLib(fileName.toUtf16z(), typeLib);
     if (hr != S_OK) {
-      // If that failed, treat fileName as a GUID and type to load from the registry.
+      // If that failed, treat filename as a GUID and try to load from the registry.
 
       string guid = fileName;
-      // Fix the GUID so it's in the expected format.
       if (guid[0] != '{')
         guid = '{' ~ guid;
       if (guid[$ - 1] != '}')
@@ -272,14 +214,14 @@ class TypeLibrary {
     return new TypeLibrary(typeLib, fileName);
   }
 
-  public final TypeLibraryInfo[] getReferences() {
+  public final Reference[] getReferences() {
     if (references_ == null) {
       GUID libGuid;
       TLIBATTR* libAttr;
       ITypeInfo typeInfo;
       int hr;
 
-      TypeLibraryInfo[GUID] map;
+      Reference[GUID] map;
 
       void addTLibGuidToMapTI(ITypeInfo typeInfo) {
         ITypeLib typeLib;
@@ -291,12 +233,12 @@ class TypeLibrary {
             scope(exit) typeLib.ReleaseTLibAttr(libAttr);
 
             if (!(libAttr.guid in map)) {
-              string name, doc, location;
+              string name, help, location;
 
-              wchar* bstrName, bstrDoc;
-              if (typeLib.GetDocumentation(-1, &bstrName, &bstrDoc, null, null) == S_OK) {
-                name = bstr.toString(bstrName);
-                doc = bstr.toString(bstrDoc);
+              wchar* bstrName, bstrHelp;
+              if (typeLib.GetDocumentation(-1, &bstrName, &bstrHelp, null, null) == S_OK) {
+                name = fromBstr(bstrName);
+                help = fromBstr(bstrHelp);
               }
               Version ver = new Version(libAttr.wMajorVerNum, libAttr.wMinorVerNum);
 
@@ -311,7 +253,7 @@ class TypeLibrary {
                 }
               }
 
-              map[libAttr.guid] = new TypeLibraryInfo(name, doc, libAttr.guid, location, ver);
+              map[libAttr.guid] = new Reference(name, help, libAttr.guid, location, ver);
             }
           }
         }
@@ -350,7 +292,7 @@ class TypeLibrary {
 
       if (typeLib_.GetLibAttr(libAttr) == S_OK) {
         scope(exit) typeLib_.ReleaseTLibAttr(libAttr);
-        map[libGuid = libAttr.guid] = new TypeLibraryInfo;
+        map[libGuid = libAttr.guid] = new Reference;
       }
 
       TYPEATTR* typeAttr;
@@ -397,15 +339,17 @@ class TypeLibrary {
         references_[i] = map[key];
     }
     if (references_ == null)
-      return new TypeLibraryInfo[0];
+      return new Reference[0];
     return references_;
   }
 
+  /**
+   */
   final Module[] getModules() {
     if (modules_ == null) {
       ITypeInfo typeInfo;
       TYPEKIND typeKind;
-      for (uint i = 0; i < typeLib_.GetTypeInfoCount(); i++) {
+      for (auto i = 0; i < typeLib_.GetTypeInfoCount(); i++) {
         checkHResult(typeLib_.GetTypeInfoType(i, typeKind));
         if (typeKind == TYPEKIND.TKIND_MODULE) {
           checkHResult(typeLib_.GetTypeInfo(i, typeInfo));
@@ -413,83 +357,83 @@ class TypeLibrary {
         }
       }
     }
-    if (modules_ == null)
-      return new Module[0];
     return modules_;
   }
 
+  /**
+   */
   final Type[] getTypes() {
     if (types_ == null) {
       ITypeInfo typeInfo;
       TYPEKIND typeKind;
       TYPEATTR* typeAttr;
 
-      for (uint i = 0; i < typeLib_.GetTypeInfoCount(); i++) {
+      for (auto i = 0; i < typeLib_.GetTypeInfoCount(); i++) {
         checkHResult(typeLib_.GetTypeInfo(i, typeInfo));
         checkHResult(typeLib_.GetTypeInfoType(i, typeKind));
         checkHResult(typeInfo.GetTypeAttr(typeAttr));
 
-        scope(exit) typeInfo.ReleaseTypeAttr(typeAttr);
-        scope(exit) typeInfo.Release();
+        scope(exit) {
+          typeInfo.ReleaseTypeAttr(typeAttr);
+          tryRelease(typeInfo);
+        }
 
-        //if (!(typeAttr.wTypeFlags & TYPEFLAGS.TYPEFLAG_FHIDDEN)) {
-          switch (typeKind) {
-            case TYPEKIND.TKIND_COCLASS:
-              if (typeAttr.wTypeFlags & TYPEFLAGS.TYPEFLAG_FCANCREATE)
-                types_ ~= new TypeImpl(typeInfo, TypeAttributes.CoClass, this);
-              break;
+        switch (typeKind) {
+          case TYPEKIND.TKIND_COCLASS:
+            if (typeAttr.wTypeFlags & TYPEFLAGS.TYPEFLAG_FCANCREATE)
+              types_ ~= new TypeImpl(typeInfo, TypeAttributes.CoClass, this);
+            break;
 
-            case TYPEKIND.TKIND_INTERFACE:
-              TypeAttributes attrs = TypeAttributes.Interface;
-              if (typeAttr.wTypeFlags & TYPEFLAGS.TYPEFLAG_FDUAL)
-                attrs |= TypeAttributes.InterfaceIsDual;
+          case TYPEKIND.TKIND_INTERFACE:
+            auto attrs = TypeAttributes.Interface;
+            if (typeAttr.wTypeFlags & TYPEFLAGS.TYPEFLAG_FDUAL)
+              attrs |= TypeAttributes.InterfaceIsDual;
+            types_ ~= new TypeImpl(typeInfo, attrs, this);
+            break;
+
+          case TYPEKIND.TKIND_DISPATCH:
+            auto attrs = TypeAttributes.Interface | TypeAttributes.InterfaceIsDispatch;
+            if (typeAttr.wTypeFlags & TYPEFLAGS.TYPEFLAG_FDUAL)
+              attrs |= TypeAttributes.InterfaceIsDual;
+
+            uint refType;
+            int hr = typeInfo.GetRefTypeOfImplType(-1, refType);
+            if (hr != TYPE_E_ELEMENTNOTFOUND && refType != 0) {
+              ITypeInfo refTypeInfo;
+              checkHResult(typeInfo.GetRefTypeInfo(refType, refTypeInfo));
+              scope(exit) tryRelease(refTypeInfo);
+
+              types_ ~= new TypeImpl(typeInfo, refTypeInfo, attrs, this);
+            }
+            else
               types_ ~= new TypeImpl(typeInfo, attrs, this);
-              break;
+            break;
 
-            case TYPEKIND.TKIND_DISPATCH:
-              TypeAttributes attrs = TypeAttributes.Interface | TypeAttributes.InterfaceIsDispatch;
-              if (typeAttr.wTypeFlags & TYPEFLAGS.TYPEFLAG_FDUAL)
-                attrs |= TypeAttributes.InterfaceIsDual;
+          case TYPEKIND.TKIND_RECORD:
+            types_ ~= new TypeImpl(typeInfo, TypeAttributes.Struct, this);
+            break;
 
-              uint refType;
-              int hr = typeInfo.GetRefTypeOfImplType(-1, refType);
-              if (hr != TYPE_E_ELEMENTNOTFOUND && refType != 0) {
-                ITypeInfo refTypeInfo;
-                checkHResult(typeInfo.GetRefTypeInfo(refType, refTypeInfo));
-                scope(exit) refTypeInfo.Release();
+          case TYPEKIND.TKIND_UNION:
+            types_ ~= new TypeImpl(typeInfo, TypeAttributes.Union, this);
+            break;
 
-                types_ ~= new TypeImpl(typeInfo, refTypeInfo, attrs, this);
-              }
-              else
-                types_ ~= new TypeImpl(typeInfo, attrs, this);
-              break;
+          case TYPEKIND.TKIND_ALIAS:
+            types_ ~= new TypeImpl(typeInfo, TypeAttributes.Alias, this);
+            break;
+            
+          case TYPEKIND.TKIND_ENUM:
+            types_ ~= new TypeImpl(typeInfo, TypeAttributes.Enum, this);
+            break;
 
-            case TYPEKIND.TKIND_RECORD:
-              types_ ~= new TypeImpl(typeInfo, TypeAttributes.Struct, this);
-              break;
-
-            case TYPEKIND.TKIND_UNION:
-              types_ ~= new TypeImpl(typeInfo, TypeAttributes.Union, this);
-              break;
-
-            case TYPEKIND.TKIND_ALIAS:
-              types_ ~= new TypeImpl(typeInfo, TypeAttributes.Alias, this);
-              break;
-              
-            case TYPEKIND.TKIND_ENUM:
-              types_ ~= new TypeImpl(typeInfo, TypeAttributes.Enum, this);
-              break;
-
-            default:
-          }
-        //}
+          default:
+        }
       }
     }
-    if (types_ == null)
-      return new Type[0];
     return types_;
   }
 
+  /**
+   */
   final Type[] findTypes(bool delegate(Type) filter) {
     Type[] filteredTypes;
     foreach (type; getTypes()) {
@@ -501,6 +445,8 @@ class TypeLibrary {
 
 }
 
+/**
+ */
 class Module {
 
   private Member[] members_;
@@ -510,14 +456,29 @@ class Module {
 
   private ITypeInfo typeInfo_;
 
+  /**
+   */
   final Member[] getMembers() {
     if (members_ == null) {
       TYPEATTR* typeAttr;
       checkHResult(typeInfo_.GetTypeAttr(typeAttr));
       scope(exit) typeInfo_.ReleaseTypeAttr(typeAttr);
 
+      VARDESC* varDesc;
+      for (auto i = 0; i < typeAttr.cVars; i++) {
+        checkHResult(typeInfo_.GetVarDesc(i, varDesc));
+        scope(exit) typeInfo_.ReleaseVarDesc(varDesc);
+
+        wchar* bstrName;
+        uint nameCount;
+        checkHResult(typeInfo_.GetNames(varDesc.memid, &bstrName, 1, nameCount));
+
+        Type fieldType = new TypeImpl(TypeImpl.getTypeName(&varDesc.elemdescVar.tdesc, typeInfo_), typeLib_);
+        members_ ~= new FieldImpl(fieldType, fromBstr(bstrName), *varDesc.lpvarValue, cast(FieldAttributes)varDesc.varkind);
+      }
+
       FUNCDESC* funcDesc;
-      for (uint i = 0; i < typeAttr.cFuncs; i++) {
+      for (auto i = 0; i < typeAttr.cFuncs; i++) {
         checkHResult(typeInfo_.GetFuncDesc(i, funcDesc));
         scope(exit) typeInfo_.ReleaseFuncDesc(funcDesc);
 
@@ -527,27 +488,14 @@ class Module {
         checkHResult(typeInfo_.GetDocumentation(id, &bstrName, &bstrHelp, null, null));
 
         Type returnType = new TypeImpl(TypeImpl.getTypeName(&funcDesc.elemdescFunc.tdesc, typeInfo_), typeLib_);
-        members_ ~= new MethodImpl(typeInfo_, bstr.toString(bstrName), bstr.toString(bstrHelp), id, MethodAttributes.Default, returnType, typeLib_);
-      }
-
-      VARDESC* varDesc;
-      for (uint i = 0; i < typeAttr.cVars; i++) {
-        checkHResult(typeInfo_.GetVarDesc(i, varDesc));
-        scope(exit) typeInfo_.ReleaseVarDesc(varDesc);
-
-        wchar* bstrName;
-        uint nameCount;
-        checkHResult(typeInfo_.GetNames(varDesc.memid, &bstrName, 1, nameCount));
-
-        Type fieldType = new TypeImpl(TypeImpl.getTypeName(&varDesc.elemdescVar.tdesc, typeInfo_), typeLib_);
-        members_ ~= new FieldImpl(fieldType, bstr.toString(bstrName), *varDesc.lpvarValue, cast(FieldAttributes)varDesc.varkind);
+        members_ ~= new MethodImpl(typeInfo_, fromBstr(bstrName), fromBstr(bstrHelp), id, MethodAttributes.Default, returnType, typeLib_);
       }
     }
-    if (members_ == null)
-      return new Member[0];
     return members_;
   }
 
+  /**
+   */
   final Field[] getFields() {
     if (fields_ == null) {
       foreach (member; getMembers()) {
@@ -555,11 +503,11 @@ class Module {
           fields_ ~= cast(Field)member;
       }
     }
-    if (fields_ == null)
-      return new Field[0];
     return fields_;
   }
 
+  /**
+   */
   final Method[] getMethods() {
     if (methods_ == null) {
       foreach (member; getMembers()) {
@@ -567,22 +515,22 @@ class Module {
           methods_ ~= cast(Method)member;
       }
     }
-    if (methods_ == null)
-      return new Method[0];
     return methods_;
   }
 
+  /**
+   */
   final Member[] getMember(string name) {
     Member[] result = null;
     foreach (member; getMembers()) {
       if (member !is null && member.name == name)
         result ~= member;
     }
-    if (result == null)
-      return new Member[0];
     return result;
   }
 
+  /**
+   */
   final Field getField(string name) {
     foreach (field; getFields()) {
       if (field !is null && field.name == name)
@@ -591,6 +539,8 @@ class Module {
     return null;
   }
 
+  /**
+   */
   final Method getMethod(string name) {
     foreach (method; getMethods()) {
       if (method !is null && method.name == name)
@@ -613,68 +563,100 @@ class Module {
 
 }
 
+///
 enum MemberTypes {
-  Field = 0x1,
-  Method = 0x2,
-  Type = 0x4
+  Field  = 0x1, ///
+  Method = 0x2, ///
+  Type   = 0x4  ///
 }
 
+/**
+ */
 abstract class Member {
 
+  /**
+   */
   abstract string name();
 
+  /**
+   */
   abstract string help();
 
+  /**
+   */
   abstract MemberTypes memberType();
 
 }
 
+///
 enum TypeAttributes {
-  CoClass = 0x1,
-  Interface = 0x2,
-  Struct = 0x4,
-  Enum = 0x8,
-  Alias = 0x10,
-  Union = 0x20,
-  InterfaceIsDual = 0x100,
+  CoClass             = 0x1,
+  Interface           = 0x2,
+  Struct              = 0x4,
+  Enum                = 0x8,
+  Alias               = 0x10,
+  Union               = 0x20,
+  InterfaceIsDual     = 0x100,
   InterfaceIsDispatch = 0x200,
-  InterfaceIsDefault = 0x400,
-  InterfaceIsSource = 0x800
+  InterfaceIsDefault  = 0x400,
+  InterfaceIsSource   = 0x800
 }
 
+/**
+ */
 abstract class Type : Member {
 
+  /**
+   */
   override MemberTypes memberType() {
     return MemberTypes.Type;
   }
 
+  /**
+   */
   abstract TypeAttributes attributes();
 
-  abstract GUID guid();
+  /**
+   */
+  abstract Guid guid();
 
+  /**
+   */
   abstract Type baseType();
 
+  /**
+   */
   abstract Type underlyingType();
 
+  /**
+   */
   abstract Type[] getInterfaces();
 
+  /**
+   */
   abstract Member[] getMembers();
 
+  /**
+   */
   abstract Field[] getFields();
 
+  /**
+   */
   abstract Method[] getMethods();
 
+  /**
+   */
   Member[] getMember(string name) {
     Member[] result = null;
     foreach (member; getMembers()) {
       if (member !is null && member.name == name)
         result ~= member;
     }
-    if (result == null)
-      return new Member[0];
     return result;
   }
 
+  /**
+   */
   Field getField(string name) {
     foreach (field; getFields()) {
       if (field !is null && field.name == name)
@@ -683,6 +665,8 @@ abstract class Type : Member {
     return null;
   }
 
+  /**
+   */
   Method getMethod(string name) {
     foreach (method; getMethods()) {
       if (method !is null && method.name == name)
@@ -691,30 +675,44 @@ abstract class Type : Member {
     return null;
   }
 
+  /**
+   */
   string toString() {
     return "Type: " ~ name;
   }
 
+  /**
+   */
   final bool isCoClass() {
     return (attributes & TypeAttributes.CoClass) != 0;
   }
 
+  /**
+   */
   final bool isInterface() {
     return (attributes & TypeAttributes.Interface) != 0;
   }
 
+  /**
+   */
   final bool isStruct() {
     return (attributes & TypeAttributes.Struct) != 0;
   }
 
+  /**
+   */
   final bool isEnum() {
     return (attributes & TypeAttributes.Enum) != 0;
   }
 
+  /**
+   */
   final bool isAlias() {
     return (attributes & TypeAttributes.Alias) != 0;
   }
 
+  /**
+   */
   final bool isUnion() {
     return (attributes & TypeAttributes.Union) != 0;
   }
@@ -725,7 +723,7 @@ package final class TypeImpl : Type {
 
   private string name_;
   private string help_;
-  private GUID guid_;
+  private Guid guid_;
   private TypeAttributes attr_;
   private Type baseType_;
   private Type underlyingType_;
@@ -750,13 +748,13 @@ package final class TypeImpl : Type {
     return attr_;
   }
 
-  override GUID guid() {
+  override Guid guid() {
     return guid_;
   }
 
   override Type baseType() {
     if (baseType_ is null) {
-      ITypeInfo typeInfo = (dispTypeInfo_ !is null)
+      auto typeInfo = (dispTypeInfo_ !is null) 
         ? dispTypeInfo_
         : typeInfo_;
 
@@ -851,8 +849,6 @@ package final class TypeImpl : Type {
         interfaces_ ~= new TypeImpl(implTypeInfo, attrs, typeLib_);
       }
     }
-    if (interfaces_ == null)
-      return new Type[0];
     return interfaces_;
   }
 
@@ -862,8 +858,26 @@ package final class TypeImpl : Type {
       checkHResult(typeInfo_.GetTypeAttr(typeAttr));
       scope(exit) typeInfo_.ReleaseTypeAttr(typeAttr);
 
+      VARDESC* varDesc;
+      for (auto i = 0; i < typeAttr.cVars; i++) {
+
+        checkHResult(typeInfo_.GetVarDesc(i, varDesc));
+        scope(exit) typeInfo_.ReleaseVarDesc(varDesc);
+
+        wchar* bstrName;
+        uint nameCount;
+        checkHResult(typeInfo_.GetNames(varDesc.memid, &bstrName, 1, nameCount));
+
+        Type fieldType = new TypeImpl(TypeImpl.getTypeName(&varDesc.elemdescVar.tdesc, typeInfo_), typeLib_);
+        string fieldName = fromBstr(bstrName);
+        if (varDesc.varkind == VARKIND.VAR_CONST)
+          members_ ~= new FieldImpl(fieldType, fieldName, *varDesc.lpvarValue, cast(FieldAttributes)varDesc.varkind);
+        else
+          members_ ~= new FieldImpl(fieldType, fieldName, cast(FieldAttributes)varDesc.varkind);
+      }
+
       FUNCDESC* funcDesc;
-      for (uint i = 0; i < typeAttr.cFuncs; i++) {
+      for (auto i = 0; i < typeAttr.cFuncs; i++) {
         checkHResult(typeInfo_.GetFuncDesc(i, funcDesc));
         scope(exit) typeInfo_.ReleaseFuncDesc(funcDesc);
 
@@ -885,29 +899,10 @@ package final class TypeImpl : Type {
           checkHResult(typeInfo_.GetDocumentation(id, &bstrName, &bstrHelp, null, null));
 
           Type returnType = new TypeImpl(TypeImpl.getTypeName(&funcDesc.elemdescFunc.tdesc, typeInfo_), typeLib_);
-          members_ ~= new MethodImpl(typeInfo_, bstr.toString(bstrName), bstr.toString(bstrHelp), id, attrs, returnType, typeLib_);
+          members_ ~= new MethodImpl(typeInfo_, fromBstr(bstrName), fromBstr(bstrHelp), id, attrs, returnType, typeLib_);
         }
       }
-
-      VARDESC* varDesc;
-      for (uint i = 0; i < typeAttr.cVars; i++) {
-        checkHResult(typeInfo_.GetVarDesc(i, varDesc));
-        scope(exit) typeInfo_.ReleaseVarDesc(varDesc);
-
-        wchar* bstrName;
-        uint nameCount;
-        checkHResult(typeInfo_.GetNames(varDesc.memid, &bstrName, 1, nameCount));
-
-        Type fieldType = new TypeImpl(TypeImpl.getTypeName(&varDesc.elemdescVar.tdesc, typeInfo_), typeLib_);
-        string fieldName = bstr.toString(bstrName);
-        if (varDesc.varkind == VARKIND.VAR_CONST)
-          members_ ~= new FieldImpl(fieldType, fieldName, *varDesc.lpvarValue, cast(FieldAttributes)varDesc.varkind);
-        else
-          members_ ~= new FieldImpl(fieldType, fieldName, cast(FieldAttributes)varDesc.varkind);
-      }
     }
-    if (members_ == null)
-      return new Member[0];
     return members_;
   }
 
@@ -918,8 +913,6 @@ package final class TypeImpl : Type {
           fields_ ~= cast(Field)member;
       }
     }
-    if (fields_ == null)
-      return new Field[0];
     return fields_;
   }
 
@@ -930,9 +923,55 @@ package final class TypeImpl : Type {
           methods_ ~= cast(Method)member;
       }
     }
-    if (methods_ == null)
-      return new Method[0];
     return methods_;
+  }
+
+  private void init(ITypeInfo typeInfo) {
+    typeInfo_ = typeInfo;
+    typeInfo_.AddRef();
+
+    wchar* bstrName, bstrHelp;
+    if (SUCCEEDED(typeInfo_.GetDocumentation(-1, &bstrName, &bstrHelp, null, null))) {
+      name_ = fromBstr(bstrName);
+      help_ = fromBstr(bstrHelp);
+    }
+
+    TYPEATTR* attr;
+    if (SUCCEEDED(typeInfo_.GetTypeAttr(attr))) {
+      guid_ = attr.guid;
+      typeInfo_.ReleaseTypeAttr(attr);
+    }
+  }
+
+  package this(ITypeInfo typeInfo, TypeAttributes attributes, TypeLibrary typeLib) {
+    init(typeInfo);
+    attr_ = attributes;
+    typeLib_ = typeLib;
+  }
+
+  package this(ITypeInfo dispTypeInfo, ITypeInfo typeInfo, TypeAttributes attributes, TypeLibrary typeLib) {
+    this(dispTypeInfo, attributes, typeLib);
+
+    typeInfo_ = typeInfo;
+    typeInfo_.AddRef();
+    dispTypeInfo_ = dispTypeInfo;
+  }
+
+  package this(string name, TypeLibrary typeLib) {
+    name_ = name;
+    typeLib_ = typeLib;
+  }
+
+  ~this() {
+    if (typeInfo_ !is null) {
+      tryRelease(typeInfo_);
+      typeInfo_ = null;
+    }
+
+    if (dispTypeInfo_ !is null) {
+      tryRelease(dispTypeInfo_);
+      dispTypeInfo_ = null;
+    }
   }
 
   package static string getTypeName(TYPEDESC* desc, ITypeInfo typeInfo, int flags = 0, bool isInterface = false) {
@@ -983,7 +1022,7 @@ package final class TypeImpl : Type {
           return "VARIANT";
         case VT_DECIMAL:
           return "DECIMAL";
-        case VT_ARRAY:
+        case VT_ARRAY, VT_SAFEARRAY:
           return "SAFEARRAY*";
         case VT_VOID:
           return "void";
@@ -1002,7 +1041,7 @@ package final class TypeImpl : Type {
 
         wchar* bstrName;
         customTypeInfo.GetDocumentation(-1, &bstrName, null, null, null);
-        typeName = bstr.toString(bstrName);
+        typeName = fromBstr(bstrName);
       }
       return typeName;
     }
@@ -1041,7 +1080,7 @@ package final class TypeImpl : Type {
 
     string getArrayTypeName() {
       if (desc.lpadesc.cDims == 1 && desc.lpadesc.rgbounds[desc.lpadesc.cDims - 1].cElements > 0)
-        return .format("%s[%s]", getTypeName(&desc.lpadesc.tdescElem, typeInfo, flags, isInterface), desc.lpadesc.rgbounds[desc.lpadesc.cDims - 1].cElements);
+        return format("{0}[{1}]", getTypeName(&desc.lpadesc.tdescElem, typeInfo, flags, isInterface), desc.lpadesc.rgbounds[desc.lpadesc.cDims - 1].cElements);
       return getTypeName(&desc.lpadesc.tdescElem, typeInfo, flags, isInterface) ~ "*";
     }
 
@@ -1057,72 +1096,35 @@ package final class TypeImpl : Type {
     return typeName;
   }
 
-  package this(ITypeInfo typeInfo, TypeAttributes attributes, TypeLibrary typeLib) {
-    init(typeInfo);
-    attr_ = attributes;
-    typeLib_ = typeLib;
-  }
-
-  package this(ITypeInfo dispTypeInfo, ITypeInfo typeInfo, TypeAttributes attributes, TypeLibrary typeLib) {
-    this(dispTypeInfo, attributes, typeLib);
-
-    typeInfo_ = typeInfo;
-    typeInfo_.AddRef();
-    dispTypeInfo_ = dispTypeInfo;
-  }
-
-  package this(string name, TypeLibrary typeLib) {
-    name_ = name;
-    typeLib_ = typeLib;
-  }
-
-  ~this() {
-    if (typeInfo_ !is null) {
-      tryRelease(typeInfo_);
-      typeInfo_ = null;
-    }
-
-    if (dispTypeInfo_ !is null) {
-      tryRelease(dispTypeInfo_);
-      dispTypeInfo_ = null;
-    }
-  }
-
-  private void init(ITypeInfo typeInfo) {
-    typeInfo_ = typeInfo;
-    typeInfo_.AddRef();
-
-    wchar* bstrName, bstrHelp;
-    if (SUCCEEDED(typeInfo_.GetDocumentation(-1, &bstrName, &bstrHelp, null, null))) {
-      name_ = bstr.toString(bstrName);
-      help_ = bstr.toString(bstrHelp);
-    }
-
-    TYPEATTR* attr;
-    if (SUCCEEDED(typeInfo_.GetTypeAttr(attr))) {
-      guid_ = attr.guid;
-      typeInfo_.ReleaseTypeAttr(attr);
-    }
-  }
-
 }
 
+///
 enum FieldAttributes {
   None,
   Static,
   Constant
 }
 
+/**
+ */
 abstract class Field : Member {
 
+  /**
+   */
   override MemberTypes memberType() {
     return MemberTypes.Field;
   }
 
+  /**
+   */
   abstract VARIANT getValue();
 
+  /**
+   */
   abstract FieldAttributes attributes();
 
+  /**
+   */
   abstract Type fieldType();
 
 }
@@ -1160,39 +1162,51 @@ package final class FieldImpl : Field {
     attr_ = attributes;
   }
 
-  package this(Type fieldType, string name, VARIANT value, FieldAttributes attributes) {
+  package this(Type fieldType, string name, ref VARIANT value, FieldAttributes attributes) {
     value.copyTo(value_);
+    //value_ = value;
     this(fieldType, name, attributes);
   }
 
-  ~this() {
-    //value_.clear();
-  }
-
 }
 
+///
 enum MethodAttributes {
-  None = 0x0,
-  Default = 0x1,
-  GetProperty = 0x2,
-  PutProperty = 0x4,
+  None           = 0x0,
+  Default        = 0x1,
+  GetProperty    = 0x2,
+  PutProperty    = 0x4,
   PutRefProperty = 0x8
 }
 
+/**
+ */
 abstract class Method : Member {
 
+  /**
+   */
   override MemberTypes memberType() {
     return MemberTypes.Method;
   }
 
+  /**
+   */
   abstract Parameter[] getParameters();
 
+  /**
+   */
   abstract MethodAttributes attributes();
 
+  /**
+   */
   abstract Type returnType();
 
+  /**
+   */
   abstract Parameter returnParameter();
 
+  /**
+   */
   abstract int id();
 
 }
@@ -1262,16 +1276,19 @@ package final class MethodImpl : Method {
 
 }
 
+///
 enum ParameterAttributes {
-  None = 0x0,
-  In = 0x1,
-  Out = 0x2,
-  Lcid = 0x4,
-  Retval = 0x8,
-  Optional = 0x10,
+  None       = 0x0,
+  In         = 0x1,
+  Out        = 0x2,
+  Lcid       = 0x4,
+  Retval     = 0x8,
+  Optional   = 0x10,
   HasDefault = 0x20
 }
 
+/**
+ */
 class Parameter {
 
   private Member member_;
@@ -1280,38 +1297,56 @@ class Parameter {
   private int position_;
   private ParameterAttributes attrs_;
 
+  /**
+   */
   string name() {
     return name_;
   }
 
+  /**
+   */
   int position() {
     return position_;
   }
 
+  /**
+   */
   ParameterAttributes attributes() {
     return attrs_;
   }
 
+  /**
+   */
   Member member() {
     return member_;
   }
 
+  /**
+   */
   Type parameterType() {
     return parameterType_;
   }
 
+  /**
+   */
   bool isIn() {
     return (attributes & ParameterAttributes.In) != 0;
   }
 
+  /**
+   */
   bool isOut() {
     return (attributes & ParameterAttributes.Out) != 0;
   }
 
+  /**
+   */
   bool isRetval() {
     return (attributes & ParameterAttributes.Retval) != 0;
   }
 
+  /**
+   */
   bool isOptional() {
     return (attributes & ParameterAttributes.Optional) != 0;
   }
@@ -1352,17 +1387,17 @@ class Parameter {
         checkHResult(method.typeInfo_.GetNames(funcDesc.memid, bstrNames, funcDesc.cParams + 1, count));
 
         // The element at 0 is the name of the function. We've already got this, so free it.
-        bstr.free(bstrNames[0]);
+        freeBstr(bstrNames[0]);
 
         if ((funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUT) || (funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUTREF))
-          bstrNames[0] = bstr.fromString("value");
+          bstrNames[0] = toBstr("value");
 
         for (ushort pos = 0; pos < funcDesc.cParams; pos++) {
           ushort flags = funcDesc.lprgelemdescParam[pos].paramdesc.wParamFlags;
           TypeImpl paramType = new TypeImpl(TypeImpl.getTypeName(&funcDesc.lprgelemdescParam[pos].tdesc, method.typeInfo_, flags), method.typeLib_);
 
           if ((flags & PARAMFLAG_FRETVAL) && getReturnParameter && returnParameter is null)
-            returnParameter = new Parameter(method, bstr.toString(bstrNames[pos + 1]), paramType, -1, cast(ParameterAttributes)flags);
+            returnParameter = new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, -1, cast(ParameterAttributes)flags);
           else if (!getReturnParameter) {
             ParameterAttributes attrs = cast(ParameterAttributes)flags;
             if (paramType.name_ == "GUID*") {
@@ -1370,7 +1405,7 @@ class Parameter {
               paramType.name_ = "GUID";
               attrs |= (ParameterAttributes.In | ParameterAttributes.Out);
             }
-            params ~= new Parameter(method, bstr.toString(bstrNames[pos + 1]), paramType, pos, attrs);
+            params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
           }
         }
 

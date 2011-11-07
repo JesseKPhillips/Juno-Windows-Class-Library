@@ -1,16 +1,18 @@
+/**
+ * Provides additional support for COM (Component Object Model).
+ *
+ * Copyright: (c) 2009 John Chapman
+ *
+ * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
+ */
 module juno.com.client;
 
-private import juno.base.core,
+import juno.base.core,
   juno.base.string,
   juno.base.native,
   juno.utils.registry,
-  juno.com.core,
-  bstr = juno.com.bstr;
-
-private import std.traits : ParameterTypeTuple;
-private import std.c.string : memcpy;
-
-debug private import std.stdio : writefln;
+  juno.com.core;
+import std.traits : ParameterTypeTuple;
 
 /**
  * Represents a late-bound COM object.
@@ -42,12 +44,20 @@ debug private import std.stdio : writefln;
  *
  * message.call("Send");
  * ---
- * Automating Microsoft Office Word:
+ * Automating Microsoft Office Excel:
  * ---
  * void main() {
- *   scope word = new DispatchObject("Word.Application");
- *   word.set("Visible", true);
- *   scope document = word.get("Documents").call("Add");
+ *   // Create an instance of the Excel application object and set the Visible property to true.
+ *   scope excel = new DispatchObject("Excel.Application");
+ *   excel.set("Visible", true);
+ *
+ *   // Get the Workbooks property, then call the Add method.
+ *   scope workbooks = excel.get("Workbooks");
+ *   scope workbook = workbooks.call("Add");
+ *
+ *   // Get the Worksheet at index 1, then set the Cells at column 5, row 3 to a string.
+ *   scope worksheet = excel.get("Worksheets", 1);
+ *   worksheet.set("Cells", 5, 3, "data");
  * }
  * ---
  * Automating Internet Explorer:
@@ -88,13 +98,17 @@ class DispatchObject {
   private IDispatch target_;
   private VARIANT result_;
 
-  this(GUID clsid, ExecutionContext context = ExecutionContext.InProcessServer | ExecutionContext.LocalServer) {
+  /**
+   */
+  this(Guid clsid, ExecutionContext context = ExecutionContext.InProcessServer | ExecutionContext.LocalServer) {
     target_ = coCreate!(IDispatch)(clsid, context);
     if (target_ is null)
       throw new InvalidOperationException;
   }
 
-  this(GUID clsid, string server, ExecutionContext context = ExecutionContext.InProcessServer | ExecutionContext.RemoteServer) {
+  /**
+   */
+  this(Guid clsid, string server, ExecutionContext context = ExecutionContext.InProcessServer | ExecutionContext.RemoteServer) {
     target_ = coCreateEx!(IDispatch)(clsid, server, context);
     if (target_ is null)
       throw new InvalidOperationException;
@@ -108,6 +122,8 @@ class DispatchObject {
       throw new InvalidOperationException;
   }
 
+  /**
+   */
   this(string progId, string server, ExecutionContext context = ExecutionContext.InProcessServer | ExecutionContext.RemoteServer) {
     target_ = coCreateEx!(IDispatch)(progId, server, context);
     if (target_ is null)
@@ -117,7 +133,10 @@ class DispatchObject {
   /**
    */
   this(IDispatch target) {
-    // AddRef?
+    if (target is null)
+      throw new ArgumentNullException("target");
+
+    target.AddRef();
     target_ = target;
   }
 
@@ -125,11 +144,15 @@ class DispatchObject {
    * ditto
    */
   this(VARIANT target) {
-    this(target.pdispVal);
+    if (auto target = com_cast!(IDispatch)(result)) {
+      target_ = target;
+    }
   }
 
   private this(VARIANT result, uint ignore) {
-    this(com_cast!(IDispatch)(result));
+    if (auto target = com_cast!(IDispatch)(result)) {
+      target_ = target;
+    }
     result_ = result;
   }
 
@@ -140,7 +163,8 @@ class DispatchObject {
   /**
    */
   final void release() {
-    result_.clear();
+    if (!(result_.isNull || result_.isEmpty))
+      result_.clear();
 
     if (target_ !is null) {
       tryRelease(target_);
@@ -151,8 +175,9 @@ class DispatchObject {
   /**
    */
   R call(R = DispatchObject)(string name, ...) {
-    static if (is(R == DispatchObject))
+    static if (is(R == DispatchObject)) {
       return new DispatchObject(invokeMethod(target_, name, _arguments, _argptr), 0);
+    }
     else {
       R ret = invokeMethod!(R)(target_, name, _arguments, _argptr);
       result_ = ret;
@@ -162,11 +187,12 @@ class DispatchObject {
 
   /**
    */
-  R get(R = DispatchObject)(string name) {
-    static if (is(R == DispatchObject))
-      return new DispatchObject(getProperty(target_, name), 0);
+  R get(R = DispatchObject)(string name, ...) {
+    static if (is(R == DispatchObject)) {
+      return new DispatchObject(getProperty(target_, name, _arguments, _argptr), 0);
+    }
     else {
-      R ret = getProperty!(R)(target_, name);
+      R ret = getProperty!(R)(target_, name, _arguments, _argptr);
       result_ = ret;
       return ret;
     }
@@ -180,12 +206,76 @@ class DispatchObject {
 
   /**
    */
+  void setRef(string name, ...) {
+    setRefProperty(target_, name, _arguments, _argptr);
+  }
+
+  /**
+   */
   final IDispatch target() {
     return target_;
   }
 
+  /**
+   */
   final VARIANT result() {
     return result_;
+  }
+
+}
+
+/**
+ */
+class EventCookie(T) {
+
+  private IConnectionPoint cp_;
+  private uint cookie_;
+
+  /**
+   */
+  this(IUnknown source) {
+    auto cpc = com_cast!(IConnectionPointContainer)(source);
+    if (cpc !is null) {
+      scope(exit) tryRelease(cpc);
+
+      if (cpc.FindConnectionPoint(uuidof!(T), cp_) != S_OK)
+        throw new ArgumentException("Source object does not expose '" ~ T.stringof ~ "' event interface.");
+    }
+  }
+
+  ~this() {
+    disconnect();
+  }
+
+  /**
+   */
+  void connect(IUnknown sink) {
+    if (cp_.Advise(sink, cookie_) != S_OK) {
+      cookie_ = 0;
+      tryRelease(cp_);
+      throw new InvalidOperationException("Could not Advise() the event interface '" ~ T.stringof ~ "'.");
+    }
+
+    if (cp_ is null || cookie_ == 0) {
+      if (cp_ !is null)
+        tryRelease(cp_);
+      throw new ArgumentException("Connection point for event interface '" ~ T.stringof ~ "' cannot be created.");
+    }
+  }
+
+  /**
+   */
+  void disconnect() {
+    if (cp_ !is null && cookie_ != 0) {
+      try {
+        cp_.Unadvise(cookie_);
+      }
+      finally {
+        tryRelease(cp_);
+        cp_ = null;
+        cookie_ = 0;
+      }
+    }
   }
 
 }
@@ -287,54 +377,8 @@ private struct MethodProxy {
 
 }
 
-public class EventCookie(T) {
-
-  private IConnectionPoint cp_;
-  private uint cookie_;
-
-  public this(IUnknown source) {
-    auto cpc = safe_com_cast!(IConnectionPointContainer)(source);
-    if (cpc !is null) {
-      scope(exit) tryRelease(cpc);
-
-      if (cpc.FindConnectionPoint(uuidof!(T), cp_) != S_OK)
-        throw new ArgumentException("Source object does not expose '" ~ T.stringof ~ "' event interface.");
-    }
-  }
-
-  ~this() {
-    close();
-  }
-
-  void advise(IUnknown sink) {
-    if (cp_.Advise(sink, cookie_) != S_OK) {
-      cookie_ = 0;
-      tryRelease(cp_);
-      throw new InvalidOperationException("Could not Advise() the event interface '" ~ T.stringof ~ "'.");
-    }
-
-    if (cp_ is null || cookie_ == 0) {
-      if (cp_ !is null)
-        tryRelease(cp_);
-      throw new ArgumentException("Connection point for event interface '" ~ T.stringof ~ "' cannot be created.");
-    }
-  }
-
-  void unadvise() {
-    if (cp_ !is null && cookie_ != 0) {
-      try {
-        cp_.Unadvise(cookie_);
-      }
-      finally {
-        tryRelease(cp_);
-        cp_ = null;
-        cookie_ = 0;
-      }
-    }
-  }
-
-}
-
+/**
+ */
 class EventProvider(T) : Implements!(T) {
 
   extern(D):
@@ -345,8 +389,10 @@ class EventProvider(T) : Implements!(T) {
   private IConnectionPoint connectionPoint_;
   private uint cookie_;
 
+  /**
+   */
   this(IUnknown source) {
-    auto cpc = safe_com_cast!(IConnectionPointContainer)(source);
+    auto cpc = com_cast!(IConnectionPointContainer)(source);
     if (cpc !is null) {
       scope(exit) tryRelease(cpc);
 
@@ -380,6 +426,8 @@ class EventProvider(T) : Implements!(T) {
     }
   }
 
+  /**
+   */
   void bind(ID, R, P...)(ID member, R delegate(P) handler) {
     static if (is(ID : string)) {
       bool found;
@@ -433,7 +481,7 @@ class EventProvider(T) : Implements!(T) {
 
                           wchar* bstrName;
                           if (typeInfo.GetDocumentation(funcDesc.memid, &bstrName, null, null, null) == S_OK) {
-                            string memberName = bstr.toString(bstrName);
+                            string memberName = fromBstr(bstrName);
                             nameTable_[memberName.toLower()] = funcDesc.memid;
                           }
                         }

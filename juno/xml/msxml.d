@@ -4,6 +4,7 @@
 /*[uuid("f5078f18-c551-11d3-89b9-0000f81fe221")]*/
 module juno.xml.msxml;
 
+/*[importlib("stdole2.tlb")]*/
 private import juno.com.core;
 
 // Enums
@@ -655,10 +656,10 @@ interface IXSLProcessor : IDispatch {
 // ISAXXMLReader interface
 interface ISAXXMLReader : IUnknown {
   mixin(uuid("a4f96ed0-f829-476e-81c0-cdc7bd2a0802"));
-  /*[id(0x60010000)]*/ int getFeature(ushort* pwchName, out short pvfValue);
-  /*[id(0x60010001)]*/ int putFeature(ushort* pwchName, short vfValue);
-  /*[id(0x60010002)]*/ int getProperty(ushort* pwchName, out VARIANT pvarValue);
-  /*[id(0x60010003)]*/ int putProperty(ushort* pwchName, VARIANT varValue);
+  /*[id(0x60010000)]*/ int getFeature(wchar* pwchName, out short pvfValue);
+  /*[id(0x60010001)]*/ int putFeature(wchar* pwchName, short vfValue);
+  /*[id(0x60010002)]*/ int getProperty(wchar* pwchName, out VARIANT pvarValue);
+  /*[id(0x60010003)]*/ int putProperty(wchar* pwchName, VARIANT varValue);
   /*[id(0x60010004)]*/ int getEntityResolver(out ISAXEntityResolver ppResolver);
   /*[id(0x60010005)]*/ int putEntityResolver(ISAXEntityResolver pResolver);
   /*[id(0x60010006)]*/ int getContentHandler(out ISAXContentHandler ppHandler);
@@ -667,18 +668,18 @@ interface ISAXXMLReader : IUnknown {
   /*[id(0x60010009)]*/ int putDTDHandler(ISAXDTDHandler pHandler);
   /*[id(0x6001000A)]*/ int getErrorHandler(out ISAXErrorHandler ppHandler);
   /*[id(0x6001000B)]*/ int putErrorHandler(ISAXErrorHandler pHandler);
-  /*[id(0x6001000C)]*/ int getBaseURL(out ushort ppwchBaseUrl);
-  /*[id(0x6001000D)]*/ int putBaseURL(ushort* pwchBaseUrl);
-  /*[id(0x6001000E)]*/ int getSecureBaseURL(out ushort ppwchSecureBaseUrl);
-  /*[id(0x6001000F)]*/ int putSecureBaseURL(ushort* pwchSecureBaseUrl);
+  /*[id(0x6001000C)]*/ int getBaseURL(out wchar* ppwchBaseUrl);
+  /*[id(0x6001000D)]*/ int putBaseURL(wchar* pwchBaseUrl);
+  /*[id(0x6001000E)]*/ int getSecureBaseURL(out wchar* ppwchSecureBaseUrl);
+  /*[id(0x6001000F)]*/ int putSecureBaseURL(wchar* pwchSecureBaseUrl);
   /*[id(0x60010010)]*/ int parse(VARIANT varInput);
-  /*[id(0x60010011)]*/ int parseURL(ushort* pwchUrl);
+  /*[id(0x60010011)]*/ int parseURL(wchar* pwchUrl);
 }
 
 // ISAXEntityResolver interface
 interface ISAXEntityResolver : IUnknown {
   mixin(uuid("99bca7bd-e8c4-4d5f-a0cf-6d907901ff07"));
-  /*[id(0x60010000)]*/ int resolveEntity(ushort* pwchPublicId, ushort* pwchSystemId, out VARIANT pvarInput);
+  /*[id(0x60010000)]*/ int resolveEntity(wchar* pwchPublicId, wchar* pwchSystemId, out VARIANT pvarInput);
 }
 
 // ISAXContentHandler interface
@@ -687,14 +688,14 @@ interface ISAXContentHandler : IUnknown {
   /*[id(0x60010000)]*/ int putDocumentLocator(ISAXLocator pLocator);
   /*[id(0x60010001)]*/ int startDocument();
   /*[id(0x60010002)]*/ int endDocument();
-  /*[id(0x60010003)]*/ int startPrefixMapping(ushort* pwchPrefix, int cchPrefix, ushort* pwchUri, int cchUri);
-  /*[id(0x60010004)]*/ int endPrefixMapping(ushort* pwchPrefix, int cchPrefix);
-  /*[id(0x60010005)]*/ int startElement(ushort* pwchNamespaceUri, int cchNamespaceUri, ushort* pwchLocalName, int cchLocalName, ushort* pwchQName, int cchQName, ISAXAttributes pAttributes);
-  /*[id(0x60010006)]*/ int endElement(ushort* pwchNamespaceUri, int cchNamespaceUri, ushort* pwchLocalName, int cchLocalName, ushort* pwchQName, int cchQName);
-  /*[id(0x60010007)]*/ int characters(ushort* pwchChars, int cchChars);
-  /*[id(0x60010008)]*/ int ignorableWhitespace(ushort* pwchChars, int cchChars);
-  /*[id(0x60010009)]*/ int processingInstruction(ushort* pwchTarget, int cchTarget, ushort* pwchData, int cchData);
-  /*[id(0x6001000A)]*/ int skippedEntity(ushort* pwchName, int cchName);
+  /*[id(0x60010003)]*/ int startPrefixMapping(wchar* pwchPrefix, int cchPrefix, wchar* pwchUri, int cchUri);
+  /*[id(0x60010004)]*/ int endPrefixMapping(wchar* pwchPrefix, int cchPrefix);
+  /*[id(0x60010005)]*/ int startElement(wchar* pwchNamespaceUri, int cchNamespaceUri, wchar* pwchLocalName, int cchLocalName, wchar* pwchQName, int cchQName, ISAXAttributes pAttributes);
+  /*[id(0x60010006)]*/ int endElement(wchar* pwchNamespaceUri, int cchNamespaceUri, wchar* pwchLocalName, int cchLocalName, wchar* pwchQName, int cchQName);
+  /*[id(0x60010007)]*/ int characters(wchar* pwchChars, int cchChars);
+  /*[id(0x60010008)]*/ int ignorableWhitespace(wchar* pwchChars, int cchChars);
+  /*[id(0x60010009)]*/ int processingInstruction(wchar* pwchTarget, int cchTarget, wchar* pwchData, int cchData);
+  /*[id(0x6001000A)]*/ int skippedEntity(wchar* pwchName, int cchName);
 }
 
 // ISAXLocator interface
@@ -702,41 +703,41 @@ interface ISAXLocator : IUnknown {
   mixin(uuid("9b7e472a-0de4-4640-bff3-84d38a051c31"));
   /*[id(0x60010000)]*/ int getColumnNumber(out int pnColumn);
   /*[id(0x60010001)]*/ int getLineNumber(out int pnLine);
-  /*[id(0x60010002)]*/ int getPublicId(out ushort ppwchPublicId);
-  /*[id(0x60010003)]*/ int getSystemId(out ushort ppwchSystemId);
+  /*[id(0x60010002)]*/ int getPublicId(out wchar* ppwchPublicId);
+  /*[id(0x60010003)]*/ int getSystemId(out wchar* ppwchSystemId);
 }
 
 // ISAXAttributes interface
 interface ISAXAttributes : IUnknown {
   mixin(uuid("f078abe1-45d2-4832-91ea-4466ce2f25c9"));
   /*[id(0x60010000)]*/ int getLength(out int pnLength);
-  /*[id(0x60010001)]*/ int getURI(int nIndex, out ushort ppwchUri, out int pcchUri);
-  /*[id(0x60010002)]*/ int getLocalName(int nIndex, out ushort ppwchLocalName, out int pcchLocalName);
+  /*[id(0x60010001)]*/ int getURI(int nIndex, out wchar* ppwchUri, out int pcchUri);
+  /*[id(0x60010002)]*/ int getLocalName(int nIndex, out wchar* ppwchLocalName, out int pcchLocalName);
   /*[id(0x60010003)]*/ int getQName(int nIndex, out ushort ppwchQName, out int pcchQName);
-  /*[id(0x60010004)]*/ int getName(int nIndex, out ushort ppwchUri, out int pcchUri, out ushort ppwchLocalName, out int pcchLocalName, out ushort ppwchQName, out int pcchQName);
-  /*[id(0x60010005)]*/ int getIndexFromName(ushort* pwchUri, int cchUri, ushort* pwchLocalName, int cchLocalName, out int pnIndex);
+  /*[id(0x60010004)]*/ int getName(int nIndex, out wchar* ppwchUri, out int pcchUri, out wchar* ppwchLocalName, out int pcchLocalName, out wchar* ppwchQName, out int pcchQName);
+  /*[id(0x60010005)]*/ int getIndexFromName(wchar* pwchUri, int cchUri, wchar* pwchLocalName, int cchLocalName, out int pnIndex);
   /*[id(0x60010006)]*/ int getIndexFromQName(ushort* pwchQName, int cchQName, out int pnIndex);
-  /*[id(0x60010007)]*/ int getType(int nIndex, out ushort ppwchType, out int pcchType);
-  /*[id(0x60010008)]*/ int getTypeFromName(ushort* pwchUri, int cchUri, ushort* pwchLocalName, int cchLocalName, out ushort ppwchType, out int pcchType);
-  /*[id(0x60010009)]*/ int getTypeFromQName(ushort* pwchQName, int cchQName, out ushort ppwchType, out int pcchType);
-  /*[id(0x6001000A)]*/ int getValue(int nIndex, out ushort ppwchValue, out int pcchValue);
-  /*[id(0x6001000B)]*/ int getValueFromName(ushort* pwchUri, int cchUri, ushort* pwchLocalName, int cchLocalName, out ushort ppwchValue, out int pcchValue);
-  /*[id(0x6001000C)]*/ int getValueFromQName(ushort* pwchQName, int cchQName, out ushort ppwchValue, out int pcchValue);
+  /*[id(0x60010007)]*/ int getType(int nIndex, out wchar* ppwchType, out int pcchType);
+  /*[id(0x60010008)]*/ int getTypeFromName(wchar* pwchUri, int cchUri, wchar* pwchLocalName, int cchLocalName, out wchar* ppwchType, out int pcchType);
+  /*[id(0x60010009)]*/ int getTypeFromQName(wchar* pwchQName, int cchQName, out wchar* ppwchType, out int pcchType);
+  /*[id(0x6001000A)]*/ int getValue(int nIndex, out wchar* ppwchValue, out int pcchValue);
+  /*[id(0x6001000B)]*/ int getValueFromName(wchar* pwchUri, int cchUri, wchar* pwchLocalName, int cchLocalName, out wchar* ppwchValue, out int pcchValue);
+  /*[id(0x6001000C)]*/ int getValueFromQName(wchar* pwchQName, int cchQName, out wchar* ppwchValue, out int pcchValue);
 }
 
 // ISAXDTDHandler interface
 interface ISAXDTDHandler : IUnknown {
   mixin(uuid("e15c1baf-afb3-4d60-8c36-19a8c45defed"));
-  /*[id(0x60010000)]*/ int notationDecl(ushort* pwchName, int cchName, ushort* pwchPublicId, int cchPublicId, ushort* pwchSystemId, int cchSystemId);
-  /*[id(0x60010001)]*/ int unparsedEntityDecl(ushort* pwchName, int cchName, ushort* pwchPublicId, int cchPublicId, ushort* pwchSystemId, int cchSystemId, ushort* pwchNotationName, int cchNotationName);
+  /*[id(0x60010000)]*/ int notationDecl(wchar* pwchName, int cchName, wchar* pwchPublicId, int cchPublicId, wchar* pwchSystemId, int cchSystemId);
+  /*[id(0x60010001)]*/ int unparsedEntityDecl(wchar* pwchName, int cchName, wchar* pwchPublicId, int cchPublicId, wchar* pwchSystemId, int cchSystemId, wchar* pwchNotationName, int cchNotationName);
 }
 
 // ISAXErrorHandler interface
 interface ISAXErrorHandler : IUnknown {
   mixin(uuid("a60511c4-ccf5-479e-98a3-dc8dc545b7d0"));
-  /*[id(0x60010000)]*/ int error(ISAXLocator pLocator, ushort* pwchErrorMessage, int hrErrorCode);
-  /*[id(0x60010001)]*/ int fatalError(ISAXLocator pLocator, ushort* pwchErrorMessage, int hrErrorCode);
-  /*[id(0x60010002)]*/ int ignorableWarning(ISAXLocator pLocator, ushort* pwchErrorMessage, int hrErrorCode);
+  /*[id(0x60010000)]*/ int error(ISAXLocator pLocator, wchar* pwchErrorMessage, int hrErrorCode);
+  /*[id(0x60010001)]*/ int fatalError(ISAXLocator pLocator, wchar* pwchErrorMessage, int hrErrorCode);
+  /*[id(0x60010002)]*/ int ignorableWarning(ISAXLocator pLocator, wchar* pwchErrorMessage, int hrErrorCode);
 }
 
 // ISAXXMLFilter interface
@@ -749,22 +750,22 @@ interface ISAXXMLFilter : ISAXXMLReader {
 // ISAXLexicalHandler interface
 interface ISAXLexicalHandler : IUnknown {
   mixin(uuid("7f85d5f5-47a8-4497-bda5-84ba04819ea6"));
-  /*[id(0x60010000)]*/ int startDTD(ushort* pwchName, int cchName, ushort* pwchPublicId, int cchPublicId, ushort* pwchSystemId, int cchSystemId);
+  /*[id(0x60010000)]*/ int startDTD(wchar* pwchName, int cchName, wchar* pwchPublicId, int cchPublicId, wchar* pwchSystemId, int cchSystemId);
   /*[id(0x60010001)]*/ int endDTD();
-  /*[id(0x60010002)]*/ int startEntity(ushort* pwchName, int cchName);
-  /*[id(0x60010003)]*/ int endEntity(ushort* pwchName, int cchName);
+  /*[id(0x60010002)]*/ int startEntity(wchar* pwchName, int cchName);
+  /*[id(0x60010003)]*/ int endEntity(wchar* pwchName, int cchName);
   /*[id(0x60010004)]*/ int startCDATA();
   /*[id(0x60010005)]*/ int endCDATA();
-  /*[id(0x60010006)]*/ int comment(ushort* pwchChars, int cchChars);
+  /*[id(0x60010006)]*/ int comment(wchar* pwchChars, int cchChars);
 }
 
 // ISAXDeclHandler interface
 interface ISAXDeclHandler : IUnknown {
   mixin(uuid("862629ac-771a-47b2-8337-4e6843c1be90"));
-  /*[id(0x60010000)]*/ int elementDecl(ushort* pwchName, int cchName, ushort* pwchModel, int cchModel);
-  /*[id(0x60010001)]*/ int attributeDecl(ushort* pwchElementName, int cchElementName, ushort* pwchAttributeName, int cchAttributeName, ushort* pwchType, int cchType, ushort* pwchValueDefault, int cchValueDefault, ushort* pwchValue, int cchValue);
-  /*[id(0x60010002)]*/ int internalEntityDecl(ushort* pwchName, int cchName, ushort* pwchValue, int cchValue);
-  /*[id(0x60010003)]*/ int externalEntityDecl(ushort* pwchName, int cchName, ushort* pwchPublicId, int cchPublicId, ushort* pwchSystemId, int cchSystemId);
+  /*[id(0x60010000)]*/ int elementDecl(wchar* pwchName, int cchName, wchar* pwchModel, int cchModel);
+  /*[id(0x60010001)]*/ int attributeDecl(wchar* pwchElementName, int cchElementName, wchar* pwchAttributeName, int cchAttributeName, wchar* pwchType, int cchType, wchar* pwchValueDefault, int cchValueDefault, wchar* pwchValue, int cchValue);
+  /*[id(0x60010002)]*/ int internalEntityDecl(wchar* pwchName, int cchName, wchar* pwchValue, int cchValue);
+  /*[id(0x60010003)]*/ int externalEntityDecl(wchar* pwchName, int cchName, wchar* pwchPublicId, int cchPublicId, wchar* pwchSystemId, int cchSystemId);
 }
 
 // IVBSAXXMLReader interface
@@ -1332,322 +1333,322 @@ interface IMXNamespaceManager : IUnknown {
   /*[id(0x60010003)]*/ int pushContext();
   /*[id(0x60010004)]*/ int pushNodeContext(IXMLDOMNode contextNode, short fDeep);
   /*[id(0x60010005)]*/ int popContext();
-  /*[id(0x60010006)]*/ int declarePrefix(wchar* prefix, wchar* namespaceURI);
-  /*[id(0x60010007)]*/ int getDeclaredPrefix(int nIndex, wchar* pwchPrefix, ref int pcchPrefix);
-  /*[id(0x60010008)]*/ int getPrefix(wchar* pwszNamespaceURI, int nIndex, wchar* pwchPrefix, ref int pcchPrefix);
-  /*[id(0x60010009)]*/ int getURI(wchar* pwchPrefix, IXMLDOMNode pContextNode, wchar* pwchUri, ref int pcchUri);
+  /*[id(0x60010006)]*/ int declarePrefix(in wchar* prefix, in wchar* namespaceURI);
+  /*[id(0x60010007)]*/ int getDeclaredPrefix(int nIndex, in wchar* pwchPrefix, ref int pcchPrefix);
+  /*[id(0x60010008)]*/ int getPrefix(in wchar* pwszNamespaceURI, int nIndex, wchar* pwchPrefix, ref int pcchPrefix);
+  /*[id(0x60010009)]*/ int getURI(in wchar* pwchPrefix, IXMLDOMNode pContextNode, wchar* pwchUri, ref int pcchUri);
 }
 
 // CoClasses
 
 // W3C-DOM XML Document (Apartment)
-abstract class DOMDocument {
+abstract final class DOMDocument {
   mixin(uuid("f6d90f11-9c73-11d3-b32e-00c04f990bb4"));
   mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
-abstract class DOMDocument26 {
+abstract final class DOMDocument26 {
   mixin(uuid("f5078f1b-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
-abstract class DOMDocument30 {
+abstract final class DOMDocument30 {
   mixin(uuid("f5078f32-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Apartment)
-abstract class DOMDocument40 {
+abstract final class DOMDocument40 {
   mixin(uuid("88d969c0-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document 6.0 (Apartment)
-abstract class DOMDocument60 {
+abstract final class DOMDocument60 {
   mixin(uuid("88d96a05-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXMLDOMDocument3);
 }
 
 // W3C-DOM XML Document (Free threaded)
-abstract class FreeThreadedDOMDocument {
+abstract final class FreeThreadedDOMDocument {
   mixin(uuid("f6d90f12-9c73-11d3-b32e-00c04f990bb4"));
   mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
-abstract class FreeThreadedDOMDocument26 {
+abstract final class FreeThreadedDOMDocument26 {
   mixin(uuid("f5078f1c-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
-abstract class FreeThreadedDOMDocument30 {
+abstract final class FreeThreadedDOMDocument30 {
   mixin(uuid("f5078f33-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document (Free threaded)
-abstract class FreeThreadedDOMDocument40 {
+abstract final class FreeThreadedDOMDocument40 {
   mixin(uuid("88d969c1-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXMLDOMDocument2);
 }
 
 // W3C-DOM XML Document 6.0 (Free threaded)
-abstract class FreeThreadedDOMDocument60 {
+abstract final class FreeThreadedDOMDocument60 {
   mixin(uuid("88d96a06-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXMLDOMDocument3);
 }
 
 // XML Schema Cache
-abstract class XMLSchemaCache {
+abstract final class XMLSchemaCache {
   mixin(uuid("373984c9-b845-449b-91e7-45ac83036ade"));
   mixin Interfaces!(IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 2.6
-abstract class XMLSchemaCache26 {
+abstract final class XMLSchemaCache26 {
   mixin(uuid("f5078f1d-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 3.0
-abstract class XMLSchemaCache30 {
+abstract final class XMLSchemaCache30 {
   mixin(uuid("f5078f34-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXMLDOMSchemaCollection);
 }
 
 // XML Schema Cache 4.0
-abstract class XMLSchemaCache40 {
+abstract final class XMLSchemaCache40 {
   mixin(uuid("88d969c2-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXMLDOMSchemaCollection2);
 }
 
 // XML Schema Cache 6.0
-abstract class XMLSchemaCache60 {
+abstract final class XMLSchemaCache60 {
   mixin(uuid("88d96a07-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXMLDOMSchemaCollection2);
 }
 
 // Compiled XSL Stylesheet Cache
-abstract class XSLTemplate {
+abstract final class XSLTemplate {
   mixin(uuid("2933bf94-7b36-11d2-b20e-00c04f983e60"));
   mixin Interfaces!(IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 2.6
-abstract class XSLTemplate26 {
+abstract final class XSLTemplate26 {
   mixin(uuid("f5078f21-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 3.0
-abstract class XSLTemplate30 {
+abstract final class XSLTemplate30 {
   mixin(uuid("f5078f36-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXSLTemplate);
 }
 
 // Compiled XSL Stylesheet Cache 4.0
-abstract class XSLTemplate40 {
+abstract final class XSLTemplate40 {
   mixin(uuid("88d969c3-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXSLTemplate);
 }
 
 // XSL Stylesheet Cache 6.0
-abstract class XSLTemplate60 {
+abstract final class XSLTemplate60 {
   mixin(uuid("88d96a08-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXSLTemplate);
 }
 
 // XML Data Source Object
-abstract class DSOControl {
+abstract final class DSOControl {
   mixin(uuid("f6d90f14-9c73-11d3-b32e-00c04f990bb4"));
   mixin Interfaces!(IDSOControl);
 }
 
 // XML Data Source Object
-abstract class DSOControl26 {
+abstract final class DSOControl26 {
   mixin(uuid("f5078f1f-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IDSOControl);
 }
 
 // XML Data Source Object
-abstract class DSOControl30 {
+abstract final class DSOControl30 {
   mixin(uuid("f5078f39-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IDSOControl);
 }
 
 // XML Data Source Object
-abstract class DSOControl40 {
+abstract final class DSOControl40 {
   mixin(uuid("88d969c4-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IDSOControl);
 }
 
 // XML HTTP Request class.
-abstract class XMLHTTP {
+abstract final class XMLHTTP {
   mixin(uuid("f6d90f16-9c73-11d3-b32e-00c04f990bb4"));
   mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
-abstract class XMLHTTP26 {
+abstract final class XMLHTTP26 {
   mixin(uuid("f5078f1e-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
-abstract class XMLHTTP30 {
+abstract final class XMLHTTP30 {
   mixin(uuid("f5078f35-c551-11d3-89b9-0000f81fe221"));
   mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // XML HTTP Request class.
-abstract class XMLHTTP40 {
+abstract final class XMLHTTP40 {
   mixin(uuid("88d969c5-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // XML HTTP Request class 6.0
-abstract class XMLHTTP60 {
+abstract final class XMLHTTP60 {
   mixin(uuid("88d96a0a-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
-abstract class ServerXMLHTTP {
+abstract final class ServerXMLHTTP {
   mixin(uuid("afba6b42-5692-48ea-8141-dc517dcf0ef1"));
   mixin Interfaces!(IServerXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
-abstract class ServerXMLHTTP30 {
+abstract final class ServerXMLHTTP30 {
   mixin(uuid("afb40ffd-b609-40a3-9828-f88bbe11e4e3"));
   mixin Interfaces!(IServerXMLHTTPRequest);
 }
 
 // Server XML HTTP Request class.
-abstract class ServerXMLHTTP40 {
+abstract final class ServerXMLHTTP40 {
   mixin(uuid("88d969c6-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IServerXMLHTTPRequest2);
 }
 
 // Server XML HTTP Request 6.0 
-abstract class ServerXMLHTTP60 {
+abstract final class ServerXMLHTTP60 {
   mixin(uuid("88d96a0b-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IServerXMLHTTPRequest2);
 }
 
 // SAX XML Reader (version independent) coclass
-abstract class SAXXMLReader {
+abstract final class SAXXMLReader {
   mixin(uuid("079aa557-4a18-424a-8eee-e39f0a8d41b9"));
   mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
 }
 
 // SAX XML Reader 3.0 coclass
-abstract class SAXXMLReader30 {
+abstract final class SAXXMLReader30 {
   mixin(uuid("3124c396-fb13-4836-a6ad-1317f1713688"));
   mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
 }
 
 // SAX XML Reader 4.0 coclass
-abstract class SAXXMLReader40 {
+abstract final class SAXXMLReader40 {
   mixin(uuid("7c6e29bc-8b8b-4c3d-859e-af6cd158be0f"));
   mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader);
 }
 
 // SAX XML Reader 6.0
-abstract class SAXXMLReader60 {
+abstract final class SAXXMLReader60 {
   mixin(uuid("88d96a0c-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader);
 }
 
 // Microsoft XML Writer (version independent) coclass
-abstract class MXXMLWriter {
+abstract final class MXXMLWriter {
   mixin(uuid("fc220ad8-a72a-4ee8-926e-0b7ad152a020"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 3.0 coclass
-abstract class MXXMLWriter30 {
+abstract final class MXXMLWriter30 {
   mixin(uuid("3d813dfe-6c91-4a4e-8f41-04346a841d9c"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 4.0 coclass
-abstract class MXXMLWriter40 {
+abstract final class MXXMLWriter40 {
   mixin(uuid("88d969c8-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft XML Writer 6.0
-abstract class MXXMLWriter60 {
+abstract final class MXXMLWriter60 {
   mixin(uuid("88d96a0f-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer (version independent) coclass
-abstract class MXHTMLWriter {
+abstract final class MXHTMLWriter {
   mixin(uuid("a4c23ec3-6b70-4466-9127-550077239978"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 3.0 coclass
-abstract class MXHTMLWriter30 {
+abstract final class MXHTMLWriter30 {
   mixin(uuid("853d1540-c1a7-4aa9-a226-4d3bd301146d"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 4.0 coclass
-abstract class MXHTMLWriter40 {
+abstract final class MXHTMLWriter40 {
   mixin(uuid("88d969c9-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // Microsoft HTML Writer 6.0
-abstract class MXHTMLWriter60 {
+abstract final class MXHTMLWriter60 {
   mixin(uuid("88d96a10-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
 // SAX Attributes (version independent) coclass
-abstract class SAXAttributes {
+abstract final class SAXAttributes {
   mixin(uuid("4dd441ad-526d-4a77-9f1b-9841ed802fb0"));
   mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 3.0 coclass
-abstract class SAXAttributes30 {
+abstract final class SAXAttributes30 {
   mixin(uuid("3e784a01-f3ae-4dc0-9354-9526b9370eba"));
   mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 4.0 coclass
-abstract class SAXAttributes40 {
+abstract final class SAXAttributes40 {
   mixin(uuid("88d969ca-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // SAX Attributes 6.0
-abstract class SAXAttributes60 {
+abstract final class SAXAttributes60 {
   mixin(uuid("88d96a0e-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
 // MX Namespace Manager coclass
-abstract class MXNamespaceManager {
+abstract final class MXNamespaceManager {
   mixin(uuid("88d969d5-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IVBMXNamespaceManager, IMXNamespaceManager);
 }
 
 // MX Namespace Manager 4.0 coclass
-abstract class MXNamespaceManager40 {
+abstract final class MXNamespaceManager40 {
   mixin(uuid("88d969d6-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IVBMXNamespaceManager, IMXNamespaceManager);
 }
 
 // MX Namespace Manager 6.0
-abstract class MXNamespaceManager60 {
+abstract final class MXNamespaceManager60 {
   mixin(uuid("88d96a11-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IVBMXNamespaceManager, IMXNamespaceManager);
 }

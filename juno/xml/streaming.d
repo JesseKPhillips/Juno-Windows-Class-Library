@@ -1,26 +1,21 @@
 /**
  * Provides a _streaming API for reading and writing XML data.
  *
- * Copyright: (c) 2008 John Chapman
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.xml.streaming;
 
-private import juno.base.core,
+import juno.base.core,
   juno.base.text,
   juno.base.string,
   juno.base.native,
   juno.locale.convert,
   juno.com.core,
-  juno.xml.core;
-
-private import std.stream : Stream, File, FileMode;
-private import std.base64;
-
-debug private import std.stdio;
-
-extern(Windows):
+  juno.xml.core,
+  std.stream;
+static import std.base64;
 
 enum XmlReaderProperty : uint {
   MultiLanguage,
@@ -40,6 +35,8 @@ enum XmlWriterProperty : uint {
   OmitXmlDeclaration,
   ConformanceLevel
 }
+
+extern(Windows):
 
 alias DllImport!("xmllite.dll", "CreateXmlReader",
   int function(ref GUID riid, void** ppvObject, IMalloc pMalloc))
@@ -128,13 +125,13 @@ interface IXmlWriter : IUnknown {
 
 extern(D):
 
-abstract class XmlResolver {
+/*abstract class XmlResolver {
 
   abstract Object resolveUri(string baseUri, string publicId, string systemId);
 
 }
 
-/*class XmlUrlResolver : XmlResolver {
+class XmlUrlResolver : XmlResolver {
 
   override Object resolveUri(string baseUri, string publicId, string systemId) {
     return null;
@@ -157,6 +154,7 @@ private class XmlResolverWrapper : Implements!(IXmlResolver) {
 }*/
 
 /**
+ * Specifies features to support on the XmlReader object.
  */
 final class XmlReaderSettings {
 
@@ -165,12 +163,14 @@ final class XmlReaderSettings {
   //private XmlResolver xmlResolver_;
 
   /**
+   * Initializes a new instance.
    */
   this() {
     reset();
   }
 
   /**
+   * Resets the members to their default values.
    */
   void reset() {
     conformanceLevel_ = XmlConformanceLevel.Document;
@@ -179,6 +179,7 @@ final class XmlReaderSettings {
   }
 
   /**
+   * Gets or sets the level of conformance with which the XmlReader will comply.
    */
   void conformanceLevel(XmlConformanceLevel value) {
     conformanceLevel_ = value;
@@ -192,6 +193,7 @@ final class XmlReaderSettings {
   }
 
   /**
+   * Gets or sets a _value indicating whether to prohibit document type definition (DTD) processing.
    */
   void prohibitDtd(bool value) {
     prohibitDtd_ = value;
@@ -215,6 +217,7 @@ final class XmlReaderSettings {
 }
 
 /**
+ * Provides context information required by the XmlReader to parse an XML fragment.
  */
 class XmlParserContext {
 
@@ -222,6 +225,10 @@ class XmlParserContext {
   private Encoding encoding_;
 
   /**
+   * Initializes a new instance.
+   * Params:
+   *   baseURI = The base URI for the XML fragment.
+   *   encoding = An Encoding object indicating the _encoding setting.
    */
   this(string baseURI, Encoding encoding = null) {
     baseURI_ = baseURI;
@@ -229,6 +236,7 @@ class XmlParserContext {
   }
   
   /**
+   * Gets or sets the base URI.
    */
   final void baseURI(string value) {
     baseURI_ = value;
@@ -242,6 +250,7 @@ class XmlParserContext {
   }
 
   /**
+   * Gets or sets the _encoding setting.
    */
   final void encoding(Encoding value) {
     encoding_ = value;
@@ -286,7 +295,7 @@ private int createStreamOnFile(string fileName, uint flags, out IStream result) 
       return S_OK;
     }
 
-    int Write(void* pv, uint cb, ref uint pcbWritten) {
+    int Write(in void* pv, uint cb, ref uint pcbWritten) {
       uint bytesWritten;
       uint ret = WriteFile(handle_, pv, cb, bytesWritten, null);
       if (&pcbWritten)
@@ -394,7 +403,7 @@ private int createStreamOnUrl(string uri, out IStream result) {
   if (hr != S_OK)
     return hr;
 
-  hr = url.BindToStorage(context, null, uuidof!(IStream), cast(void**)&result);
+  hr = url.BindToStorage(context, null, uuidof!(IStream), retval(result));
   return (hr != S_OK) 
     ? E_FAIL 
     : hr;
@@ -474,6 +483,11 @@ abstract class XmlReader {
   abstract bool read();
 
   /**
+   * Checks that the current node is an element and advances the reader to the next node.
+   * Params:
+   *   localName = The local _name of the element.
+   *   name = The qualified _name of the element.
+   *   ns = The namespace URI of the element.
    */
   void readStartElement(string localName, string ns) {
     if (moveToContent() != XmlNodeType.Element)
@@ -504,6 +518,7 @@ abstract class XmlReader {
   }
 
   /**
+   * Checks that the current content node is an end tag and advances the reader to the next node.
    */
   void readEndElement() {
     if (moveToContent() != XmlNodeType.EndElement)
@@ -512,6 +527,11 @@ abstract class XmlReader {
   }
 
   /**
+   * Reads a text-only element.
+   * Params:
+   *   localName = The local _name of the element.
+   *   name = The qualified _name of the element.
+   *   ns = The namespace URI of the element.
    */
   string readElementString(string localName, string ns) {
     if (moveToContent() != XmlNodeType.Element)
@@ -570,6 +590,10 @@ abstract class XmlReader {
   }
 
   /**
+   * Advances the XmlReader to the next descendant element.
+   *   localName = The local _name of the element.
+   *   name = The qualified _name of the element.
+   *   namespaceURI = The namespace URI of the element.
    */
   bool readToDescendant(string localName, string namespaceURI) {
     int depth = this.depth;
@@ -607,6 +631,10 @@ abstract class XmlReader {
   }
 
   /**
+   * Reads until the named element is found.
+   *   localName = The local _name of the element.
+   *   name = The qualified _name of the element.
+   *   namespaceURI = The namespace URI of the element.
    */
   bool readToFollowing(string localName, string namespaceURI) {
     while (read()) {
@@ -628,8 +656,12 @@ abstract class XmlReader {
   }
 
   /**
+   * Advances the XmlReader to the next sibling element.
+   *   localName = The local _name of the element.
+   *   name = The qualified _name of the element.
+   *   namespaceURI = The namespace URI of the element.
    */
-  bool readToNextSibling(char[] localName, char[] namespaceURI) {
+  bool readToNextSibling(string localName, string namespaceURI) {
     XmlNodeType nt;
     do {
       skip();
@@ -655,6 +687,7 @@ abstract class XmlReader {
   }
 
   /**
+   * If the current node is not a content node, the reader skips ahead to the next content node or end of file.
    */
   XmlNodeType moveToContent() {
     do {
@@ -676,6 +709,8 @@ abstract class XmlReader {
   }
 
   /**
+   * Reads the contents of an element or text node.
+   * Returns: The contents of an element.
    */
   string readString() {
     if (readState != XmlReadState.Interactive)
@@ -701,6 +736,7 @@ abstract class XmlReader {
   }
 
   /**
+   * Skips the children of the current node.
    */
   void skip() {
     if (readState == XmlReadState.Interactive) {
@@ -719,14 +755,24 @@ abstract class XmlReader {
   }
 
   /**
+   * Moves to the first attribute.
+   * Returns: true if an attribute exists; otherwise, false.
    */
   abstract bool moveToFirstAttribute();
 
   /**
+   * Moves to the next attribute.
+   * Returns: true if there is a next attribute; otherwise, false.
    */
   abstract bool moveToNextAttribute();
 
   /**
+   * Moves to the specified attribute.
+   * Params:
+   *   localName = The local _name of the element.
+   *   name = The qualified _name of the element.
+   *   namespaceURI = The namespace URI of the element.
+   * Returns: true if the attribute is found; otherwise, false.
    */
   abstract bool moveToAttribute(string localName, string namespaceURI);
 
@@ -736,10 +782,18 @@ abstract class XmlReader {
   abstract bool moveToAttribute(string name);
 
   /**
+   * Moves to the element that contains the current attribute node.
+   * Returns: true if the reader is positioned on an attribute; otherwise, false.
    */
   abstract bool moveToElement();
 
   /**
+   * Gets the value of an attribute.
+   * Params:
+   *   localName = The local _name of the element.
+   *   name = The qualified _name of the element.
+   *   namespaceURI = The namespace URI of the element.
+   * Returns: The value of the specified attribute.
    */
   abstract string getAttribute(string localName, string namespaceURI);
 
@@ -749,66 +803,81 @@ abstract class XmlReader {
   abstract string getAttribute(string name);
 
   /**
+   * Gets the state of the reader.
    */
   abstract XmlReadState readState();
 
   /**
+   * Gets the _depth of the current node in the XML document.
    */
   abstract int depth();
 
   /**
+   * Gets a value indicating whether the reader is positioned at the end of the stream.
    */
   abstract bool isEOF();
 
   /**
+   * Gets a value indicating whether the current node is an empty element.
    */
   abstract bool isEmptyElement();
 
   /**
+   * Gets a value indicating whether the current node is an attribute generated from the default value defined in the DTD or schema.
    */
   bool isDefault() {
     return false;
   }
 
   /**
+   * Gets the type of the current node.
    */
   abstract XmlNodeType nodeType();
 
   /**
+   * Gets the base URI of the current node.
    */
   abstract string baseURI();
 
   /**
+   * Gets the qualified _name of the current node.
    */
   abstract string name();
 
   /**
+   * Gets the namespace _prefix of the current node.
    */
   abstract string prefix();
 
   /**
+   * Gets the local name of the current node.
    */
   abstract string localName();
 
   /**
+   * Gets the namespace URI of the current node.
    */
   abstract string namespaceURI();
 
   /**
+   * Gets a value indicating whether the current node has a value.
    */
   abstract bool hasValue();
 
   /**
+   * Gets the text _value of the current node.
    */
   abstract string value();
 
   /**
+   * Gets a value indicating whether the current node has any attributes.
    */
   bool hasAttributes() {
     return attributeCount > 0;
   }
 
   /**
+   * Gets the number of attributes on the current node.
    */
   abstract int attributeCount();
 
@@ -821,9 +890,15 @@ abstract class XmlReader {
   abstract int linePosition();
 
   /**
+   * Gets the value of the attribute.
+   * Params:
+   *   localName = The local _name of the element.
+   *   name = The qualified _name of the element.
+   *   namespaceURI = The namespace URI of the element.
+   * Returns: The value of the specified attribute.
    */
-  string opIndex(string name, string namespaceURI) {
-    return getAttribute(name, namespaceURI);
+  string opIndex(string localName, string namespaceURI) {
+    return getAttribute(localName, namespaceURI);
   }
 
   /**
@@ -1027,6 +1102,7 @@ private final class XmlLiteReader : XmlReader {
 }
 
 /**
+ * Specifies features to support on the XmlWriter object.
  */
 final class XmlWriterSettings {
 
@@ -1036,12 +1112,14 @@ final class XmlWriterSettings {
   private bool omitXmlDeclaration_;
 
   /**
+   * Initialized a new instance.
    */
   this() {
     reset();
   }
 
   /**
+   * Resets the members to their default values.
    */
   void reset() {
     encoding_ = Encoding.UTF8;
@@ -1051,6 +1129,7 @@ final class XmlWriterSettings {
   }
 
   /**
+   * Gets or sets the type of text encoding to use.
    */
   void encoding(Encoding value) {
     encoding_ = value;
@@ -1064,6 +1143,7 @@ final class XmlWriterSettings {
   }
 
   /**
+   * Gets or sets the level of conformance the XmlReader complies with.
    */
   void conformanceLevel(XmlConformanceLevel value) {
     conformanceLevel_ = value;
@@ -1077,6 +1157,7 @@ final class XmlWriterSettings {
   }
 
   /**
+   * Gets or sets a value indicating whether to _indent elements.
    */
   void indent(bool value) {
     indent_ = value ? 1 : 0;
@@ -1090,6 +1171,7 @@ final class XmlWriterSettings {
   }
 
   /**
+   * Gets or sets a value indicating whether to write an XML declaration.
    */
   bool omitXmlDeclaration() {
     return omitXmlDeclaration_;
@@ -1105,10 +1187,16 @@ final class XmlWriterSettings {
 }
 
 /**
+ * Represents a writer that provides a forward-only means of generating streams or files containing XML data.
  */
 abstract class XmlWriter {
 
   /**
+   * Creates a new instance.
+   * Params:
+   *   outputFileName = The file to write to.
+   *   settings = The XmlWriterSettings object used to configure the new instance.
+   * Returns: A new XmlWriter instance.
    */
   static XmlWriter create(string outputFileName, XmlWriterSettings settings = null) {
     if (settings is null)
@@ -1120,6 +1208,11 @@ abstract class XmlWriter {
   }
 
   /**
+   * Creates a new instance.
+   * Params:
+   *   output = The stream to write to.
+   *   settings = The XmlWriterSettings object used to configure the new instance.
+   * Returns: A new XmlWriter instance.
    */
   static XmlWriter create(Stream output, XmlWriterSettings settings = null) {
     if (output is null)
@@ -1131,21 +1224,22 @@ abstract class XmlWriter {
     return createImpl(new COMStream(output), settings.encoding, settings);
   }
 
-  /**
-   */
   private static XmlWriter createImpl(IStream output, Encoding encoding, XmlWriterSettings settings) {
     return new XmlLiteWriter(output, encoding, settings);
   }
 
   /**
+   * Closes this stream.
    */
   abstract void close();
 
   /**
+   * Writes out all the attributes.
    */
   abstract void writeAttributes(XmlReader reader, bool defattr);
 
   /**
+   * Writes an attribute.
    */
   abstract void writeAttributeString(string prefix, string localname, string ns, string value);
 
@@ -1164,26 +1258,32 @@ abstract class XmlWriter {
   }
 
   /**
+   * Writes out a &lt;![CDATA[...]]&gt; block containing the specified _text.
    */
   abstract void writeCData(string text);
 
   /**
+   * Writes a character entity for the specified character value.
    */
   abstract void writeCharEntity(char ch);
 
   /**
+   * Writes the text contained in the specified _buffer.
    */
-  abstract void writeChars(char[] buffer, int index, int count);
+  abstract void writeChars(in char[] buffer, int index, int count);
 
   /**
+   * Writes out a &lt;!--...--&gt; containing the specified _text.
    */
   abstract void writeComment(string text);
 
   /**
+   * Writes the DOCTYPE declaration with the specified _name and optional attributes.
    */
   abstract void writeDocType(string name, string pubid, string sysid, string subset);
 
   /**
+   * Writes an element containing the specified _value.
    */
   abstract void writeElementString(string prefix, string localName, string ns, string value);
 
@@ -1202,50 +1302,66 @@ abstract class XmlWriter {
   }
 
   /**
+   * Closes any open elements or attributes.
    */
   abstract void writeEndDocument();
 
   /**
+   * Closes one element and pops the corresponding namespace scope.
    */
   abstract void writeEndElement();
 
   /**
+   * Writes out an entity reference as &name;.
    */
   abstract void writeEntityRef(string name);
 
   /**
+   * Closes one element and pops the corresponding namespace scope.
    */
   abstract void writeFullEndElement();
 
   /**
+   * Writes out the specified _name.
    */
   abstract void writeName(string name);
 
   /**
+   * Writes out the specified _name.
    */
   abstract void writeNmToken(string name);
 
   /**
+   * Copies everything from the source _reader to the current writer.
+   * Params:
+   *   reader = The XmlReader to read from.
+   *   defattr = true to copy the default attributes from reader; otherwise, false.
    */
   abstract void writeNode(XmlReader reader, bool defattr);
 
   /**
+   * Writes out a processing instruction as follows: &lt;?name text?&gt;.
    */
   abstract void writeProcessingInstruction(string name, string text);
 
   /**
+   * Writes out the namespace-qualified name.
    */
   abstract void writeQualifiedName(string localName, string ns);
 
   /**
+   * Writes raw markup from a string.
    */
   abstract void writeRaw(string data);
 
   /**
+   * Writes raw markup from a character buffer.
    */
   abstract void writeRaw(char[] buffer, int index, int count);
 
   /**
+   * Writes the XML declaration.
+   * Params: standalone = If true, writes "standalone=yes"; if false, "standalone=no".
    */
   abstract void writeStartDocument(bool standalone);
 
@@ -1255,6 +1371,7 @@ abstract class XmlWriter {
   abstract void writeStartDocument();
 
   /**
+   * Writes the specified start tag.
    */
   abstract void writeStartElement(string prefix, string localName, string ns);
 
@@ -1273,18 +1390,22 @@ abstract class XmlWriter {
   }
 
   /**
+   * Writes the specified _text content.
    */
   abstract void writeString(string text);
 
   /**
+   * Writes out the specified white space.
    */
   abstract void writeWhitespace(string ws);
 
   /**
+   * Flushes whatever is in the buffer to the underlying stream, then flushes the underlying stream.
    */
   abstract void flush();
 
   /**
+   * Encodes the specified binary bytes as Base64 and writes out the resulting text.
    */
   abstract void writeBase64(void[] buffer, int index, int count);
 
@@ -1358,7 +1479,7 @@ private final class XmlLiteWriter : XmlWriter {
     writerImpl_.WriteCharEntity(ch);
   }
 
-  override void writeChars(char[] buffer, int index, int count) {
+  override void writeChars(in char[] buffer, int index, int count) {
     writerImpl_.WriteChars(buffer.toUtf16z(index), count);
   }
 
@@ -1447,7 +1568,7 @@ private final class XmlLiteWriter : XmlWriter {
   }
 
   override void writeBase64(void[] buffer, int index, int count) {
-    writeChars(std.base64.encode(cast(char[])buffer), index, count);
+    writeChars(std.base64.encode(cast(string)buffer), index, count);
   }
 
 }

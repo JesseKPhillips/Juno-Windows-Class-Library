@@ -1,42 +1,43 @@
 /**
  * Provides support for COM (Component Object Model).
  *
- * Copyright: (c) 2008 John Chapman
+ * See $(LINK2 http://msdn.microsoft.com/en-us/library/ms690233(VS.85).aspx, MSDN) for a glossary of terms.
+ *
+ * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.com.core;
 
-private import juno.base.core,
+import juno.base.core,
   juno.base.native,
-  std.stdarg,
   std.string,
-  std.utf,
-  std.outofmemory,
-  std.stream;
-
-private import bstr = juno.com.bstr;
-
-private import std.traits;
-private import std.typetuple : IndexOf, NoDuplicates, TypeTuple, MostDerived;
-private static import std.gc, std.c.stdlib;
-
-debug private import std.stdio;
+  std.stream,
+  std.typetuple,
+  std.traits,
+  std.stdarg;
+version(D_Version2) {
+  import core.exception, core.memory;
+  //static import core.exception, core.memory;
+  alias indexOf find;
+}
+else {
+  import std.outofmemory, std.gc;
+  //static import std.outofmemory, std.gc;
+}
+static import std.c.stdio;
+debug import std.stdio : writefln;
 
 pragma(lib, "ole32.lib");
 pragma(lib, "oleaut32.lib");
 
 static this() {
-  startupCOM();
+  startup();
 }
 
 static ~this() {
-  shutdownCOM();
+  shutdown();
 }
-
-/*//////////////////////////////////////////////////////////////////////////////////////////
-// Structs, Enums                                                                         //
-//////////////////////////////////////////////////////////////////////////////////////////*/
 
 enum /* HRESULT */ {
   S_OK            = 0x0,
@@ -50,7 +51,7 @@ enum /* HRESULT */ {
 
   E_ACCESSDENIED  = 0x80070005,
   E_OUTOFMEMORY   = 0x8007000E,
-  E_INVALIDARG    = 0x80070057,
+  E_INVALIDARG    = 0x80070057
 }
 
 /**
@@ -65,6 +66,93 @@ bool SUCCEEDED(int hr) {
  */
 bool FAILED(int hr) {
   return hr < 0;
+}
+
+/**
+ * The exception thrown when an unrecognized HRESULT is returned from a COM operation.
+ */
+class COMException : Exception {
+
+  int errorCode_;
+
+  /**
+   * Initializes a new instance with a specified error code.
+   * Params: errorCode = The error code (HRESULT) value associated with this exception.
+   */
+  this(int errorCode) {
+    super(getErrorMessage(errorCode));
+    errorCode_ = errorCode;
+  }
+
+  /**
+   * Initializes a new instance with a specified message and error code.
+   * Params:
+   *   message = The error _message that explains this exception.
+   *   errorCode = The error code (HRESULT) value associated with this exception.
+   */
+  this(string message, int errorCode) {
+    super(message);
+    errorCode_ = errorCode;
+  }
+
+  /**
+   * Gets the HRESULT of the error.
+   * Returns: The HRESULT of the error.
+   */
+  int errorCode() {
+    return errorCode_;
+  }
+
+  private static string getErrorMessage(int errorCode) {
+    wchar[256] buffer;
+    uint result = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, errorCode, 0, buffer.ptr, buffer.length + 1, null);
+    if (result != 0) {
+      string s = .toUTF8(buffer[0 .. result]);
+
+      // Remove trailing characters
+      while (result > 0) {
+        char c = s[result - 1];
+        if (c > ' ' && c != '.')
+          break;
+        result--;
+      }
+
+      return std.string.format("%s. (Exception from HRESULT: 0x%08X)", s[0 .. result], cast(uint)errorCode);
+    }
+
+    return std.string.format("Unspecified error (0x%08X)", cast(uint)errorCode);
+  }
+
+}
+
+/// Converts an HRESULT error code to a corresponding Exception object.
+Exception exceptionForHR(int errorCode) {
+  switch (errorCode) {
+    case E_NOTIMPL:
+      return new NotImplementedException;
+    case E_NOINTERFACE:
+      return new InvalidCastException;
+    case E_POINTER:
+      return new NullReferenceException;
+    case E_ACCESSDENIED:
+      return new UnauthorizedAccessException;
+    case E_OUTOFMEMORY:
+      return new OutOfMemoryException;
+    case E_INVALIDARG:
+      return new ArgumentException;
+    default:
+  }
+  return new COMException(errorCode);
+}
+
+/// Throwns an exception with a specific failure HRESULT value.
+void throwExceptionForHR(int errorCode)
+in {
+  assert(FAILED(errorCode));
+}
+body {
+  if (FAILED(errorCode))
+    throw exceptionForHR(errorCode);
 }
 
 /**
@@ -130,7 +218,7 @@ struct GUID {
    * Returns: The resulting GUID.
    */
   static GUID opCall(string s) {
-
+    
     ulong parse(string s) {
 
       bool hexToInt(char c, out uint result) {
@@ -253,7 +341,12 @@ struct GUID {
    * Returns a string representation of the value of this instance in registry format.
    * Returns: A string formatted in this pattern: {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} where the GUID is represented as a series of lowercase hexadecimal digits in groups of 8, 4, 4, 4 and 12 and separated by hyphens.
    */
-  string toString(string format = "D") {
+  string toString() {
+    return toString("D");
+  }
+
+  /// ditto
+  string toString(string format) {
 
     void hexToString(ref char[] s, ref uint index, uint a, uint b) {
 
@@ -267,6 +360,9 @@ struct GUID {
       s[index++] = hexToChar(b >> 4);
       s[index++] = hexToChar(b);
     }
+
+    if (format == null)
+      format = "D";
 
     char[] s;
     uint index = 0;
@@ -298,11 +394,34 @@ struct GUID {
    * Retrieves the hash code for this instance.
    * Returns: The hash code for this instance.
    */
-  hash_t toHash() {
+  uint toHash() {
     return a ^ ((b >> 16) | c) ^ ((f << 24) | k);
   }
 
 }
+
+alias GUID Guid;
+
+/**
+ * Retrieves the ProgID for a given class identifier (CLSID).
+ */
+string progIdFromClsid(Guid clsid) {
+  wchar* str;
+  ProgIDFromCLSID(clsid, str);
+  return toUTF8(str[0 .. wcslen(str)]);
+}
+
+/**
+ * Retrieves the class identifier (CLSID) for a given ProgID.
+ */
+Guid clsidFromProgId(string progId) {
+  Guid clsid;
+  CLSIDFromProgID(progId.toUTF16z(), clsid);
+  return clsid;
+}
+
+extern(Windows)
+int CoCreateGuid(out GUID pGuid);
 
 /**
  * Associates a GUID with an interface.
@@ -332,25 +451,6 @@ string uuid(string g) {
   else assert(false, "Incorrect format for GUID.");
 }
 
-string uuid(string type, string g) {
-  // Alternative form for module-level (global) declarations, eg: 
-  //   mixin(uuid("IUnknown", "00000000-0000-0000-c000-000000000046"));
-  // produces:
-  //   GUID IID_IUnknown = { ... };
-  //   template uuidof(T : IUnknown) { const GUID uuidof = IID_IUnknown; }
-
-  if (g.length == 38) {
-    assert(g[0] == '{' && g[$-1] == '}', "Incorrect format for GUID.");
-    return uuid(type, g[1..$-1]);
-  }
-  else if (g.length == 36) {
-    assert(g[8] == '-' && g[13] == '-' && g[18] == '-' && g[23] == '-', "Incorrect format for GUID.");
-    return "const GUID IID_" ~ type ~ " = { 0x" ~ g[0..8] ~ ",0x" ~ g[9..13] ~ ",0x" ~ g[14..18] ~ ",0x" ~ g[19..21] ~ ",0x" ~ g[21..23] ~ ",0x" ~ g[24..26] ~ ",0x" ~ g[26..28] ~ ",0x" ~ g[28..30] ~ ",0x" ~ g[30..32] ~ ",0x" ~ g[32..34] ~ ",0x" ~ g[34..36] ~ " };"\n ~
-      "template uuidof(T : " ~ type ~ ") { const GUID uuidof = IID_" ~ type ~ "; }";
-  }
-  else assert(false, "Incorrect format for GUID.");
-}
-
 /**
  * Retrieves the GUID associated with the specified variable or type.
  * Examples:
@@ -367,15 +467,16 @@ string uuid(string type, string g) {
  * ---
  */
 template uuidof(alias T) {
-  const GUID uuidof = uuidofT!(typeof(T));
+  static if (is(typeof(T)))
+    const GUID uuidof = uuidofT!(typeof(T));
+  else
+    const GUID uuidof = uuidofT!(T);
 }
 
-/**
- * ditto
- */
+/* Conflicts with the definition above.
 template uuidof(T) {
   const GUID uuidof = uuidofT!(T);
-}
+}*/
 
 template uuidofT(T : T) {
   static if (is(typeof(mixin("IID_" ~ T.stringof))))
@@ -386,6 +487,14 @@ template uuidofT(T : T) {
     const GUID uuidofT = T.IID;
   else
     static assert(false, "No GUID has been associated with '" ~ T.stringof ~ "'.");
+}
+
+void** retval(T)(out T ppv)
+in {
+  assert(&ppv != null);
+}
+body {
+  return cast(void**)&ppv;
 }
 
 enum : ushort {
@@ -408,6 +517,7 @@ struct SAFEARRAYBOUND {
   int lLbound;
 }
 
+/// Represents an array of elements.
 struct SAFEARRAY {
 
   ushort cDims;
@@ -417,66 +527,33 @@ struct SAFEARRAY {
   void* pvData;
   SAFEARRAYBOUND[1] rgsabound;
 
-  static SAFEARRAY* opCall(T...)(T values) {
-    static if (T.length == 1 && isArray!(T)) {
-      return fromArray(values, false);
-    }
-    else {
-      auto bound = SAFEARRAYBOUND(values.length);
-      auto sa = SafeArrayCreate(VT_VARIANT, 1, &bound);
-
-      VARIANT* data;
-      SafeArrayAccessData(sa, outval(data));
-      foreach (i, value; values)
-        data[i] = VARIANT(value);
-      SafeArrayUnaccessData(sa);
-
-      return sa;
-    }
-  }
-
-  static SAFEARRAY* fromArray(T)(T[] array, bool wrap = false) {
-    VARTYPE vt;
-    if (wrap) vt = VT_VARIANT;
-    else      vt = VariantType!(T);
-
+  /**
+   * Initializes a new instance using the specified _array.
+   * Params: array = The elements with which to initialize the instance.
+   * Returns: A pointer to the new instance.
+   */
+  static SAFEARRAY* opCall(T)(T[] array) {
     auto bound = SAFEARRAYBOUND(array.length);
-    auto sa = SafeArrayCreate(vt, 1, &bound);
+    auto sa = SafeArrayCreate(VariantType!(T), 1, &bound);
 
-    if (wrap) {
-      VARIANT* data;
-      SafeArrayAccessData(sa, outval(data));
-      for (int i = 0; i < array.length; i++) {
-        data[i] = VARIANT(array[i]);
-      }
-      SafeArrayUnaccessData(sa);
-    }
-    else {
-      // Strings are stored as BSTRs
-      static if (is(T : string))  alias wchar* Type;
-      else                        alias T Type;
+    static if (is(T : string)) alias wchar* Type;
+    else                       alias T Type;
 
-      Type* data;
-      SafeArrayAccessData(sa, outval(data));
-      for (int i = 0; i < array.length; i++) {
-        static if (is(T : string))  data[i] = bstr.fromString(array[i]);
-        else                        data[i] = array[i];
-      }
-      SafeArrayUnaccessData(sa);
+    Type* data;
+    SafeArrayAccessData(sa, retval(data));
+    for (auto i = 0; i < array.length; i++) {
+      static if (is(T : string)) data[i] = array[i].toBstr();
+      else                       data[i] = array[i];
     }
+    SafeArrayUnaccessData(sa);
 
     return sa;
   }
 
-  void destroy() {
-    SafeArrayDestroy(this);
-  }
-
-  void resize(int newSize) {
-    auto bound = SAFEARRAYBOUND(newSize);
-    SafeArrayRedim(this, &bound);
-  }
-
+  /**
+   * Copies the elements of the SAFEARRAY to a new array of the specified type.
+   * Returns: An array of the specified type containing copies of the elements of the SAFEARRAY.
+   */
   T[] toArray(T)() {
     int upperBound, lowerBound;
     SafeArrayGetUBound(this, 1, upperBound);
@@ -487,65 +564,154 @@ struct SAFEARRAY {
 
     T[] result = new T[count];
 
-    if ((fFeatures & FADF_VARIANT) != 0) {
-      VARIANT* data;
-      SafeArrayAccessData(this, outval(data));
-      for (int i = lowerBound; i <= upperBound; i++) {
-        static if (is(T == VARIANT)) result[i] = data[i];
-        else {
-          auto val = data[i];
-          if (val.vt != VariantType!(T))
-            val = val.changeTo(VariantType!(T));
-          result[i] = val.value!(T);
-        }
-      }
-      SafeArrayUnaccessData(this);
-    }
-    else {
-      static if (is(T : string))  alias wchar* Type;
-      else                        alias T Type;
+    static if (is(T : string)) alias wchar* Type;
+    else                       alias T Type;
 
-      Type* data;
-      SafeArrayAccessData(this, outval(data));
-      for (int i = lowerBound; i <= upperBound; i++) {
-        static if (is(T : string))
-          result[i] = bstr.toString(data[i]);
-        else
-          result[i] = data[i];
-      }
-      SafeArrayUnaccessData(this);
+    Type* data;
+    SafeArrayAccessData(this, retval(data));
+    for (auto i = lowerBound; i < upperBound + 1; i++) {
+      static if (is(T : string)) result[i] = fromBstr(data[i]);
+      else                       result[i] = data[i];
     }
+    SafeArrayUnaccessData(this);
 
     return result;
   }
 
+  /**
+   * Destroys the SAFEARRAY and all of its data.
+   * Remarks: If objects are stored in the array, Release is called on each object.
+   */
+  void destroy() {
+    version(D_Version2) {
+      SafeArrayDestroy(&this);
+    }
+    else {
+      SafeArrayDestroy(this);
+    }
+  }
+
+  /**
+   * Increments the _lock count of an array.
+   */
   void lock() {
-    SafeArrayLock(this);
+    version(D_Version2) {
+      SafeArrayLock(&this);
+    }
+    else {
+      SafeArrayLock(this);
+    }
   }
 
+  /**
+   * Decrements the lock count of an array.
+   */
   void unlock() {
-    SafeArrayUnlock(this);
+    version(D_Version2) {
+      SafeArrayUnlock(&this);
+    }
+    else {
+      SafeArrayUnlock(this);
+    }
   }
 
+  /**
+   * Gets or sets the number of elements in the array.
+   * Params: value = The number of elements.
+   */
+  void length(int value) {
+    auto bound = SAFEARRAYBOUND(value);
+    version(D_Version2) {
+      SafeArrayRedim(&this, &bound);
+    }
+    else {
+      SafeArrayRedim(this, &bound);
+    }
+  }
+  /// ditto
   int length() {
     int upperBound, lowerBound;
-    SafeArrayGetUBound(this, 1, upperBound);
-    SafeArrayGetLBound(this, 1, lowerBound);
+    version(D_Version2) {
+      SafeArrayGetUBound(&this, 1, upperBound);
+      SafeArrayGetLBound(&this, 1, lowerBound);
+    }
+    else {
+      SafeArrayGetUBound(this, 1, upperBound);
+      SafeArrayGetLBound(this, 1, lowerBound);
+    }
     return upperBound - lowerBound + 1;
   }
 
 }
 
-deprecated SAFEARRAY* toSafeArray(T)(T[] array) {
-  return SAFEARRAY.fromArray(array, true);
-}
+extern(Windows):
 
-deprecated T[] toArray(T)(SAFEARRAY* safeArray) {
-  return safeArray.toArray!(T)();
+int SafeArrayAllocDescriptor(uint cDims, out SAFEARRAY* ppsaOut);
+int SafeArrayAllocDescriptorEx(ushort vt, uint cDims, out SAFEARRAY* ppsaOut);
+int SafeArrayAllocData(SAFEARRAY* psa);
+SAFEARRAY* SafeArrayCreate(ushort vt, uint cDims, SAFEARRAYBOUND* rgsabound);
+SAFEARRAY* SafeArrayCreateEx(ushort vt, uint cDims, SAFEARRAYBOUND* rgsabound, void* pvExtra);
+int SafeArrayCopyData(SAFEARRAY* psaSource, SAFEARRAY* psaTarget);
+int SafeArrayDestroyDescriptor(SAFEARRAY* psa);
+int SafeArrayDestroyData(SAFEARRAY* psa);
+int SafeArrayDestroy(SAFEARRAY* psa);
+int SafeArrayRedim(SAFEARRAY* psa, SAFEARRAYBOUND* psaboundNew);
+uint SafeArrayGetDim(SAFEARRAY* psa);
+uint SafeArrayGetElemsize(SAFEARRAY* psa);
+int SafeArrayGetUBound(SAFEARRAY* psa, uint cDim, out int plUbound);
+int SafeArrayGetLBound(SAFEARRAY* psa, uint cDim, out int plLbound);
+int SafeArrayLock(SAFEARRAY* psa);
+int SafeArrayUnlock(SAFEARRAY* psa);
+int SafeArrayAccessData(SAFEARRAY* psa, void** ppvData);
+int SafeArrayUnaccessData(SAFEARRAY* psa);
+int SafeArrayGetElement(SAFEARRAY* psa, int* rgIndices, void* pv);
+int SafeArrayPutElement(SAFEARRAY* psa, int* rgIndices, void* pv);
+int SafeArrayCopy(SAFEARRAY* psa, out SAFEARRAY* ppsaOut);
+int SafeArrayPtrOfIndex(SAFEARRAY* psa, int* rgIndices, void** ppvData);
+int SafeArraySetRecordInfo(SAFEARRAY* psa, IRecordInfo prinfo);
+int SafeArrayGetRecordInfo(SAFEARRAY* psa, out IRecordInfo prinfo);
+int SafeArraySetIID(SAFEARRAY* psa, ref GUID guid);
+int SafeArrayGetIID(SAFEARRAY* psa, out GUID pguid);
+int SafeArrayGetVartype(SAFEARRAY* psa, out ushort pvt);
+SAFEARRAY* SafeArrayCreateVector(ushort vt, int lLbound, uint cElements);
+SAFEARRAY* SafeArrayCreateVectorEx(ushort vt, int lLbound, uint cElements, void* pvExtra);
+
+extern(D):
+
+version(D_Version2) {
+  string decimal_operator(string name) {
+    return "DECIMAL op" ~ name ~ "(DECIMAL d) { \n"
+      "  DECIMAL result; \n"
+      "  VarDec" ~ name ~ "(this, d, result); \n"
+      "  return result; \n"
+      "} \n"
+      "void op" ~ name ~ "Assign" ~ "(DECIMAL d) { \n"
+      "  VarDec" ~ name ~ "(this, d, this); \n"
+      "}";
+  }
+}
+else {
+  string decimal_operator(string name) {
+    return "DECIMAL op" ~ name ~ "(DECIMAL d) { \n"
+      "  DECIMAL result; \n"
+      "  VarDec" ~ name ~ "(*this, d, result); \n"
+      "  return result; \n"
+      "} \n"
+      "void op" ~ name ~ "Assign" ~ "(DECIMAL d) { \n"
+      "  VarDec" ~ name ~ "(*this, d, *this); \n"
+      "}";
+  }
 }
 
 const ubyte DECIMAL_NEG = 0x80;
 
+DECIMAL dec(string s)() {
+  return DECIMAL.parse(s);
+}
+
+/**
+ * Represents a decimal number ranging from positive 79,228,162,514,264,337,593,543,950,335 to negative 79,228,162,514,264,337,593,543,950,335.
+ */
 struct DECIMAL {
 
   ushort wReserved;
@@ -555,130 +721,80 @@ struct DECIMAL {
   uint Lo32;
   uint Mid32;
 
+  /// Represents the smallest possible value.
   static DECIMAL min = { 0, 0, DECIMAL_NEG, uint.max, uint.max, uint.max };
+  /// Represents the largest possible value.
   static DECIMAL max = { 0, 0, 0, uint.max, uint.max, uint.max };
+  /// Represents -1.
   static DECIMAL minusOne = { 0, 0, DECIMAL_NEG, 0, 1, 0 };
+  /// Represents 0.
   static DECIMAL zero = { 0, 0, 0, 0, 0, 0 };
+  /// Represents 1.
   static DECIMAL one = { 0, 0, 0, 0, 1, 0 };
 
+  /// Initializes a new instance.
   static DECIMAL opCall(T)(T value) {
     DECIMAL self;
 
-    static if (is(T == uint)) VarDecFromUI4(value, self);
-    else static if (is(T == int)) VarDecFromI4(value, self);
-    else static if (is(T == ulong)) VarDecFromUI8(value, self);
-    else static if (is(T == long)) VarDecFromI8(value, self);
-    else static if (is(T == float)) VarDecFromR4(value, self);
-    else static if (is(T == double)) VarDecFromR8(value, self);
+    static if (is(T == uint))
+      VarDecFromUI4(value, self);
+    else static if (is(T == int))
+      VarDecFromI4(value, self);
+    else static if (is(T == ulong))
+      VarDecFromUI8(value, self);
+    else static if (is(T == long))
+      VarDecFromI8(value, self);
+    else static if (is(T == float))
+      VarDecFromR4(value, self);
+    else static if (is(T == double))
+      VarDecFromR8(value, self);
     else static assert(false);
 
     return self;
   }
 
+  /// ditto
   static DECIMAL opCall(T = void)(uint lo, uint mid, uint hi, bool isNegative, ubyte scale) {
     DECIMAL self;
     self.Hi32 = hi, self.Mid32 = mid, self.Lo32 = lo, self.scale = scale, self.sign = isNegative ? DECIMAL_NEG : 0;
     return self;
   }
 
-  int opCmp(DECIMAL d) {
-    return VarDecCmp(this, &d) - 1;
-  }
-
-  bool opEquals(DECIMAL d) {
-    return opCmp(d) == 0;
-  }
-
-  DECIMAL opAdd(DECIMAL d) {
-    DECIMAL ret;
-    VarDecAdd(this, &d, &ret);
-    return ret;
-  }
-
-  void opAddAssign(DECIMAL d) {
-    *this = *this + d;
-  }
-
-  DECIMAL opSub(DECIMAL d) {
-    DECIMAL ret;
-    VarDecSub(this, &d, &ret);
-    return ret;
-  }
-
-  void opSubAssign(DECIMAL d) {
-    *this = *this - d;
-  }
-
-  DECIMAL opMul(DECIMAL d) {
-    DECIMAL ret;
-    VarDecMul(this, &d, &ret);
-    return ret;
-  }
-
-  void opMulAssign(DECIMAL d) {
-    *this = *this * d;
-  }
-
-  DECIMAL opDiv(DECIMAL d) {
-    DECIMAL ret;
-    VarDecDiv(this, &d, &ret);
-    return ret;
-  }
-
-  void opDivAssign(DECIMAL d) {
-    *this = *this / d;
-  }
-
-  DECIMAL opMod(DECIMAL d) {
-    return remainder(*this, d);
-  }
-
-  void opModAssign(DECIMAL d) {
-    *this = *this % d;
-  }
-
-  DECIMAL opNeg() {
-    DECIMAL ret;
-    VarDecNeg(this, &ret);
-    return ret;
-  }
-
-  DECIMAL opPos() {
-    return *this;
-  }
-
-  DECIMAL opPostInc() {
-    return *this = *this + cast(DECIMAL)1;
-  }
-
-  DECIMAL opPostDec() {
-    return *this = *this - cast(DECIMAL)1;
+  /// Converts the string representation of a number to its DECIMAL equivalent.
+  static DECIMAL parse(string s) {
+    DECIMAL d;
+    VarDecFromStr(s.toUTF16z(), GetThreadLocale(), 0, d);
+    return d;
   }
 
   static DECIMAL abs(DECIMAL d) {
-    DECIMAL ret;
-    VarDecAbs(&d, &ret);
-    return ret;
+    DECIMAL result;
+    VarDecAbs(d, result);
+    return result;
   }
 
+  /// Rounds a value to the nearest or specific number of decimal places.
   static DECIMAL round(DECIMAL d, int decimals = 0) {
-    DECIMAL ret;
-    VarDecRound(&d, decimals, &ret);
-    return ret;
+    DECIMAL result;
+    VarDecRound(d, decimals, result);
+    return result;
   }
 
+  /// Rounds a value to the closest integer toward negative infinity.
   static DECIMAL floor(DECIMAL d) {
-    DECIMAL ret;
-    VarDecInt(&d, &ret);
-    return ret;
+    DECIMAL result;
+    VarDecInt(d, result);
+    return result;
   }
 
+  /// Returns the integral digits of a value.
   static DECIMAL truncate(DECIMAL d) {
-    DECIMAL ret;
-    VarDecFix(&d, &ret);
-    return ret;
+    DECIMAL result;
+    VarDecFix(d, result);
+    return result;
   }
 
+  /// Computes the _remainder after dividing two values.
   static DECIMAL remainder(DECIMAL d1, DECIMAL d2) {
     if (abs(d1) < abs(d2))
       return d1;
@@ -695,13 +811,42 @@ struct DECIMAL {
     return r;
   }
 
-  static DECIMAL parse(string s) {
-    DECIMAL d;
-    VarDecFromStr(s.toUTF16z(), 0, 0, d);
-    return d;
+  /// Adds two values.
+  static DECIMAL add(DECIMAL d1, DECIMAL d2) {
+    DECIMAL result;
+    VarDecAdd(d1, d2, result);
+    return result;
   }
 
-  hash_t toHash() {
+  /// Subtracts one value from another.
+  static DECIMAL subtract(DECIMAL d1, DECIMAL d2) {
+    DECIMAL result;
+    VarDecSub(d1, d2, result);
+    return result;
+  }
+
+  /// Multiplies two values.
+  static DECIMAL multiply(DECIMAL d1, DECIMAL d2) {
+    DECIMAL result;
+    VarDecMul(d1, d2, result);
+    return result;
+  }
+
+  /// Divides two values.
+  static DECIMAL divide(DECIMAL d1, DECIMAL d2) {
+    DECIMAL result;
+    VarDecDiv(d1, d2, result);
+    return result;
+  }
+
+  /// Returns the result of multiplying a value by -1.
+  static DECIMAL negate(DECIMAL d) {
+    DECIMAL result;
+    VarDecNeg(d, result);
+    return result;
+  }
+
+  uint toHash() {
     double d;
     VarR8FromDec(this, d);
     if (d == 0)
@@ -709,26 +854,158 @@ struct DECIMAL {
     return (cast(int*)&d)[0] ^ (cast(int*)&d)[1];
   }
 
+  /// Converts the numeric value of this instance to its equivalent string representation.
   string toString() {
     wchar* str;
-    if (VarBstrFromDec(this, 0, 0, str) != S_OK)
+    if (VarBstrFromDec(this, GetThreadLocale(), 0, str) != S_OK)
       return null;
-    return bstr.toString(str);
+    return fromBstr(str);
+  }
+
+  /// Compares two values.
+  static int compare(DECIMAL d1, DECIMAL d2) {
+    return VarDecCmp(d1, d2) - 1;
+  }
+
+  /// Compares this instance to a specified instance.
+  int compareTo(DECIMAL value) {
+    version(D_Version2) {
+      return compare(this, value);
+    }
+    else {
+      return compare(*this, value);
+    }
+  }
+
+  /// ditto
+  int opCmp(DECIMAL d) {
+    version(D_Version2) {
+      return compare(this, d);
+    }
+    else {
+      return compare(*this, d);
+    }
+  }
+
+  /// Returns a value indicating whether two instances represent the same value.
+  static bool equals(DECIMAL d1, DECIMAL d2) {
+    return compare(d1, d2) == 0;
+  }
+
+  /// Returns a value indicating whether this instance and a specified instance represent the same _value.
+  bool equals(DECIMAL value) {
+    version(D_Version2) {
+      return compare(this, value) == 0;
+    }
+    else {
+      return compare(*this, value) == 0;
+    }
+  }
+
+  /// ditto
+  bool opEquals(DECIMAL d) {
+    version(D_Version2) {
+      return compare(this, d) == 0;
+    }
+    else {
+      return compare(*this, d) == 0;
+    }
+  }
+
+  mixin(decimal_operator("Add"));
+  mixin(decimal_operator("Sub"));
+  mixin(decimal_operator("Mul"));
+  mixin(decimal_operator("Div"));
+
+  DECIMAL opMod(DECIMAL d) {
+    version(D_Version2) {
+      return remainder(this, d);
+    }
+    else {
+      return remainder(*this, d);
+    }
+  }
+
+  DECIMAL opNeg() {
+    DECIMAL result;
+    VarDecNeg(this, result);
+    return result;
+  }
+
+  DECIMAL opPos() {
+    version(D_Version2) {
+      return this;
+    }
+    else {
+      return *this;
+    }
+  }
+
+  DECIMAL opPostInc() {
+    version(D_Version2) {
+      return this = this + DECIMAL(1);
+    }
+    else {
+      return *this = *this + DECIMAL(1);
+    }
+  }
+
+  DECIMAL opPostDec() {
+    version(D_Version2) {
+      return this = this - DECIMAL(1);
+    }
+    else {
+      return *this = *this - DECIMAL(1);
+    }
   }
 
 }
 
-enum : short {
-  VARIANT_TRUE = -1,
-  VARIANT_FALSE = 0
-} alias short VARIANT_BOOL;
+alias DECIMAL Decimal;
 
-enum : VARIANT_BOOL {
-  com_true = VARIANT_TRUE,
-  com_false = VARIANT_FALSE
-} alias VARIANT_BOOL com_bool;
+extern(Windows):
 
-enum /* VARENUM */ : ushort {
+int VarDecFromUI4(uint ulIn, out DECIMAL pdecOut);
+int VarDecFromI4(int lIn, out DECIMAL pdecOut);
+int VarDecFromUI8(ulong ui64In, out DECIMAL pdecOut);
+int VarDecFromI8(long i64In, out DECIMAL pdecOut);
+int VarDecFromR4(float dlbIn, out DECIMAL pdecOut);
+int VarDecFromR8(double dlbIn, out DECIMAL pdecOut);
+int VarDecFromStr(in wchar* StrIn, uint lcid, uint dwFlags, out DECIMAL pdecOut);
+int VarBstrFromDec(ref DECIMAL pdecIn, uint lcid, uint dwFlags, out wchar* pbstrOut);
+int VarUI4FromDec(ref DECIMAL pdecIn, out uint pulOut);
+int VarI4FromDec(ref DECIMAL pdecIn, out int plOut);
+int VarUI8FromDec(ref DECIMAL pdecIn, out ulong pui64Out);
+int VarI8FromDec(ref DECIMAL pdecIn, out long pi64Out);
+int VarR4FromDec(ref DECIMAL pdecIn, out float pfltOut);
+int VarR8FromDec(ref DECIMAL pdecIn, out double pdblOut);
+
+int VarDecAdd(ref DECIMAL pdecLeft, ref DECIMAL pdecRight, out DECIMAL pdecResult);
+int VarDecSub(ref DECIMAL pdecLeft, ref DECIMAL pdecRight, out DECIMAL pdecResult);
+int VarDecMul(ref DECIMAL pdecLeft, ref DECIMAL pdecRight, out DECIMAL pdecResult);
+int VarDecDiv(ref DECIMAL pdecLeft, ref DECIMAL pdecRight, out DECIMAL pdecResult);
+int VarDecRound(ref DECIMAL pdecIn, int cDecimals, out DECIMAL pdecResult);
+int VarDecAbs(ref DECIMAL pdecIn, out DECIMAL pdecResult);
+int VarDecFix(ref DECIMAL pdecIn, out DECIMAL pdecResult);
+int VarDecInt(ref DECIMAL pdecIn, out DECIMAL pdecResult);
+int VarDecNeg(ref DECIMAL pdecIn, out DECIMAL pdecResult);
+int VarDecCmp(ref DECIMAL pdecLeft, out DECIMAL pdecRight);
+
+version(D_Version2) {
+}
+else {
+  int VarBstrFromDec(DECIMAL* pdecIn, uint lcid, uint dwFlags, out wchar* pbstrOut);
+  int VarR8FromDec(DECIMAL* pdecIn, out double pdblOut);
+  int VarDecNeg(DECIMAL* pdecIn, out DECIMAL pdecResult);
+}
+
+int VarFormat(ref VARIANT pvarIn, in wchar* pstrFormat, int iFirstDay, int iFirstWeek, uint dwFlags, out wchar* pbstrOut);
+int VarFormatFromTokens(ref VARIANT pvarIn, in wchar* pstrFormat, byte* pbTokCur, uint dwFlags, out wchar* pbstrOut, uint lcid);
+int VarFormatNumber(ref VARIANT pvarIn, int iNumDig, int ilncLead, int iUseParens, int iGroup, uint dwFlags, out wchar* pbstrOut);
+
+extern(D):
+
+enum /*VARENUM*/ : ushort {
   VT_EMPTY            = 0,
   VT_NULL             = 1,
   VT_I2               = 2,
@@ -778,9 +1055,21 @@ enum /* VARENUM */ : ushort {
   VT_ARRAY            = 0x2000,
   VT_BYREF            = 0x4000,
   VT_RESERVED         = 0x8000
-} alias ushort VARTYPE;
+}
+alias ushort VARTYPE;
 
-// From D 2.0
+enum : short {
+  VARIANT_TRUE = -1, /// Represents the boolean value _true (-1).
+  VARIANT_FALSE = 0  /// Represents the boolean value _false (0).
+}
+typedef short VARIANT_BOOL;
+
+enum : VARIANT_BOOL {
+  com_true = VARIANT_TRUE,
+  com_false = VARIANT_FALSE
+}
+alias VARIANT_BOOL com_bool;
+
 template isStaticArray(T : U[N], U, size_t N) {
   const isStaticArray = true;
 }
@@ -809,9 +1098,9 @@ template isPointer(T) {
  * Determines the equivalent COM type of a built-in type at compile-time.
  * Examples:
  * ---
- * VARTYPE a = VariantType!(string);          // VT_BSTR
- * VARTYPE b = VariantType!(bool);            // VT_BOOL
- * VARTYPE c = VariantType!(typeof([1,2,3])); // VT_ARRAY | VT_I4
+ * auto a = VariantType!(string);          // VT_BSTR
+ * auto b = VariantType!(bool);            // VT_BOOL
+ * auto c = VariantType!(typeof([1,2,3])); // VT_ARRAY | VT_I4
  * ---
  */
 template VariantType(T) {
@@ -845,7 +1134,7 @@ template VariantType(T) {
     const VariantType = VT_DECIMAL;
   else static if (is(T E == enum))
     const VariantType = VariantType!(E);
-  else static if (is(T : string))
+  else static if (is(T : string) || is(T : wstring) || is(T : dstring))
     const VariantType = VT_BSTR;
   else static if (is(T == wchar*))
     const VariantType = VT_BSTR;
@@ -859,26 +1148,57 @@ template VariantType(T) {
     const VariantType = VT_UNKNOWN;
   else static if (isArray!(T))
     const VariantType = VariantType!(typeof(*T)) | VT_ARRAY;
-  else static if (isPointer!(T))
+  else static if (isPointer!(T)/* && !is(T == void*)*/)
     const VariantType = VariantType!(typeof(*T)) | VT_BYREF;
   else
     const VariantType = VT_VOID;
 }
 
+version(D_Version2) {
+  string variant_operator(string name) {
+    return "VARIANT op" ~ name ~ "(VARIANT that) { \n"
+      "  VARIANT result; \n"
+      "  Var" ~ name ~ "(this, that, result); \n"
+      "  return result; \n"
+      "} \n"
+      "void op" ~ name ~ "Assign" ~ "(VARIANT that) { \n"
+      "  if (!isEmpty) clear(); \n"
+      "  Var" ~ name ~ "(this, that, this); \n"
+      "}";
+  }
+}
+else {
+  string variant_operator(string name) {
+    return "VARIANT op" ~ name ~ "(VARIANT that) { \n"
+      "  VARIANT result; \n"
+      "  Var" ~ name ~ "(*this, that, result); \n"
+      "  return result; \n"
+      "} \n"
+      "void op" ~ name ~ "Assign" ~ "(VARIANT that) { \n"
+      "  if (!isEmpty) clear(); \n"
+      "  Var" ~ name ~ "(*this, that, *this); \n"
+      "}";
+  }
+}
+
 /**
  * A container for many different types.
+ * Examples:
+ * ---
+ * VARIANT var = 10;     // Instance contains VT_I4.
+ * var = "Hello, World"; // Instance now contains VT_BSTR.
+ * var = 234.5;          // Instance now contains VT_R8.
+ * ---
  */
 struct VARIANT {
 
   union {
     struct {
       /// Describes the type of the instance.
-      VARTYPE vt;
-      private {
-        ushort wReserved1;
-        ushort wReserved2;
-        ushort wReserved3;
-      }
+      ushort vt;
+      ushort wReserved1;
+      ushort wReserved2;
+      ushort wReserved3;
       union {
         long llVal;
         int lVal;
@@ -914,15 +1234,11 @@ struct VARIANT {
         ushort uiVal;
         uint ulVal;
         ulong ullVal;
-        int intVal;
-        uint uintVal;
         DECIMAL* pdecVal;
         byte* pcVal;
-        ushort* puiVal;
+        short* puiVal;
         uint* pulVal;
         ulong* pullVal;
-        int* pintVal;
-        uint* puintVal;
         struct {
           void* pvRecord;
           IRecordInfo pRecInfo;
@@ -932,60 +1248,227 @@ struct VARIANT {
     DECIMAL decVal;
   }
 
-  /**
-   * Initializes a new instance using the specified _value and _type.
-   * Params:
-   *   value = A _value of one of the acceptable types.
-   *   type = The VARTYPE identifying the _type of value.
-   * Returns: The resulting VARIANT.
-   */
-  static VARIANT opCall(T)(T value, VARTYPE type = VariantType!(T)) {
-    static if (is(T E == enum)) {
-      return opCall(cast(E)value, type);
-    }
-    else {
-      VARIANT self;
-      self = value;
-      if (type != self.vt)
-        VariantChangeType(&self, &self, VARIANT_ALPHABOOL, type);
+  /// Represents the _missing value.
+  static VARIANT Missing = { vt: VT_ERROR, scode: DISP_E_PARAMNOTFOUND };
 
+  /// Represents the _nothing value.
+  static VARIANT Nothing = { vt: VT_DISPATCH, pdispVal: null };
+
+  /// Represents the _null value.
+  static VARIANT Null = { vt: VT_NULL };
+
+  version(D_Version2) {
+    /**
+     * Initializes a new instance using the specified _value and _type.
+     * Params:
+     *   value = A _value of one of the acceptable types.
+     *   type = The ushort identifying the _type of value.
+     */
+    mixin("
+    this(T)(T value, ushort type = VariantType!(T)) {
+      initialize(this, value, type);
+    }
+    ");
+
+    static VARIANT opCall(T)(T value, ushort type = VariantType!(T)) {
+      return VARIANT(value, type);
+    }
+
+    ~this() {
+      if (isCOMAlive && !(isNull || isEmpty)) {
+        clear();
+      }
+    }
+  }
+  else {
+    /**
+     * Initializes a new instance using the specified _value and _type.
+     * Params:
+     *   value = A _value of one of the acceptable types.
+     *   type = The ushort identifying the _type of value.
+     * Returns: The resulting VARIANT.
+     */
+    static VARIANT opCall(T)(T value, ushort type = VariantType!(T)) {
+      VARIANT self;
+      initialize(self, value, type);
       return self;
     }
   }
 
-  void opAssign(T)(T value) {
-    if (vt != VT_EMPTY)
+  private static void initialize(T)(ref VARIANT ret, T value, ushort type = VariantType!(T)) {
+    static if (is(T E == enum)) {
+      initialize(ret, cast(E)value, type);
+    }
+    else {
+      ret = value;
+      if (type != ret.vt)
+        VariantChangeTypeEx(ret, ret, GetThreadLocale(), VARIANT_ALPHABOOL, type);
+    }
+  }
+
+  /*void opAssign(T)(T value) {
+    if (!isEmpty)
       clear();
 
-    static if (is(T == VARIANT_BOOL)) boolVal = value;
-    else static if (is(T == bool)) boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
-    else static if (is(T == ubyte)) bVal = value;
-    else static if (is(T == byte)) cVal = value;
-    else static if (is(T == ushort)) uiVal = value;
-    else static if (is(T == short)) iVal = value;
-    else static if (is(T == uint)) ulVal = value;
+    static if (is(T == long)) llVal = value;
     else static if (is(T == int)) lVal = value;
-    else static if (is(T == ulong)) ullVal = value;
-    else static if (is(T == long)) llVal = value;
+    else static if (is(T == ubyte)) bVal = value;
+    else static if (is(T == short)) iVal = value;
     else static if (is(T == float)) fltVal = value;
     else static if (is(T == double)) dblVal = value;
-    else static if (is(T == DECIMAL)) decVal = value;
-    else static if (is(T : string)) bstrVal = bstr.fromString(value);
+    else static if (is(T == VARIANT_BOOL)) boolVal = value;
+    else static if (is(T == bool)) boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
+    else static if (is(T : string) || is(T : wstring) || is(T : dstring)) bstrVal = toBstr(value);
     else static if (is(T : IDispatch)) pdispVal = value, value.AddRef();
     else static if (is(T : IUnknown)) punkVal = value, value.AddRef();
-    else static if (is(T : Object)) byref = cast(void*)value;
-    else static if (is(T == VARIANT*)) pvarVal = value;
     else static if (is(T == SAFEARRAY*)) parray = value;
-    else static if (isArray!(T)) parray = SAFEARRAY.from(value);
+    else static if (isArray!(T)) parray = SAFEARRAY(value);
+    else static if (is(T == VARIANT*)) pvarVal = value;
+    else static if (is(T : Object)) byref = cast(void*)value;
+    else static if (isPointer!(T)) byref = cast(void*)value;
+    else static if (is(T == byte)) cVal = value;
+    else static if (is(T == ushort)) uiVal = value;
+    else static if (is(T == uint)) ulVal = value;
+    else static if (is(T == ulong)) ullVal = value;
+    else static if (is(T == DECIMAL)) decVal = value;
+    else static if (is(T == VARIANT)) {}
     else static assert(false, "'" ~ T.stringof ~ "' is not one of the allowed types.");
 
     vt = VariantType!(T);
 
     static if (is(T == SAFEARRAY*)) {
-      VARTYPE type;
+      ushort type;
       SafeArrayGetVartype(value, type);
       vt |= type;
     }
+    else static if (is(T == VARIANT)) {
+      value.copyTo(*this);
+    }
+  }*/
+
+  void opAssign(long value) {
+    if (!isEmpty) clear();
+    llVal = value;
+    vt = VT_I8;
+  }
+
+  void opAssign(int value) {
+    if (!isEmpty) clear();
+    lVal = value;
+    vt = VT_I4;
+  }
+
+  void opAssign(ubyte value) {
+    if (!isEmpty) clear();
+    bVal = value;
+    vt = VT_UI1;
+  }
+
+  void opAssign(short value) {
+    if (!isEmpty) clear();
+    iVal = value;
+    vt = VT_I2;
+  }
+
+  void opAssign(float value) {
+    if (!isEmpty) clear();
+    fltVal = value;
+    vt = VT_R4;
+  }
+
+  void opAssign(double value) {
+    if (!isEmpty) clear();
+    dblVal = value;
+    vt = VT_R8;
+  }
+
+  void opAssign(bool value) {
+    if (!isEmpty) clear();
+    boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
+    vt = VT_BOOL;
+  }
+
+  void opAssign(VARIANT_BOOL value) {
+    if (!isEmpty) clear();
+    boolVal = value;
+    vt = VT_BOOL;
+  }
+
+  void opAssign(string value) {
+    if (!isEmpty) clear();
+    bstrVal = toBstr(value);
+    vt = VT_BSTR;
+  }
+
+  void opAssign(IUnknown value) {
+    if (!isEmpty) clear();
+    if (auto disp = com_cast!(IDispatch)(value)) {
+      pdispVal = disp;
+      vt = VT_DISPATCH;
+    }
+    else {
+      value.AddRef();
+      punkVal = value;
+      vt = VT_UNKNOWN;
+    }
+  }
+
+  void opAssign(SAFEARRAY* value) {
+    if (!isEmpty) clear();
+    parray = value;
+    ushort type;
+    SafeArrayGetVartype(value, type);
+    vt = VT_ARRAY | type;
+  }
+
+  void opAssign(byte value) {
+    if (!isEmpty) clear();
+    cVal = value;
+    vt = VT_I1;
+  }
+
+  void opAssign(ushort value) {
+    if (!isEmpty) clear();
+    uiVal = value;
+    vt = VT_UI2;
+  }
+
+  void opAssign(uint value) {
+    if (!isEmpty) clear();
+    ulVal = value;
+    vt = VT_UI4;
+  }
+
+  void opAssign(ulong value) {
+    if (!isEmpty) clear();
+    ullVal = value;
+    vt = VT_UI4;
+  }
+
+  void opAssign(DECIMAL value) {
+    if (!isEmpty) clear();
+    decVal = value;
+    vt = VT_DECIMAL;
+  }
+
+  version(D_Version2) {
+    // Illegal in 1.0
+    void opAssign(VARIANT value) {
+      if (!isEmpty) clear();
+      VariantCopy(this, value);
+    }
+
+    /*void opAssign(VARIANT* value) {
+      if (!isEmpty) clear();
+      pvarVal = value;
+      vt = VT_BYREF | VT_VARIANT;
+    }*/
+  }
+
+  void opAssign(ubyte[] value) {
+    if (!isEmpty) clear();
+    parray = SAFEARRAY(value);
+    vt = VT_ARRAY | VT_UI1;
   }
 
   /**
@@ -993,19 +1476,42 @@ struct VARIANT {
    * See_Also: $(LINK2 http://msdn2.microsoft.com/en-us/library/ms221165.aspx, VariantClear).
    */
   void clear() {
-    if (isCOMAlive && !(vt == VT_NULL || vt == VT_EMPTY))
-      VariantClear(this);
+    if (isCOMAlive && !(isNull || isEmpty)) {
+      version(D_Version2) {
+        VariantClear(this);
+      }
+    else {
+        VariantClear(*this);
+      }
+    }
   }
 
+  /**
+   * Copies this instance into the destination value.
+   * Params: dest = The variant to copy into.
+   */
   void copyTo(out VARIANT dest) {
-    VariantCopy(&dest, this);
+    version(D_Version2) {
+      VariantCopy(dest, this);
+    }
+    else {
+      VariantCopy(dest, *this);
+    }
   }
 
-  VARIANT changeTo(VARTYPE newType) {
-    VARIANT ret;
-    if (FAILED(VariantChangeType(&ret, this, VARIANT_ALPHABOOL, newType)))
-      throw new InvalidCastException("Invalid cast.");
-    return ret;
+  /**
+   * Convers a variant from one type to another.
+   * Params: newType = The type to change to.
+   */
+  VARIANT changeType(ushort newType) {
+    VARIANT dest;
+    version(D_Version2) {
+      VariantChangeTypeEx(dest, this, GetThreadLocale(), VARIANT_ALPHABOOL, newType);
+    }
+    else {
+      VariantChangeTypeEx(dest, *this, GetThreadLocale(), VARIANT_ALPHABOOL, newType);
+    }
+    return dest;
   }
 
   /**
@@ -1013,15 +1519,22 @@ struct VARIANT {
    * Returns: A string representation of the value contained in this instance.
    */
   string toString() {
-    if (vt == VT_NULL || vt == VT_EMPTY)
+    if (isNull || isEmpty)
       return null;
 
     if (vt == VT_BSTR)
-      return bstr.toString(bstrVal);
+      return fromBstr(bstrVal);
 
+    int hr;
     VARIANT temp;
-    if (SUCCEEDED(VariantChangeType(&temp, this, VARIANT_ALPHABOOL | VARIANT_LOCALBOOL, VT_BSTR)))
-      return bstr.toString(temp.bstrVal);
+    version(D_Version2) {
+      hr = VariantChangeTypeEx(temp, this, GetThreadLocale(), VARIANT_ALPHABOOL, VT_BSTR);
+    }
+    else {
+      hr = VariantChangeTypeEx(temp, *this, GetThreadLocale(), VARIANT_ALPHABOOL, VT_BSTR);
+    }
+    if (SUCCEEDED(hr))
+      return fromBstr(temp.bstrVal);
 
     return null;
   }
@@ -1030,36 +1543,82 @@ struct VARIANT {
    * Returns the _value contained in this instance.
    */
   V value(V)() {
-    //if (vt != VariantType!(V)) assert(false);
-
-    static if (is(V == bool)) return (boolVal == VARIANT_TRUE) ? true : false;
-    else static if (is(V == VARIANT_BOOL)) return boolVal;
-    else static if (is(V == ubyte)) return bVal;
-    else static if (is(V == byte)) return cVal;
-    else static if (is(V == ushort)) return uiVal;
-    else static if (is(V == short)) return iVal;
-    else static if (is(V == uint)) return ulVal;
+    static if (is(V == long)) return llVal;
     else static if (is(V == int)) return lVal;
-    else static if (is(V == ulong)) return ullVal;
-    else static if (is(V == long)) return llVal;
+    else static if (is(V == ubyte)) return bVal;
+    else static if (is(V == short)) return iVal;
     else static if (is(V == float)) return fltVal;
     else static if (is(V == double)) return dblVal;
-    else static if (is(V == DECIMAL)) return decVal;
-    else static if (is(V : string)) return bstr.toString(bstrVal);
+    else static if (is(V == bool)) return (boolVal == VARIANT_TRUE) ? true : false;
+    else static if (is(V == VARIANT_BOOL)) return boolVal;
+    else static if (is(V : string)) return fromBstr(bstrVal);
+    else static if (is(V == wchar*)) return bstrVal;
     else static if (is(V : IDispatch)) return cast(V)pdispVal;
     else static if (is(V : IUnknown)) return cast(V)punkVal;
-    else static if (is(V : Object)) return cast(V)byref;
-    else static if (is(V == VARIANT*)) return pvarVal;
     else static if (is(V == SAFEARRAY*)) return parray;
     else static if (isArray!(V)) return parray.toArray!(typeof(*V))();
+    else static if (is(V == VARIANT*)) return pvarVal;
+    else static if (is(V : Object)) return cast(V)byref;
+    else static if (isPointer!(V)) return cast(V)byref;
+    else static if (is(V == byte)) return cVal;
+    else static if (is(V == ushort)) return uiVal;
+    else static if (is(V == uint)) return ulVal;
+    else static if (is(V == ulong)) return ullVal;
+    else static if (is(V == DECIMAL)) return decVal;
     else static assert(false, "'" ~ V.stringof ~ "' is not one of the allowed types.");
   }
 
+  /**
+   * Determines whether this instance is empty.
+   */
+  bool isEmpty() {
+    return (vt == VT_EMPTY);
+  }
+
+  /**
+   * Determines whether this instance is _null.
+   */
+  bool isNull() {
+    return (vt == VT_NULL);
+  }
+
+  /**
+   * Determines whether this instance is Nothing.
+   */
+  bool isNothing() {
+    return (vt == VT_DISPATCH && pdispVal is null)
+      || (vt == VT_UNKNOWN && punkVal is null);
+  }
+
+  int opCmp(VARIANT that) {
+    version(D_Version2) {
+      return VarCmp(this, that, GetThreadLocale(), 0) - 1;
+    }
+    else {
+      return VarCmp(*this, that, GetThreadLocale(), 0) - 1;
+    }
+  }
+
+  bool opEquals(VARIANT that) {
+    return opCmp(that) == 0;
+  }
+
+  mixin(variant_operator("Cat"));
+  mixin(variant_operator("Add"));
+  mixin(variant_operator("Sub"));
+  mixin(variant_operator("Div"));
+  mixin(variant_operator("Mul"));
+  mixin(variant_operator("Mod"));
+  mixin(variant_operator("And"));
+  mixin(variant_operator("Or"));
+  mixin(variant_operator("Xor"));
+
 }
 
-VARIANT toVariant(T)(T value, bool heapAlloc = false) {
-  if (heapAlloc)
+VARIANT toVariant(T)(T value, bool autoFree = false) {
+  if (!autoFree) {
     return VARIANT(value);
+  }
   else return (new class(value) {
     VARIANT var;
     this(T value) { var = VARIANT(value); }
@@ -1067,41 +1626,101 @@ VARIANT toVariant(T)(T value, bool heapAlloc = false) {
   }).var;
 }
 
-/*//////////////////////////////////////////////////////////////////////////////////////////
-// Interfaces                                                                             //
-//////////////////////////////////////////////////////////////////////////////////////////*/
+extern(Windows):
+
+void VariantInit(ref VARIANT pvarg);
+int VariantClear(ref VARIANT pvarg);
+int VariantCopy(ref VARIANT pvargDest, ref VARIANT pvargSrc);
+
+int VarAdd(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarAnd(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarCat(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarDiv(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarMod(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarMul(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarOr(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarSub(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarXor(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarCmp(ref VARIANT pvarLeft, ref VARIANT pvarRight, uint lcid, uint dwFlags);
+
+enum : ushort {
+  VARIANT_NOVALUEPROP        = 0x1,
+  VARIANT_ALPHABOOL          = 0x2,
+  VARIANT_NOUSEROVERRIDE     = 0x4,
+  VARIANT_CALENDAR_HIJRI     = 0x8,
+  VARIANT_LOCALBOOL          = 0x10,
+  VARIANT_CALENDAR_THAI      = 0x20,
+  VARIANT_CALENDAR_GREGORIAN = 0x40,
+  VARIANT_USE_NLS            = 0x80
+}
+
+int VariantChangeType(ref VARIANT pvargDest, ref VARIANT pvarSrc, ushort wFlags, ushort vt);
+int VariantChangeTypeEx(ref VARIANT pvargDest, ref VARIANT pvarSrc, uint lcid, ushort wFlags, ushort vt);
 
 extern(Windows):
 
 interface IUnknown {
   mixin(uuid("00000000-0000-0000-c000-000000000046"));
+
   int QueryInterface(ref GUID riid, void** ppvObject);
   uint AddRef();
   uint Release();
 }
 
+enum : uint {
+  CLSCTX_INPROC_SERVER    = 0x1,
+  CLSCTX_INPROC_HANDLER   = 0x2,
+  CLSCTX_LOCAL_SERVER     = 0x4,
+  CLSCTX_INPROC_SERVER16  = 0x8,
+  CLSCTX_REMOTE_SERVER    = 0x10,
+  CLSCTX_INPROC_HANDLER16 = 0x20,
+  CLSCTX_INPROC           = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER,
+  CLSCTX_SERVER           = CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER,
+  CLSCTX_ALL              = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER
+}
+
+int CoCreateInstance(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, ref GUID riid, void** ppv);
+
+int CoGetClassObject(ref GUID rclsid, uint dwClsContext, void* pvReserved, ref GUID riid, void** ppv);
+
+struct COSERVERINFO {
+  uint dwReserved1;
+  version(D_Version2) {
+    mixin("const(wchar)* pwszName;");
+  }
+  else {
+    wchar* pwszName;
+  }
+  COAUTHINFO* pAutInfo;
+  uint dwReserved2;
+}
+
+int CoCreateInstanceEx(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, COSERVERINFO* pServerInfo, uint dwCount, MULTI_QI* pResults);
+
 enum {
-  CLASS_E_NOAGGREGATION       = 0x80040110,
-  CLASS_E_CLASSNOTAVAILABLE   = 0x80040111
+  CLASS_E_NOAGGREGATION     = 0x80040110,
+  CLASS_E_CLASSNOTAVAILABLE = 0x80040111
 }
 
 enum {
-  SELFREG_E_FIRST     = tMAKE_SCODE!(SEVERITY_ERROR, FACILITY_ITF, 0x0200),
-  SELFREG_E_LAST      = tMAKE_SCODE!(SEVERITY_ERROR, FACILITY_ITF, 0x020F),
-  SELFREG_S_FIRST     = tMAKE_SCODE!(SEVERITY_SUCCESS, FACILITY_ITF, 0x0200),
-  SELFREG_S_LAST      = tMAKE_SCODE!(SEVERITY_SUCCESS, FACILITY_ITF, 0x020F),
-  SELFREG_E_TYPELIB   = SELFREG_E_FIRST,
-  SELFREG_E_CLASS     = SELFREG_E_FIRST + 1
+  SELFREG_E_FIRST   = MAKE_SCODE!(SEVERITY_ERROR, FACILITY_ITF, 0x0200),
+  SELFREG_E_LAST    = MAKE_SCODE!(SEVERITY_ERROR, FACILITY_ITF, 0x020F),
+  SELFREG_S_FIRST   = MAKE_SCODE!(SEVERITY_SUCCESS, FACILITY_ITF, 0x0200),
+  SELFREG_S_LAST    = MAKE_SCODE!(SEVERITY_SUCCESS, FACILITY_ITF, 0x020F),
+  SELFREG_E_TYPELIB = SELFREG_E_FIRST,
+  SELFREG_E_CLASS   = SELFREG_E_FIRST + 1
 }
 
 interface IClassFactory : IUnknown {
   mixin(uuid("00000001-0000-0000-c000-000000000046"));
+
   int CreateInstance(IUnknown pUnkOuter, ref GUID riid, void** ppvObject);
   int LockServer(int fLock);
 }
 
 interface IMalloc : IUnknown {
   mixin(uuid("00000002-0000-0000-c000-000000000046"));
+
   void* Alloc(size_t cb);
   void* Realloc(void* pv, size_t cb);
   void Free(void* pv);
@@ -1110,15 +1729,11 @@ interface IMalloc : IUnknown {
   void HeapMinimize();
 }
 
-struct COSERVERINFO {
-  uint dwReserved1;
-  wchar* pwszName;
-  COAUTHINFO* pAutInfo;
-  uint dwReserved2;
-}
+int CoGetMalloc(uint dwMemContext/* = 1*/, out IMalloc ppMalloc);
 
 interface IMarshal : IUnknown {
   mixin(uuid("00000003-0000-0000-c000-000000000046"));
+
   int GetUnmarshalClass(ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags, out GUID pCid);
   int GetMarshalSizeMax(ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags, out uint pSize);
   int MarshalInterface(IStream pStm, ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags);
@@ -1129,8 +1744,9 @@ interface IMarshal : IUnknown {
 
 interface ISequentialStream : IUnknown {
   mixin(uuid("0c733a30-2a1c-11ce-ade5-00aa0044773d"));
+
   int Read(void* pv, uint cb, ref uint pcbRead);
-  int Write(void* pv, uint cb, ref uint pcbWritten);
+  int Write(in void* pv, uint cb, ref uint pcbWritten);
 }
 
 enum : uint {
@@ -1166,8 +1782,39 @@ struct STATSTG {
   uint reserved;
 }
 
+interface ILockBytes : IUnknown {
+  mixin(uuid("0000000a-0000-0000-c000-000000000046"));
+
+  int ReadAt(ulong ulOffset, void* pv, uint cb, ref uint pcbRead);
+  int WriteAt(ulong ulOffset, in void* pv, uint cb, ref uint pcbWritten);
+  int Flush();
+  int SetSize(ulong cb);
+  int LockRegion(ulong libOffset, ulong cb, uint dwLockType);
+  int UnlockRegion(ulong libOffset, ulong cb, uint dwLockType);
+  int Stat(out STATSTG pstatstg, uint grfStatFlag);
+}
+
+enum : uint {
+  STGM_DIRECT           = 0x00000000,
+  STGM_TRANSACTED       = 0x00010000,
+  STGM_SIMPLE           = 0x08000000,
+  STGM_READ             = 0x00000000,
+  STGM_WRITE            = 0x00000001,
+  STGM_READWRITE        = 0x00000002,
+  STGM_SHARE_DENY_NONE  = 0x00000040,
+  STGM_SHARE_DENY_READ  = 0x00000030,
+  STGM_SHARE_DENY_WRITE = 0x00000020,
+  STGM_SHARE_EXCLUSIVE  = 0x00000010,
+  STGM_CREATE           = 0x00001000
+}
+
+int GetHGlobalFromILockBytes(ILockBytes plkbyt, out Handle phglobal);
+int CreateILockBytesOnHGlobal(Handle hGlobal, int fDeleteOnRelease, out ILockBytes pplkbyt);
+int StgCreateDocfileOnILockBytes(ILockBytes plkbyt, uint grfMode, uint reserved, out IStorage ppstgOpen);
+
 interface IStorage : IUnknown {
   mixin(uuid("0000000b-0000-0000-c000-000000000046"));
+
   int CreateStream(wchar* pwcsName, uint grfMode, uint reserved1, uint reserved2, out IStream ppstm);
   int OpenStream(wchar* pwcsName, void* reserved1, uint grfMode, uint reserved2, out IStream ppstm);
   int CreateStorage(wchar* pwcsName, uint grfMode, uint reserved1, uint reserved2, out IStorage ppstg);
@@ -1184,6 +1831,11 @@ interface IStorage : IUnknown {
   int SetStateBits(uint grfStateBits, uint grfMask);
   int Stat(out STATSTG pstatstg, uint grfStatFlag);
 }
+
+int ReadClassStg(IStorage pStg, out GUID pclsid);
+int WriteClassStg(IStorage pStg, ref GUID rclsid);
+int ReadClassStm(IStream pStm, out GUID pclsid);
+int WriteClassStm(IStream pStm, ref GUID rclsid);
 
 struct STGOPTIONS {
   ushort usVersion;
@@ -1204,6 +1856,7 @@ int StgOpenStorageEx(in wchar* pwcsName, uint grfMode, uint stgfmt, uint grfAttr
 
 interface IStream : ISequentialStream {
   mixin(uuid("0000000c-0000-0000-c000-000000000046"));
+
   int Seek(long dlibMove, uint dwOrigin, ref ulong plibNewPosition);
   int SetSize(ulong libNewSize);
   int CopyTo(IStream stm, ulong cb, ref ulong pcbRead, ref ulong pcbWritten);
@@ -1215,26 +1868,16 @@ interface IStream : ISequentialStream {
   int Clone(out IStream ppstm);
 }
 
+int GetHGlobalFromStream(IStream pstm, out Handle phglobal);
+int CreateStreamOnHGlobal(Handle hGlobal, int fDeleteOnRelease, out IStream ppstm);
+
 interface IEnumSTATSTG : IUnknown {
   mixin(uuid("0000000d-0000-0000-c000-000000000046"));
+
   int Next(uint celt, STATSTG* rgelt, out uint pceltFetched);
   int Skip(uint celt);
   int Reset();
   int Clone(out IEnumSTATSTG ppenum);
-}
-
-enum : uint {
-  STGM_DIRECT           = 0x00000000,
-  STGM_TRANSACTED       = 0x00010000,
-  STGM_SIMPLE           = 0x08000000,
-  STGM_READ             = 0x00000000,
-  STGM_WRITE            = 0x00000001,
-  STGM_READWRITE        = 0x00000002,
-  STGM_SHARE_DENY_NONE  = 0x00000040,
-  STGM_SHARE_DENY_READ  = 0x00000030,
-  STGM_SHARE_DENY_WRITE = 0x00000020,
-  STGM_SHARE_EXCLUSIVE  = 0x00000010,
-  STGM_CREATE           = 0x00001000
 }
 
 enum : uint {
@@ -1262,11 +1905,12 @@ struct BIND_OPTS2 {
 
 interface IBindCtx : IUnknown {
   mixin(uuid("0000000e-0000-0000-c000-000000000046"));
+
   int RegisterObjectBound(IUnknown punk);
   int RevokeObjectBound(IUnknown punk);
   int ReleaseBoundObjects();
-  int SetBindOptions(ref BIND_OPTS pbindopts);
-  int GetBindOptions(ref BIND_OPTS pbindopts);
+  int SetBindOptions(BIND_OPTS* pbindopts);
+  int GetBindOptions(BIND_OPTS* pbindopts);
   int GetRunningObjectTable(out IRunningObjectTable pprot);
   int RegisterObjectParam(wchar* pszKey, IUnknown punk);
   int GetObjectParam(wchar* pszKey, out IUnknown ppunk);
@@ -1278,6 +1922,7 @@ int CreateBindCtx(uint reserved, out IBindCtx ppbc);
 
 interface IMoniker : IPersistStream {
   mixin(uuid("0000000f-0000-0000-c000-000000000046"));
+
   int BindToObject(IBindCtx pbc, IMoniker pmkToLeft, ref GUID riidResult, void** ppvResult);
   int BindToStorage(IBindCtx pbc, IMoniker pmkToLeft, ref GUID riid, void** ppv);
   int Reduce(IBindCtx pbc, uint dwReduceHowFar, ref IMoniker ppmkToLeft, out IMoniker ppmkReduced);
@@ -1299,6 +1944,7 @@ int CreateFileMoniker(in wchar* lpszPathName, out IMoniker ppmk);
 
 interface IRunningObjectTable : IUnknown {
   mixin(uuid("00000010-0000-0000-c000-000000000046"));
+
   int Register(uint grfFlags, IUnknown punkObject, IMoniker pmkObjectName, out uint pdwRegister);
   int Revoke(uint dwRegister);
   int IsRunning(IMoniker pmkObjectName);
@@ -1308,8 +1954,26 @@ interface IRunningObjectTable : IUnknown {
   int EnumRunning(out IEnumMoniker ppenumMoniker);
 }
 
+struct MULTI_QI {
+  version(D_Version2) {
+    mixin("const(GUID)* pIID;");
+  }
+  else {
+    GUID* pIID;
+  }
+  IUnknown pItf;
+  int hr;
+}
+
+interface IMultiQI : IUnknown {
+  mixin(uuid("00000020-0000-0000-c000-000000000046"));
+
+  int QueryMultipleInterfaces(uint cMQIs, MULTI_QI* pMQIs);
+}
+
 interface IRecordInfo : IUnknown {
   mixin(uuid("0000002f-0000-0000-c000-000000000046"));
+
   int RecordInit(void* pvNew);
   int RecordClear(void* pvExisting);
   int RecordCopy(void* pvExisting, void* pvNew);
@@ -1330,6 +1994,7 @@ interface IRecordInfo : IUnknown {
 
 interface IEnumUnknown : IUnknown {
   mixin(uuid("00000100-0000-0000-c000-000000000046"));
+
   int Next(uint celt, IUnknown* rgelt, out uint pceltFetched);
   int Skip(uint celt);
   int Reset();
@@ -1338,7 +2003,8 @@ interface IEnumUnknown : IUnknown {
 
 interface IEnumString : IUnknown {
   mixin(uuid("00000101-0000-0000-c000-000000000046"));
-  int Next(uint celt, wchar** rgelt, out uint pceltFetched);
+
+  int Next(uint celt, wchar** rgelt, uint* pceltFetched);
   int Skip(uint celt);
   int Reset();
   int Clone(out IEnumString ppenum);
@@ -1346,7 +2012,8 @@ interface IEnumString : IUnknown {
 
 interface IEnumMoniker : IUnknown {
   mixin(uuid("00000102-0000-0000-c000-000000000046"));
-  int Next(uint celt, IEnumMoniker* rgelt, out uint pceltFetched);
+
+  int Next(uint celt, IMoniker* rgelt, out uint pceltFetched);
   int Skip(uint celt);
   int Reset();
   int Clone(out IEnumMoniker ppenum);
@@ -1361,42 +2028,30 @@ struct DVTARGETDEVICE {
   ubyte* tdData;
 }
 
+enum DVASPECT : uint {
+  DVASPECT_CONTENT = 1,
+  DVASPECT_THUMBNAIL = 2,
+  DVASPECT_ICON = 4,
+  DVASPECT_DOCPRINT = 8
+}
+
+enum : uint {
+  TYMED_NULL = 0,
+  TYMED_HGLOBAL = 1,
+  TYMED_FILE = 2,
+  TYMED_ISTREAM = 4,
+  TYMED_ISTORAGE = 8,
+  TYMED_GDI = 16,
+  TYMED_MFPICT = 32,
+  TYMED_ENHMF = 64
+}
+
 struct FORMATETC {
   ushort cfFormat;
   DVTARGETDEVICE* ptd;
   uint dwAspect;
   int lindex;
   uint tymed;
-}
-
-interface IEnumFORMATETC : IUnknown {
-  mixin(uuid("00000103-0000-0000-c000-000000000046"));
-  int Next(uint celt, FORMATETC* rgelt, ref uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumFORMATETC ppenum);
-}
-
-struct OLEVERB {
-  int lVerb;
-  wchar* lpszVerbName;
-  uint fuFlags;
-  uint grfAttribs;
-}
-
-interface IEnumOLEVERB : IUnknown {
-  mixin(uuid("00000104-0000-0000-c000-000000000046"));
-  int Next(uint celt, OLEVERB* rgelt, out uint pceltFetched);
-  int Skip(uint celt);
-  int Reset();
-  int Clone(out IEnumOLEVERB ppenum);
-}
-
-enum DVASPECT : uint {
-  DVASPECT_CONTENT = 1,
-  DVASPECT_THUMBNAIL = 2,
-  DVASPECT_ICON = 4,
-  DVASPECT_DOCPRINT = 8
 }
 
 enum TYMED : uint {
@@ -1424,6 +2079,31 @@ struct STGMEDIUM {
   IUnknown pUnkForRelease;
 }
 
+interface IEnumFORMATETC : IUnknown {
+  mixin(uuid("00000103-0000-0000-c000-000000000046"));
+
+  int Next(uint celt, FORMATETC* rgelt, ref uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumFORMATETC ppenum);
+}
+
+struct OLEVERB {
+  int lVerb;
+  wchar* lpszVerbName;
+  uint fuFlags;
+  uint grfAttribs;
+}
+
+interface IEnumOLEVERB : IUnknown {
+  mixin(uuid("00000104-0000-0000-c000-000000000046"));
+
+  int Next(uint celt, OLEVERB* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumOLEVERB ppenum);
+}
+
 struct STATDATA {
   FORMATETC formatetc;
   uint advf;
@@ -1433,6 +2113,7 @@ struct STATDATA {
 
 interface IEnumSTATDATA : IUnknown {
   mixin(uuid("00000105-0000-0000-c000-000000000046"));
+
   int Next(uint celt, STATDATA* rgelt, out uint pceltFetched);
   int Skip(uint celt);
   int Reset();
@@ -1441,11 +2122,13 @@ interface IEnumSTATDATA : IUnknown {
 
 interface IPersist : IUnknown {
   mixin(uuid("0000010c-0000-0000-c000-000000000046"));
+
   int GetClassID(out GUID pClassID);
 }
 
 interface IPersistStream : IPersist {
   mixin(uuid("00000109-0000-0000-c000-000000000046"));
+
   int IsDirty();
   int Load(IStream pStm);
   int Save(IStream pStm, int fClearDirty);
@@ -1454,6 +2137,7 @@ interface IPersistStream : IPersist {
 
 interface IPersistStreamInit : IPersist {
   mixin(uuid("7FD52380-4E07-101B-AE2D-08002B2EC713"));
+
   int IsDirty();
   int Load(IStream pStm);
   int Save(IStream pStm, int fClearDirty);
@@ -1474,6 +2158,7 @@ enum {
 
 interface IDataObject : IUnknown {
   mixin(uuid("0000010e-0000-0000-c000-000000000046"));
+
   int GetData(ref FORMATETC pformatetcIn, out STGMEDIUM pmedium);
   int GetDataHere(ref FORMATETC pformatetc, ref STGMEDIUM pmedium);
   int QueryGetData(ref FORMATETC pformatetc);
@@ -1492,6 +2177,7 @@ int OleIsCurrentClipboard(IDataObject pDataObj);
 
 interface IAdviseSink : IUnknown {
   mixin(uuid("0000010f-0000-0000-c000-000000000046"));
+
   int OnDataChange(ref FORMATETC pFormatetc, ref STGMEDIUM pStgmed);
   int OnViewChange(uint dwAspect, int lindex);
   int OnRename(IMoniker pmk);
@@ -1499,8 +2185,15 @@ interface IAdviseSink : IUnknown {
   int OnClose();
 }
 
+enum {
+  DRAGDROP_S_DROP = 0x00040100,
+  DRAGDROP_S_CANCEL = 0x00040101,
+  DRAGDROP_S_USEDEFAULTCURSORS = 0x00040102
+}
+
 interface IDropSource : IUnknown {
   mixin(uuid("00000121-0000-0000-c000-000000000046"));
+
   int QueryContinueDrag(int fEscapePressed, uint grfKeyState);
   int GiveFeedback(uint dwEffect);
 }
@@ -1515,6 +2208,7 @@ enum : uint {
 
 interface IDropTarget : IUnknown {
   mixin(uuid("00000122-0000-0000-c000-000000000046"));
+
   int DragEnter(IDataObject pDataObj, uint grfKeyState, POINT pt, ref uint pdwEffect);
   int DragOver(uint grfKeyState, POINT pt, ref uint pdwEffect);
   int DragLeave();
@@ -1582,6 +2276,7 @@ enum {
 
 interface IDispatch : IUnknown {
   mixin(uuid("00020400-0000-0000-c000-000000000046"));
+
   int GetTypeInfoCount(out uint pctinfo);
   int GetTypeInfo(uint iTInfo, uint lcid, out ITypeInfo ppTInfo);
   int GetIDsOfNames(ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId);
@@ -1605,7 +2300,7 @@ struct TYPEDESC {
     ARRAYDESC* lpadesc;
     uint hreftype;
   }
-  VARTYPE vt;
+  ushort vt;
 }
 
 struct ARRAYDESC {
@@ -1831,6 +2526,7 @@ enum {
 
 interface ITypeInfo : IUnknown {
   mixin(uuid("00020401-0000-0000-c000-000000000046"));
+
   int GetTypeAttr(out TYPEATTR* ppTypeAttr);
   int GetTypeComp(out ITypeComp ppTComp);
   int GetFuncDesc(uint index, out FUNCDESC* ppFuncDesc);
@@ -1854,6 +2550,7 @@ interface ITypeInfo : IUnknown {
 
 interface ITypeLib : IUnknown {
   mixin(uuid("00020402-0000-0000-c000-000000000046"));
+
   uint GetTypeInfoCount();
   int GetTypeInfo(uint index, out ITypeInfo ppTInfo);
   int GetTypeInfoType(uint index, out TYPEKIND pTKind);
@@ -1866,14 +2563,41 @@ interface ITypeLib : IUnknown {
   int ReleaseTLibAttr(TLIBATTR* pTLibAttr);
 }
 
+int LoadTypeLib(in wchar* szFile, out ITypeLib pptlib);
+
+enum REGKIND {
+  REGKIND_DEFAULT,
+  REGKIND_REGISTER,
+  REGKIND_NONE
+}
+
+int LoadTypeLibEx(in wchar* szFile, REGKIND regkind, out ITypeLib pptlib);
+int LoadRegTypeLib(ref GUID rgiud, ushort wVerMajor, ushort wVerMinor, uint lcid, out ITypeLib pptlib);
+int QueryPathOfRegTypeLib(ref GUID guid, ushort wVerMajor, ushort wVerMinor, uint lcid, out wchar* lpbstrPathName);
+int RegisterTypeLib(ITypeLib ptlib, in wchar* szFullPath, in wchar* szHelpDir);
+int UnRegisterTypeLib(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
+int RegisterTypeLibForUser(ITypeLib ptlib, wchar* szFullPath, wchar* szHelpDir);
+int UnRegisterTypeLibForUser(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
+
 interface ITypeComp : IUnknown {
   mixin(uuid("00020403-0000-0000-c000-000000000046"));
+
   int Bind(wchar* szName, uint lHashVal, ushort wFlags, out ITypeInfo ppTInfo, out DESCKIND pDescKind, out BINDPTR pBindPtr);
   int BindType(wchar* szName, uint lHashVal, out ITypeInfo ppTInfo, out ITypeComp ppTComp);
 }
 
+interface IEnumVARIANT : IUnknown {
+  mixin(uuid("00020404-0000-0000-c000-000000000046"));
+
+  int Next(uint celt, VARIANT* rgelt, out uint pceltFetched);
+  int Skip(uint celt);
+  int Reset();
+  int Clone(out IEnumVARIANT ppenum);
+}
+
 interface ICreateTypeInfo : IUnknown {
   mixin(uuid("00020405-0000-0000-c000-000000000046"));
+
   int SetGuid(ref GUID guid);
   int SetTypeFlags(uint uTypeFlags);
   int SetDocString(wchar* szStrDoc);
@@ -1901,6 +2625,7 @@ interface ICreateTypeInfo : IUnknown {
 
 interface ICreateTypeLib : IUnknown {
   mixin(uuid("00020406-0000-0000-c000-000000000046"));
+
   int CreateTypeInfo(wchar* szName, TYPEKIND tkind, out ICreateTypeInfo ppCTInfo);
   int SetName(wchar* szName);
   int SetVersion(ushort wMajorVerNum, ushort wMinorVerNum);
@@ -1913,8 +2638,11 @@ interface ICreateTypeLib : IUnknown {
   int SaveAllChanges();
 }
 
+int CreateTypeLib(SYSKIND syskind, in wchar* szFile, out ICreateTypeLib ppctlib);
+
 interface ICreateTypeInfo2 : ICreateTypeInfo {
   mixin(uuid("0002040e-0000-0000-c000-000000000046"));
+
   int DeleteFuncDesc(uint index);
   int DeleteFuncDescByMemId(int memid, INVOKEKIND invKind);
   int DeleteVarDesc(uint index);
@@ -1933,11 +2661,14 @@ interface ICreateTypeInfo2 : ICreateTypeInfo {
 
 interface ICreateTypeLib2 : ICreateTypeLib {
   mixin(uuid("0002040f-0000-0000-c000-000000000046"));
+
   int DeleteTypeInfo(wchar* szName);
   int SetCustData(ref GUID guid, ref VARIANT pVarVal);
   int SetHelpStringContext(uint dwHelpStringContext);
   int SetHelpStringDll(wchar* szFileName);
 }
+
+int CreateTypeLib2(SYSKIND syskind, in wchar* szFile, out ICreateTypeLib2 ppctlib);
 
 enum CHANGEKIND {
   CHANGEKIND_ADDMEMBER,
@@ -1952,6 +2683,7 @@ enum CHANGEKIND {
 
 interface ITypeChangeEvents : IUnknown {
   mixin(uuid("00020410-0000-0000-c000-000000000046"));
+
   int RequestTypeChange(CHANGEKIND changeKind, ITypeInfo pTInfoBefore, wchar* pStrName, out int pfCancel);
   int AfterTypeChange(CHANGEKIND changeKind, ITypeInfo pTInfoAfter, wchar* pStrName);
 }
@@ -1968,6 +2700,7 @@ struct CUSTDATA {
 
 interface ITypeLib2 : ITypeLib {
   mixin(uuid("00020411-0000-0000-c000-000000000046"));
+
   int GetCustData(ref GUID guid, out VARIANT pVarVal);
   int GetLibStatistics(out uint pcUniqueNames, out uint pcchUniqueNames);
   int GetDocumentation2(int index, uint lcid, wchar** pBstrHelpString, uint* pdwHelpContext, wchar** pBstrHelpStringDll);
@@ -1976,6 +2709,7 @@ interface ITypeLib2 : ITypeLib {
 
 interface ITypeInfo2 : ITypeInfo {
   mixin(uuid("00020412-0000-0000-c000-000000000046"));
+
   int GetTypeKind(out TYPEKIND pTypeKind);
   int GetTypeFlags(out uint pTypeFlags);
   int GetFuncIndexOfMemId(int memid, INVOKEKIND invKind, out uint pFuncIndex);
@@ -1995,6 +2729,7 @@ interface ITypeInfo2 : ITypeInfo {
 
 interface IEnumGUID : IUnknown {
   mixin(uuid("0002E000-0000-0000-c000-000000000046"));
+
   int Next(uint celt, GUID* rgelt, out uint pceltFetched);
   int Skip(uint celt);
   int Reset();
@@ -2009,6 +2744,7 @@ struct CATEGORYINFO {
 
 interface IEnumCATEGORYINFO : IUnknown {
   mixin(uuid("0002E011-0000-0000-c000-000000000046"));
+
   int Next(uint celt, CATEGORYINFO* rgelt, out uint pceltFetched);
   int Skip(uint celt);
   int Reset();
@@ -2017,6 +2753,7 @@ interface IEnumCATEGORYINFO : IUnknown {
 
 interface ICatInformation : IUnknown {
   mixin(uuid("0002E013-0000-0000-c000-000000000046"));
+
   int EnumCategories(uint lcid, out IEnumCATEGORYINFO ppenumCategoryInfo);
   int GetCategoryDesc(inout GUID rcatid, uint lcid, out wchar* pszDesc);
   int EnumClassesOfCategories(uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq, out IEnumGUID ppenumClsid);
@@ -2027,17 +2764,20 @@ interface ICatInformation : IUnknown {
 
 abstract final class StdComponentCategoriesMgr {
   mixin(uuid("0002E005-0000-0000-c000-000000000046"));
+
   mixin Interfaces!(ICatInformation);
 }
 
 interface IConnectionPointContainer : IUnknown {
   mixin(uuid("b196b284-bab4-101a-b69c-00aa00341d07"));
+
   int EnumConnectionPoints(out IEnumConnectionPoints ppEnum);
   int FindConnectionPoint(ref GUID riid, out IConnectionPoint ppCP);
 }
 
 interface IEnumConnectionPoints : IUnknown {
   mixin(uuid("b196b285-bab4-101a-b69c-00aa00341d07"));
+
   int Next(uint cConnections, IConnectionPoint* ppCP, out uint pcFetched);
   int Skip(uint cConnections);
   int Reset();
@@ -2046,6 +2786,7 @@ interface IEnumConnectionPoints : IUnknown {
 
 interface IConnectionPoint : IUnknown {
   mixin(uuid("b196b286-bab4-101a-b69c-00aa00341d07"));
+
   int GetConnectionInterface(out GUID pIID);
   int GetConnectionPointContainer(out IConnectionPointContainer ppCPC);
   int Advise(IUnknown pUnkSink, out uint pdwCookie);
@@ -2060,6 +2801,7 @@ struct CONNECTDATA {
 
 interface IEnumConnections : IUnknown {
   mixin(uuid("b196b287-bab4-101a-b69c-00aa00341d07"));
+
   int Next(uint cConnections, CONNECTDATA* rgcd, out uint pcFetched);
   int Skip(uint cConnections);
   int Reset();
@@ -2068,6 +2810,7 @@ interface IEnumConnections : IUnknown {
 
 interface IErrorInfo : IUnknown {
   mixin(uuid("1cf2b120-547d-101b-8e65-08002b2bd119"));
+
   int GetGUID(out GUID pGUID);
   int GetSource(out wchar* pBstrSource);
   int GetDescription(out wchar* pBstrDescription);
@@ -2081,6 +2824,7 @@ int CreateErrorInfo(out IErrorInfo pperrinfo);
 
 interface ISupportErrorInfo : IUnknown {
   mixin(uuid("df0b3d60-548f-101b-8e65-08002b2bd119"));
+
   int InterfaceSupportsErrorInfo(ref GUID riid);
 }
 
@@ -2092,6 +2836,7 @@ struct LICINFO {
 
 interface IClassFactory2 : IClassFactory {
   mixin(uuid("b196b28f-bab4-101a-b69c-00aa00341d07"));
+
   int GetLicInfo(out LICINFO pLicInfo);
   int RequestLicKey(uint dwReserved, out wchar* pBstrKey);
   int CreateInstanceLic(IUnknown pUnkOuter, IUnknown pUnkReserved, ref GUID riid, wchar* bstrKey, void** ppvObj);
@@ -2122,6 +2867,7 @@ struct TEXTMETRICOLE {
 
 interface IFont : IUnknown {
   mixin(uuid("BEF6E002-A874-101A-8BBA-00AA00300CAB"));
+
   int get_Name(out wchar* pName);
   int set_Name(wchar* name);
   int get_Size(out long pSize);
@@ -2150,6 +2896,7 @@ interface IFont : IUnknown {
 
 interface IPicture : IUnknown {
   mixin(uuid("7BF80980-BF32-101A-8BBB-00AA00300CAB"));
+
   int get_Handle(out uint pHandle);
   int get_hPal(out uint phPal);
   int get_Type(out short pType);
@@ -2178,9 +2925,25 @@ interface IPictureDisp : IDispatch {
   mixin(uuid("7BF80981-BF32-101A-8BBB-00AA00300CAB"));
 }
 
-/*//////////////////////////////////////////////////////////////////////////////////////////
-// Ole32 API                                                                              //
-//////////////////////////////////////////////////////////////////////////////////////////*/
+int OleSetContainedObject(IUnknown pUnknown, int fContained);
+
+enum {
+  PICTYPE_UNINITIALIZED = -1,
+  PICTYPE_NONE = 0,
+  PICTYPE_BITMAP = 1,
+  PICTYPE_METAFILE = 2,
+  PICTYPE_ICON = 3,
+  PICTYPE_ENHMETAFILE = 4
+}
+
+struct PICTDESC {
+  uint cbSizeofStruct = PICTDESC.sizeof;
+  uint picType;
+  Handle handle;
+}
+
+int OleCreatePictureIndirect(PICTDESC* lpPictDesc, ref GUID riid, int fOwn, void** lplpvObj);
+int OleLoadPicture(IStream lpstream, int lSize, int fRunmode, ref GUID riid, void** lplpvObj);
 
 int OleInitialize(void* pvReserved);
 void OleUninitialize();
@@ -2196,41 +2959,9 @@ int CoInitialize(void*);
 void CoUninitialize();
 int CoInitializeEx(void*, uint dwCoInit);
 
-int CoCreateGuid(out GUID pGuid);
-
 void* CoTaskMemAlloc(size_t cb);
 void* CoTaskMemRealloc(void* pv, size_t cb);
 void CoTaskMemFree(void* pv);
-
-int CoGetMalloc(uint dwMemContext/* = 1*/, out IMalloc ppMalloc);
-
-enum : uint {
-  CLSCTX_INPROC_SERVER = 0x1,
-  CLSCTX_INPROC_HANDLER = 0x2,
-  CLSCTX_LOCAL_SERVER = 0x4,
-  CLSCTX_INPROC_SERVER16 = 0x8,
-  CLSCTX_REMOTE_SERVER = 0x10,
-  CLSCTX_INPROC_HANDLER16 = 0x20,
-  CLSCTX_INPROC = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER,
-  CLSCTX_SERVER = CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER,
-  CLSCTX_ALL = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER
-}
-
-int CoCreateInstance(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, ref GUID riid, void** ppv);
-int CoGetClassObject(ref GUID rclsid, uint dwClsContext, void* pvReserved, ref GUID riid, void** ppv);
-
-struct MULTI_QI {
-  GUID* pIID;
-  IUnknown pItf;
-  int hr;
-}
-
-int CoCreateInstanceEx(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, COSERVERINFO* pServerInfo, uint dwCount, MULTI_QI* pResults);
-
-interface IMultiQI : IUnknown {
-  mixin(uuid("00000020-0000-0000-c000-000000000046"));
-  int QueryMultipleInterfaces(uint cMQIs, MULTI_QI* pMQIs);
-}
 
 enum : uint {
   ACTIVEOBJECT_STRONG,
@@ -2263,124 +2994,27 @@ int ProgIDFromCLSID(ref GUID clsid, out wchar* lplpszProgID);
 int CLSIDFromProgID(in wchar* lpszProgID, out GUID lpclsid);
 int CLSIDFromProgIDEx(in wchar* lpszProgID, out GUID lpclsid);
 
-void VariantInit(VARIANT* pvarg);
-int VariantClear(VARIANT* pvarg);
-int VariantCopy(VARIANT* pvargDest, in VARIANT* pvargSrc);
-
-enum : uint {
-  VARIANT_NOVALUEPROP = 0x1,
-  VARIANT_ALPHABOOL = 0x2,
-  VARIANT_NOUSEROVERRIDE = 0x4,
-  VARIANT_CALENDAR_HIJRI = 0x8,
-  VARIANT_LOCALBOOL = 0x10,
-  VARIANT_CALENDAR_THAI = 0x20,
-  VARIANT_CALENDAR_GREGORIAN = 0x40,
-  VARIANT_USE_NLS = 0x80
-}
-
-int VariantChangeType(VARIANT* pvargDest, in VARIANT* pvarSrc, ushort wFlags, ushort vt);
-int VariantChangeTypeEx(VARIANT* pvargDest, in VARIANT* pvarSrc, uint lcid, ushort wFlags, ushort vt);
-
-int LoadTypeLib(in wchar* szFile, out ITypeLib pptlib);
-
-enum REGKIND {
-  REGKIND_DEFAULT,
-  REGKIND_REGISTER,
-  REGKIND_NONE
-}
-
-int LoadTypeLibEx(in wchar* szFile, REGKIND regkind, out ITypeLib pptlib);
-int LoadRegTypeLib(ref GUID rgiud, ushort wVerMajor, ushort wVerMinor, uint lcid, out ITypeLib pptlib);
-int QueryPathOfRegTypeLib(ref GUID guid, ushort wVerMajor, ushort wVerMinor, uint lcid, out wchar* lpbstrPathName);
-int RegisterTypeLib(ITypeLib ptlib, in wchar* szFullPath, in wchar* szHelpDir);
-int UnRegisterTypeLib(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
-int RegisterTypeLibForUser(ITypeLib ptlib, wchar* szFullPath, wchar* szHelpDir);
-int UnRegisterTypeLibForUser(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
-int CreateTypeLib(SYSKIND syskind, in wchar* szFile, out ICreateTypeLib ppctlib);
-int CreateTypeLib2(SYSKIND syskind, in wchar* szFile, out ICreateTypeLib2 ppctlib);
-
-int SafeArrayAllocDescriptor(uint cDims, out SAFEARRAY* ppsaOut);
-int SafeArrayAllocDescriptorEx(VARTYPE vt, uint cDims, out SAFEARRAY* ppsaOut);
-int SafeArrayAllocData(SAFEARRAY* psa);
-SAFEARRAY* SafeArrayCreate(VARTYPE vt, uint cDims, SAFEARRAYBOUND* rgsabound);
-SAFEARRAY* SafeArrayCreateEx(VARTYPE vt, uint cDims, SAFEARRAYBOUND* rgsabound, void* pvExtra);
-int SafeArrayCopyData(SAFEARRAY* psaSource, SAFEARRAY* psaTarget);
-int SafeArrayDestroyDescriptor(SAFEARRAY* psa);
-int SafeArrayDestroyData(SAFEARRAY* psa);
-int SafeArrayDestroy(SAFEARRAY* psa);
-int SafeArrayRedim(SAFEARRAY* psa, SAFEARRAYBOUND* psaboundNew);
-uint SafeArrayGetDim(SAFEARRAY* psa);
-uint SafeArrayGetElemsize(SAFEARRAY* psa);
-int SafeArrayGetUBound(SAFEARRAY* psa, uint cDim, out int plUbound);
-int SafeArrayGetLBound(SAFEARRAY* psa, uint cDim, out int plLbound);
-int SafeArrayLock(SAFEARRAY* psa);
-int SafeArrayUnlock(SAFEARRAY* psa);
-int SafeArrayAccessData(SAFEARRAY* psa, void** ppvData);
-int SafeArrayUnaccessData(SAFEARRAY* psa);
-int SafeArrayGetElement(SAFEARRAY* psa, int* rgIndices, void* pv);
-int SafeArrayPutElement(SAFEARRAY* psa, int* rgIndices, void* pv);
-int SafeArrayCopy(SAFEARRAY* psa, out SAFEARRAY* ppsaOut);
-int SafeArrayPtrOfIndex(SAFEARRAY* psa, int* rgIndices, void** ppvData);
-int SafeArraySetRecordInfo(SAFEARRAY* psa, IRecordInfo prinfo);
-int SafeArrayGetRecordInfo(SAFEARRAY* psa, out IRecordInfo prinfo);
-int SafeArraySetIID(SAFEARRAY* psa, ref GUID guid);
-int SafeArrayGetIID(SAFEARRAY* psa, out GUID pguid);
-int SafeArrayGetVartype(SAFEARRAY* psa, out VARTYPE pvt);
-SAFEARRAY* SafeArrayCreateVector(VARTYPE vt, int lLbound, uint cElements);
-SAFEARRAY* SafeArrayCreateVectorEx(VARTYPE vt, int lLbound, uint cElements, void* pvExtra);
-
-int VarDecFromUI4(uint ulIn, out DECIMAL pdecOut);
-int VarDecFromI4(int lIn, out DECIMAL pdecOut);
-int VarDecFromUI8(ulong ui64In, out DECIMAL pdecOut);
-int VarDecFromI8(long i64In, out DECIMAL pdecOut);
-int VarDecFromR4(float dlbIn, out DECIMAL pdecOut);
-int VarDecFromR8(double dlbIn, out DECIMAL pdecOut);
-int VarDecFromStr(in wchar* StrIn, uint lcid, uint dwFlags, out DECIMAL pdecOut);
-int VarBstrFromDec(in DECIMAL* pdecIn, uint lcid, uint dwFlags, out wchar* pbstrOut);
-int VarUI4FromDec(in DECIMAL* pdecIn, out uint pulOut);
-int VarI4FromDec(in DECIMAL* pdecIn, out int plOut);
-int VarUI8FromDec(in DECIMAL* pdecIn, out ulong pui64Out);
-int VarI8FromDec(in DECIMAL* pdecIn, out long pi64Out);
-int VarR8FromDec(in DECIMAL* pdecIn, out double pdblOut);
-
-int VarDecAdd(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
-int VarDecSub(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
-int VarDecMul(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
-int VarDecDiv(DECIMAL* pdecLeft, DECIMAL* pdecRight, DECIMAL* pdecResult);
-int VarDecRound(DECIMAL* pdecIn, int cDecimals, DECIMAL* pdecResult);
-int VarDecAbs(DECIMAL* pdecIn, DECIMAL* pdecResult);
-int VarDecFix(DECIMAL* pdecIn, DECIMAL* pdecResult);
-int VarDecInt(DECIMAL* pdecIn, DECIMAL* pdecResult);
-int VarDecNeg(DECIMAL* pdecIn, DECIMAL* pdecResult);
-int VarDecCmp(DECIMAL* pdecLeft, DECIMAL* pdecRight);
-
-int CreateStreamOnHGlobal(Handle hGlobal, int fDeleteOnRelease, out IStream ppstm);
-
-struct PICTDESC {
-  uint cbSizeofStruct = PICTDESC.sizeof;
-  uint picType;
-  Handle handle;
-}
-
-int OleCreatePictureIndirect(PICTDESC* lpPictDesc, ref GUID riid, int fOwn, void** lplpvObj);
-int OleLoadPicture(IStream lpstream, int lSize, int fRunmode, ref GUID riid, void** lplpvObj);
-
 /*//////////////////////////////////////////////////////////////////////////////////////////
 // Helpers                                                                                //
 //////////////////////////////////////////////////////////////////////////////////////////*/
 
 extern(D):
 
-package bool isCOMAlive;
+package bool isCOMAlive = false;
 
-private void startupCOM() {
+private void startup() {
   isCOMAlive = SUCCEEDED(CoInitializeEx(null, COINIT_APARTMENTTHREADED));
 }
 
-private void shutdownCOM() {
+private void shutdown() {
   // Before we shut down COM, give classes a chance to release any COM resources.
   try {
-    std.gc.fullCollect();
+    version(D_Version2) {
+      GC.collect();
+    }
+    else {
+      std.gc.fullCollect();
+    }
   }
   finally {
     isCOMAlive = false;
@@ -2388,23 +3022,8 @@ private void shutdownCOM() {
   }
 }
 
-// BSTR
-// http://msdn2.microsoft.com/en-us/library/ms221069.aspx
-
-/*wchar* allocBSTR(string s) {
-  if (s == null)
-    return null;
-
-  return bstr.SysAllocString(s.toUTF16z());
-}
-
-void freeBSTR(wchar* s) {
-  if (s != null)
-    bstr.SysFreeString(s);
-}*/
-
 /**
- * Speciifes whether to throw exceptions or return null when COM operations fail.
+ * Specifies whether to throw exceptions or return null when COM operations fail.
  */
 enum ExceptionPolicy {
   NoThrow, /// Returns null on failure.
@@ -2415,16 +3034,36 @@ template com_cast_impl(T, ExceptionPolicy policy) {
 
   T com_cast_impl(U)(U obj) {
     static if (is(U : IUnknown)) {
-      if (obj is null) {
-        static if (policy == ExceptionPolicy.Throw)
-          throw new ArgumentNullException("obj");
-        else
-          return null;
+      static if (is(typeof(obj is null))) {
+        if (obj is null) {
+          static if (policy == ExceptionPolicy.Throw)
+            throw new ArgumentNullException("obj");
+          else
+            return null;
+        }
+      }
+      else static if (is(typeof(obj.isNull))) {
+        // com_ref
+        if (obj.isNull) {
+          static if (policy == ExceptionPolicy.Throw)
+            throw new ArgumentNullException("obj");
+          else
+            return null;
+        }
       }
 
       T result;
-      if (SUCCEEDED(obj.QueryInterface(uuidof!(T), outval(result))))
+      if (SUCCEEDED(obj.QueryInterface(uuidof!(T), retval(result))))
         return result;
+
+      static if (policy == ExceptionPolicy.Throw)
+        throw new InvalidCastException("Invalid cast from '" ~ U.stringof ~ "' to '" ~ T.stringof ~ "'.");
+      else
+        return null;
+    }
+    else static if (is(U : Object)) {
+      if (auto comObj = cast(COMObject)obj)
+        return com_cast!(T)(comObj.obj);
 
       static if (policy == ExceptionPolicy.Throw)
         throw new InvalidCastException("Invalid cast from '" ~ U.stringof ~ "' to '" ~ T.stringof ~ "'.");
@@ -2433,13 +3072,18 @@ template com_cast_impl(T, ExceptionPolicy policy) {
     }
     else static if (is(U == VARIANT)) {
       const type = VariantType!(T);
+
       static if (type != VT_VOID) {
         VARIANT temp;
-        if (VariantChangeType(&temp, &obj, VARIANT_ALPHABOOL, type) == S_OK) {
+        if (SUCCEEDED(VariantChangeTypeEx(temp, obj, GetThreadLocale(), VARIANT_ALPHABOOL, type))) {
+          scope(exit) temp.clear();
+
           with (temp) {
             static if (type == VT_BOOL) {
-              static if (is(T == bool)) return (boolVal == VARIANT_TRUE) ? true : false;
-              else return boolVal;
+              static if (is(T == bool))
+                return (boolVal == VARIANT_TRUE) ? true : false;
+              else 
+                return boolVal;
             }
             else static if (type == VT_UI1) return bVal;
             else static if (type == VT_I1) return cVal;
@@ -2453,17 +3097,20 @@ template com_cast_impl(T, ExceptionPolicy policy) {
             else static if (type == VT_R8) return dblVal;
             else static if (type == VT_DECIMAL) return decVal;
             else static if (type == VT_BSTR) {
-              static if (is(T : string)) return bstr.toString(bstrVal);
-              else return bstrVal;
+              static if (is(T : string))
+                return fromBstr(bstrVal);
+              else 
+                return bstrVal;
             }
             else static if (type == VT_UNKNOWN) return com_cast_impl(obj.punkVal);
             else static if (type == VT_DISPATCH) return com_cast_impl(obj.pdispVal);
             else return T.init;
           }
         }
-        else static if (policy == ExceptionPolicy.Throw)
+        static if (policy == ExceptionPolicy.Throw)
           throw new InvalidCastException("Invalid cast from '" ~ U.stringof ~ "' to '" ~ T.stringof ~ "'.");
-        else return T.init;
+        else
+          return T.init;
       }
       else static assert(false, "Cannot cast from '" ~ U.stringof ~ "' to '" ~ T.stringof ~ "'.");
     }
@@ -2513,34 +3160,36 @@ template com_cast(T) {
   alias com_cast_impl!(T, ExceptionPolicy.NoThrow) com_cast;
 }
 
-/**
- */
-template safe_com_cast(T) {
-  alias com_cast_impl!(T, ExceptionPolicy.Throw) safe_com_cast;
+/// Invokes the conversion operation to convert from one COM type to another, as above, but throws an exception
+/// if the cast fails.
+/// Throws: COMException if the cast failed.
+template com_safe_cast(T) {
+  alias com_cast_impl!(T, ExceptionPolicy.Throw) com_safe_cast;
 }
 
-/**
- * Indicates the execution contexts in which a COM object is to be run.
- */
+/// Specifies the context in which the code that manages an object will run.
+/// See_Also: $(LINK2 http://msdn.microsoft.com/en-us/library/ms693716.aspx, CLSCTX Enumeration).
 enum ExecutionContext : uint {
-  InProcessServer = CLSCTX_INPROC_SERVER,   ///
-  InProcessHandler = CLSCTX_INPROC_HANDLER, ///
-  LocalServer = CLSCTX_LOCAL_SERVER,        ///
-  RemoteServer = CLSCTX_REMOTE_SERVER,      ///
-  All = CLSCTX_ALL                          ///
+  InProcessServer  = CLSCTX_INPROC_SERVER,  /// The code that creates and manages objects of this class is a DLL that runs in the same process as the caller of the function specifying the class context.
+  InProcessHandler = CLSCTX_INPROC_HANDLER, /// The code that manages objects of this class is an in-process handler. is a DLL that runs in the client process and implements client-side structures of this class when instances of the class are accessed remotely.
+  LocalServer      = CLSCTX_LOCAL_SERVER,   /// The code that creates and manages objects of this class runs on same machine but is loaded in a separate process space.
+  RemoteServer     = CLSCTX_REMOTE_SERVER,  /// A  remote context. The code that creates and manages objects of this class is run on a different computer.
+  All              = CLSCTX_ALL
 }
 
-private void** outval(T)(out T ppv)
-in {
-  assert(&ppv != null);
-}
-body {
-  return cast(void**)&ppv;
-}
-
-IUnknown coCreateInstance(GUID clsid, IUnknown outer, ExecutionContext context, GUID iid) {
+/**
+ * Creates an object of the class associated with a specified GUID.
+ * Params:
+ *   clsid = The class associated with the object.
+ *   outer = If null, indicates that the object is not being created as part of an aggregate.
+ *   context = Context in which the code that manages the object will run.
+ *   iid = The identifier of the interface to be used to communicate with the object.
+ * Returns: The requested object.
+ * See_Also: $(LINK2 http://msdn.microsoft.com/en-us/library/ms686615.aspx, CoCreateInstance).
+ */
+IUnknown coCreateInstance(Guid clsid, IUnknown outer, ExecutionContext context, Guid iid) {
   IUnknown ret;
-  if (SUCCEEDED(CoCreateInstance(clsid, outer, cast(uint)context, iid, outval(ret))))
+  if (SUCCEEDED(CoCreateInstance(clsid, outer, cast(uint)context, iid, retval(ret))))
     return ret;
   return null;
 }
@@ -2550,11 +3199,7 @@ IUnknown coCreateInstance(GUID clsid, IUnknown outer, ExecutionContext context, 
  * See_Also: $(LINK2 http://msdn2.microsoft.com/en-us/library/ms221467.aspx, GetActiveObject).
  */
 IUnknown getActiveObject(string progId) {
-  GUID clsid;
-  wchar* str = bstr.fromString(progId);
-  CLSIDFromProgID(str, clsid);
-  bstr.free(str);
-
+  GUID clsid = clsidFromProgId(progId);
   IUnknown obj = null;
   if (SUCCEEDED(GetActiveObject(clsid, null, obj)))
     return obj;
@@ -2562,32 +3207,32 @@ IUnknown getActiveObject(string progId) {
   return null;
 }
 
-///
+/**
+ * Creates a COM object of the class associated with the specified CLSID.
+ * Params:
+ *   clsid = A CLSID associated with the coclass that will be used to create the object.
+ *   context = The _context in which to run the code that manages the new object with run.
+ * Returns: A reference to the interface identified by T.
+ * Examples:
+ * ---
+ * if (auto doc = coCreate!(IXMLDOMDocument3)(uuidof!(DOMDocument60))) {
+ *   scope(exit) doc.Release();
+ * }
+ * ---
+ */
 template coCreate(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
 
-  /**
-   * Creates a COM object of the class associated with the specified CLSID.
-   * Params:
-   *   clsid = A CLSID associated with the coclass that will be used to create the object.
-   *   context = The _context in which to run the code that manages the new object with run.
-   * Returns: A reference to the interface identified by T.
-   * Examples:
-   * ---
-   * if (auto doc = coCreate!(IXMLDOMDocument3)(DOMDocument60.CLSID)) {
-   *   scope(exit) doc.Release();
-   * }
-   * ---
-   */
   T coCreate(U)(U clsid, ExecutionContext context = ExecutionContext.InProcessServer) {
     GUID guid;
-    static if (is(U == GUID))
+    static if (is(U : GUID)) {
       guid = clsid;
+    }
     else static if (is(U : string)) {
       try {
         guid = GUID(clsid);
       }
       catch (FormatException) {
-        int hr = CLSIDFromProgID(clsid.toUTF16z(), guid);
+        int hr = CLSIDFromProgID(std.utf.toUTF16z(clsid), guid);
         if (FAILED(hr)) {
           static if (policy == ExceptionPolicy.Throw)
             throw new COMException(hr);
@@ -2596,9 +3241,10 @@ template coCreate(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
         }
       }
     }
+    else static assert(false);
 
     T ret;
-    int hr = CoCreateInstance(guid, null, context, uuidof!(T), outval(ret));
+    int hr = CoCreateInstance(guid, null, context, uuidof!(T), retval(ret));
 
     if (FAILED(hr)) {
       static if (policy == ExceptionPolicy.Throw)
@@ -2616,14 +3262,15 @@ template coCreateEx(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
 
   T coCreateEx(U)(U clsid, string server, ExecutionContext context = ExecutionContext.InProcessServer) {
     GUID guid;
-    static if (is(U == GUID))
+    static if (is(U : GUID)) {
       guid = clsid;
+    }
     else static if (is(U : string)) {
       try {
         guid = GUID(clsid);
       }
       catch (FormatException) {
-        int hr = CLSIDFromProgID(clsid.toUTF16z(), guid);
+        int hr = CLSIDFromProgID(std.utf.toUTF16z(clsid), guid);
         if (FAILED(hr)) {
           static if (policy == ExceptionPolicy.Throw)
             throw new COMException(hr);
@@ -2654,12 +3301,8 @@ template coCreateEx(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
 
 template Interfaces(TList...) {
 
-  deprecated {
-    static GUID CLSID(); // Use IID instead.
-  }
-
   static T coCreate(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow)(ExecutionContext context = ExecutionContext.InProcessServer) {
-    static if (IndexOf!(T, TList) == -1)
+    static if (std.typetuple.IndexOf!(T, TList) == -1)
       static assert(false, "'" ~ typeof(this).stringof ~ "' does not support '" ~ T.stringof ~ "'.");
     else
       return .coCreate!(T, policy)(uuidof!(typeof(this)), context);
@@ -2669,14 +3312,16 @@ template Interfaces(TList...) {
 
 template QueryInterfaceImpl(TList...) {
 
+  extern(Windows)
   int QueryInterface(ref GUID riid, void** ppvObject) {
     if (ppvObject is null)
       return E_POINTER;
 
     *ppvObject = null;
 
-    if (riid == uuidof!(IUnknown))
+    if (riid == uuidof!(IUnknown)) {
       *ppvObject = cast(void*)cast(IUnknown)this;
+    }
     else foreach (T; TList) {
       // Search the specified list of types to see if we support the interface we're being asked for.
       if (riid == uuidof!(T)) {
@@ -2695,45 +3340,35 @@ template QueryInterfaceImpl(TList...) {
 
 }
 
-// DMD prevents destructors from running on COM objects.
-private void runFinalizer(Object obj) {
-  if (obj) {
-    ClassInfo** ci = cast(ClassInfo**)cast(void*)obj;
-    if (*ci) {
-      if (auto c = **ci) {
-        do {
-          if (c.destructor) {
-            auto finalizer = cast(void function(Object))c.destructor;
-            finalizer(obj);
-          }
-          c = c.base;
-        } while (c);
-      }
-    }
-  }
-}
-
 // Implements AddRef & Release for IUnknown subclasses.
 template ReferenceCountImpl() {
 
-  private int refCount = 1;
-  private bool finalized;
+  private int refCount_ = 1;
+  private bool finalized_;
+
+  extern(Windows):
 
   uint AddRef() {
-    return InterlockedIncrement(&refCount);
+    return InterlockedIncrement(refCount_);
   }
 
   uint Release() {
-    if (InterlockedDecrement(&refCount) == 0) {
-      if (!finalized) {
-        finalized = true;
-        runFinalizer(this); // calls destructor (~this) if implemented.
+    if (InterlockedDecrement(refCount_) == 0) {
+      if (!finalized_) {
+        finalized_ = true;
+        runFinalizer(this);
       }
 
-      std.gc.removeRange(cast(void*)this);
-      std.c.stdlib.free(cast(void*)this);
+      version(D_Version2) {
+        core.memory.GC.removeRange(cast(void*)this);
+        core.memory.GC.free(cast(void*)this);
+      }
+      else {
+        std.gc.removeRange(cast(void*)this);
+        std.c.stdlib.free(cast(void*)this);
+      }
     }
-    return refCount;
+    return refCount_;
   }
 
   extern(D):
@@ -2744,19 +3379,46 @@ template ReferenceCountImpl() {
     if (p is null)
       throw new OutOfMemoryException;
 
-    std.gc.addRange(p, p + sz);
+    version(D_Version2) {
+      core.memory.GC.addRange(p, sz);
+    }
+    else {
+      std.gc.addRange(p, p + sz);
+    }
     return p;
   }
 
 }
 
+template InterfacesTuple(T) {
+
+  static if (is(T == Object)) {
+    alias TypeTuple!() InterfacesTuple;
+  }
+  static if (is(BaseTypeTuple!(T)[0] == Object)) {
+    alias TypeTuple!(BaseTypeTuple!(T)[1 .. $]) InterfacesTuple;
+  }
+  else {
+    alias std.typetuple.NoDuplicates!(
+      TypeTuple!(BaseTypeTuple!(T)[1 .. $], 
+        InterfacesTuple!(BaseTypeTuple!(T)[0]))) 
+      InterfacesTuple;
+  }
+
+}
+
+/// Provides an implementation of IUnknown suitable for using as mixin.
 template IUnknownImpl(T...) {
 
-  mixin QueryInterfaceImpl!(T);
+  static if (is(T[0] : Object))
+    mixin QueryInterfaceImpl!(InterfacesTuple!(T[0]), T[1 .. $]);
+  else
+    mixin QueryInterfaceImpl!(T);
   mixin ReferenceCountImpl;
 
 }
 
+/// Provides an implementation of IDispatch suitable for using as mixin.
 template IDispatchImpl(T...) {
 
   mixin IUnknownImpl!(T);
@@ -2782,22 +3444,22 @@ template IDispatchImpl(T...) {
 
 }
 
-template DerivesFrom(T, TList...) {
-  const bool DerivesFrom = is(MostDerived!(T, TList) : T);
-}
-
 template AllBaseTypesOfImpl(T...) {
+
   static if (T.length == 0)
     alias TypeTuple!() AllBaseTypesOfImpl;
   else
-    alias TypeTuple!(T[0], 
-      AllBaseTypesOfImpl!(BaseTypeTuple!(T[0])), 
-        AllBaseTypesOfImpl!(T[1 .. $])) 
+    alias TypeTuple!(T[0],
+      AllBaseTypesOfImpl!(std.traits.BaseTypeTuple!(T[0])),
+        AllBaseTypesOfImpl!(T[1 .. $]))
     AllBaseTypesOfImpl;
+
 }
 
-template AllBaseTypesOf(T) {
-  alias NoDuplicates!(AllBaseTypesOfImpl!(BaseTypeTuple!(T))) AllBaseTypesOf;
+template AllBaseTypesOf(T...) {
+
+  alias NoDuplicates!(AllBaseTypesOfImpl!(T)) AllBaseTypesOf;
+
 }
 
 /**
@@ -2813,11 +3475,29 @@ template AllBaseTypesOf(T) {
  */
 abstract class Implements(T...) : T {
 
-  static if (DerivesFrom!(IDispatch, T))
-    mixin IDispatchImpl!(AllBaseTypesOf!(T));
+  static if (IndexOf!(IDispatch, AllBaseTypesOf!(T)) != -1)
+    mixin IDispatchImpl!(T, AllBaseTypesOf!(T));
   else
-    mixin IUnknownImpl!(AllBaseTypesOf!(T));
+    mixin IUnknownImpl!(T, AllBaseTypesOf!(T));
 
+}
+
+// DMD prevents destructors from running on COM objects.
+void runFinalizer(Object obj) {
+  if (obj) {
+    ClassInfo** ci = cast(ClassInfo**)cast(void*)obj;
+    if (*ci) {
+      if (auto c = **ci) {
+        do {
+          if (c.destructor) {
+            auto finalizer = cast(void function(Object))c.destructor;
+            finalizer(obj);
+          }
+          c = c.base;
+        } while (c);
+      }
+    }
+  }
 }
 
 /**
@@ -2830,12 +3510,47 @@ bool isCOMObject(Object obj) {
   if (*ci !is null) {
     ClassInfo c = **ci;
     if (c !is null)
-      return (c.flags & 1) != 0;
+      return ((c.flags & 1) != 0);
   }
   return false;
 }
 
+/**
+ * Wraps a manually reference counted IUnknown-derived object so that its 
+ * memory can be managed automatically by the D runtime's garbage collector.
+ */
+final class COMObject {
+
+  private IUnknown obj_;
+
+  /**
+   * Initializes a new instance with the specified IUnknown-derived object.
+   * Params: obj = The object to wrap.
+   */
+  this(IUnknown obj) {
+    obj_ = obj;
+  }
+
+  ~this() {
+    if (obj_ !is null) {
+      finalRelease(obj_);
+      obj_ = null;
+    }
+  }
+
+  /**
+   * Retrieves the original IUnknown-derived object.
+   * Returns: The wrapped object.
+   */
+  IUnknown opCast() {
+    return obj_;
+  }
+
+}
+
 // Deprecate? You should really use the scope(exit) pattern.
+/**
+ */
 void releaseAfter(IUnknown obj, void delegate() block) {
   try {
     block();
@@ -2847,6 +3562,8 @@ void releaseAfter(IUnknown obj, void delegate() block) {
 }
 
 // Deprecate? You should really use the scope(exit) pattern.
+/**
+ */
 void clearAfter(VARIANT var, void delegate() block) {
   try {
     block();
@@ -2856,6 +3573,9 @@ void clearAfter(VARIANT var, void delegate() block) {
   }
 }
 
+/**
+ * Decrements the reference count for an object.
+ */
 void tryRelease(IUnknown obj) {
   if (obj) {
     try {
@@ -2866,6 +3586,9 @@ void tryRelease(IUnknown obj) {
   }
 }
 
+/**
+ * Decrements the reference count for an object until it reaches 0.
+ */
 void finalRelease(IUnknown obj) {
   if (obj) {
     while (obj.Release() > 0) {
@@ -2873,162 +3596,73 @@ void finalRelease(IUnknown obj) {
   }
 }
 
-/+version (D_Version2) {
+/**
+ * Allocates a BSTR equivalent to s.
+ * Params: s = The string with which to initialize the BSTR.
+ * Returns: The BSTR equivalent to s.
+ */
+wchar* toBstr(string s) {
+  if (s == null)
+    return null;
+
+  return SysAllocString(std.utf.toUTF16z(s));
+}
 
 /**
- * Wraps a COM interface in a smart pointer.
+ * Converts a BSTR to a string, optionally freeing the original BSTR.
+ * Params: bstr = The BSTR to convert.
+ * Returns: A string equivalent to bstr.
  */
-struct com_ptr(T) {
+string fromBstr(wchar* s, bool free = true) {
+  if (s == null)
+    return null;
 
-  private T ptr_;
+  uint len = SysStringLen(s);
+  if (len == 0)
+    return null;
 
-  this(this) {
-    addRef();
-  }
+  string ret = std.utf.toUTF8(s[0 .. len]);
+  /*int cb = WideCharToMultiByte(CP_UTF8, 0, s, len, null, 0, null, null);
+  char[] ret = new char[cb];
+  WideCharToMultiByte(CP_UTF8, 0, s, len, ret.ptr, cb, null, null);*/
 
-  ~this() {
-    release();
-  }
-
-  static com_ptr opCall(GUID clsid) {
-    com_ptr self;
-    self.ptr_ = coCreate!(T)(clsid);
-    return self;
-  }
-
-  static com_ptr opCall(string progId) {
-    com_ptr self;
-    //self.ptr_ = coCreate!(T)(progId);
-    return self;
-  }
-
-  static com_ptr opCall(T ptr) {
-    com_ptr self;
-    self.ptr_ = ptr;
-    return self;
-  }
-
-  com_ptr* opAssign(ref com_ptr other) {
-    ptr_ = other.ptr_;
-    addRef();
-    return this;
-  }
-
-  com_ptr* opAssign(T ptr) {
-    ptr_ = ptr;
-    addRef();
-    return this;
-  }
-
-  void addRef() {
-    if (ptr_ !is null)
-      ptr_.AddRef();
-  }
-
-  void release() {
-    if (ptr_ !is null) {
-      ptr_.Release();
-      ptr_ = null;
-    }
-  }
-
-  T ptr() {
-    return ptr_;
-  }
-
-  bool opEquals(void*) {
-    return ptr_ is null;
-  }
-
+  if (free)
+    SysFreeString(s);
+  return cast(string)ret;
 }
 
-}+/
 
 /**
- * The exception thrown when an unrecognized HRESULT is returned from a COM operation.
+ * Frees the memory occupied by the specified BSTR.
+ * Params: bstr = The BSTR to free.
  */
-class COMException : Exception {
-
-  int errorCode_;
-
-  /**
-   * Initializes a new instance with a specified error code.
-   * Params: errorCode = The error code (HRESULT) value associated with this exception.
-   */
-  this(int errorCode) {
-    super(getErrorMessage(errorCode));
-    errorCode_ = errorCode;
-  }
-
-  /**
-   * Initializes a new instance with a specified message and error code.
-   * Params:
-   *   message = The error _message that explains this exception.
-   *   errorCode = The error code (HRESULT) value associated with this exception.
-   */
-  this(string message, int errorCode) {
-    super(message);
-    errorCode_ = errorCode;
-  }
-
-  /**
-   * Gets the HRESULT of the error.
-   * Returns: The HRESULT of the error.
-   */
-  int errorCode() {
-    return errorCode_;
-  }
-
-  private static string getErrorMessage(int errorCode) {
-    wchar[256] buffer;
-    uint result = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, errorCode, 0, buffer.ptr, buffer.length + 1, null);
-    if (result != 0) {
-      string s = .toUTF8(buffer[0 .. result]);
-
-      // Remove trailing characters
-      while (result > 0) {
-        char c = s[result - 1];
-        if (c > ' ' && c != '.')
-          break;
-        result--;
-      }
-
-      return format("%s. (Exception from HRESULT: 0x%08X)", s[0 .. result], cast(uint)errorCode);
-    }
-
-    return format("Unspecified error (0x%08X)", cast(uint)errorCode);
-  }
-
+void freeBstr(wchar* s) {
+  if (s != null)
+    SysFreeString(s);
 }
 
-Exception exceptionForHR(int errorCode) {
-  switch (errorCode) {
-    case E_NOTIMPL:
-      return new NotImplementedException;
-    case E_NOINTERFACE:
-      return new InvalidCastException;
-    case E_POINTER:
-      return new NullReferenceException;
-    case E_ACCESSDENIED:
-      return new UnauthorizedAccessException;
-    case E_OUTOFMEMORY:
-      return new OutOfMemoryException;
-    case E_INVALIDARG:
-      return new ArgumentException;
-    default:
-  }
-  return new COMException(errorCode);
+uint bstrLength(wchar* s) {
+  if (s == null)
+    return 0;
+  return SysStringLen(s);
 }
 
-void throwExceptionForHR(int errorCode)
-in {
-  assert(FAILED(errorCode));
-}
-body {
-  if (FAILED(errorCode))
-    throw exceptionForHR(errorCode);
-}
+extern(Windows):
 
+wchar* SysAllocString(in wchar* psz);
+int SysReAllocString(wchar*, in wchar* psz);
+wchar* SysAllocStringLen(in wchar* psz, uint len);
+int SysReAllocStringLen(wchar*, in wchar* psz, uint len);
+void SysFreeString(wchar*);
+uint SysStringLen(wchar*);
+uint SysStringByteLen(wchar*);
+wchar* SysAllocStringByteLen(in ubyte* psz, uint len);
+
+extern(D):
+
+/**
+ * Provides an implementation of the IStream interface.
+ */
 class COMStream : Implements!(IStream) {
 
   private Stream stream_;
@@ -3039,6 +3673,10 @@ class COMStream : Implements!(IStream) {
     stream_ = stream;
   }
 
+  Stream baseStream() {
+    return stream_;
+  }
+
   int Read(void* pv, uint cb, ref uint pcbRead) {
     uint ret = stream_.readBlock(pv, cb);
     if (&pcbRead)
@@ -3046,7 +3684,7 @@ class COMStream : Implements!(IStream) {
     return S_OK;
   }
 
-  int Write(void* pv, uint cb, ref uint pcbWritten) {
+  int Write(in void* pv, uint cb, ref uint pcbWritten) {
     uint ret = stream_.writeBlock(pv, cb);
     if (&pcbWritten)
       pcbWritten = ret;
@@ -3109,84 +3747,24 @@ class COMStream : Implements!(IStream) {
 
 }
 
-class StreamFromCOMStream : Stream {
-
-  private IStream stream_;
-
-  this(IStream stream) {
-    stream_ = stream;
-  }
-
-  ~this() {
-    close();
-  }
-
-  override void close() {
-    if (stream_ !is null) {
-      try {
-        stream_.Commit(0);
-      }
-      catch {
-      }
-
-      tryRelease(stream_);
-      stream_ = null;
-    }
-  }
-
-  override uint readBlock(void* buffer, size_t size) {
-    uint ret;
-    stream_.Read(buffer, size, ret);
-    return ret;
-  }
-
-  override uint writeBlock(void* buffer, size_t size) {
-    uint ret;
-    stream_.Write(buffer, size, ret);
-    return ret;
-  }
-
-  override ulong seek(long offset, SeekPos origin) {
-    uint dwOrigin;
-    if (origin == SeekPos.Set)
-      dwOrigin = STREAM_SEEK_SET;
-    else if (origin == SeekPos.Current)
-      dwOrigin = STREAM_SEEK_CUR;
-    else if (origin == SeekPos.End)
-      dwOrigin = STREAM_SEEK_END;
-
-    ulong ret;
-    stream_.Seek(offset, dwOrigin, ret);
-    return ret;
-  }
-
-  override void position(ulong value) {
-    seek(cast(long)value, SeekPos.Set);
-  }
-
-  override ulong position() {
-    return seek(0, SeekPos.Current);
-  }
-
-  override ulong size() {
-    ulong oldPos = position;
-    ulong newPos = seek(0, SeekPos.End);
-    position = oldPos;
-    return newPos - oldPos;
-  }
-
-}
-
+/// Specifies the type of member to that is to be invoked.
 enum DispatchFlags : ushort {
-  InvokeMethod    = DISPATCH_METHOD,
-  GetProperty     = DISPATCH_PROPERTYGET,
-  PutProperty     = DISPATCH_PROPERTYPUT,
-  PutRefProperty  = DISPATCH_PROPERTYPUTREF
+  InvokeMethod   = DISPATCH_METHOD,         /// Specifies that a method is to be invoked.
+  GetProperty    = DISPATCH_PROPERTYGET,    /// Specifies that the value of a property should be returned.
+  PutProperty    = DISPATCH_PROPERTYPUT,    /// Specifies that the value of a property should be set.
+  PutRefProperty = DISPATCH_PROPERTYPUTREF  /// Specifies that the value of a property should be set by reference.
 }
 
+/// The exception thrown when there is an attempt to dynamically access a member that does not exist.
 class MissingMemberException : Exception {
 
-  this(string message = "Member not found.") {
+  private const string E_MISSINGMEMBER = "Member not found.";
+
+  this() {
+    super(E_MISSINGMEMBER);
+  }
+
+  this(string message) {
     super(message);
   }
 
@@ -3196,6 +3774,16 @@ class MissingMemberException : Exception {
 
 }
 
+/**
+ * Invokes the specified member on the specified object.
+ * Params:
+ *   dispId = The identifier of the method or property member to invoke.
+ *   flags = The type of member to invoke.
+ *   target = The object on which to invoke the specified member.
+ *   args = A list containing the arguments to pass to the member to invoke.
+ * Returns: The return value of the invoked member.
+ * Throws: COMException if the call failed.
+ */
 VARIANT invokeMemberById(int dispId, DispatchFlags flags, IDispatch target, VARIANT[] args...) {
   args.reverse;
 
@@ -3213,45 +3801,92 @@ VARIANT invokeMemberById(int dispId, DispatchFlags flags, IDispatch target, VARI
 
   VARIANT result;
   EXCEPINFO excep;
-  int hr = target.Invoke(dispId, GUID.empty, LOCALE_SYSTEM_DEFAULT, flags, &params, &result, &excep, null);
+  int hr = target.Invoke(dispId, GUID.empty, GetThreadLocale(), cast(ushort)flags, &params, &result, &excep, null);
 
-  for (uint i = 0; i < params.cArgs; i++) {
+  for (auto i = 0; i < params.cArgs; i++) {
     params.rgvarg[i].clear();
   }
 
-  if (FAILED(hr)) {
-    throw new COMException(bstr.toString(excep.bstrDescription), hr);
+  string errorMessage;
+  if (hr == DISP_E_EXCEPTION && excep.scode != 0) {
+    errorMessage = fromBstr(excep.bstrDescription);
+    hr = excep.scode;
   }
+
+  switch (hr) {
+    case S_OK, S_FALSE, E_ABORT:
+      return result;
+    default:
+      if (auto supportErrorInfo = com_cast!(ISupportErrorInfo)(target)) {
+        scope(exit) supportErrorInfo.Release();
+
+        if (SUCCEEDED(supportErrorInfo.InterfaceSupportsErrorInfo(uuidof!(IDispatch)))) {
+          IErrorInfo errorInfo;
+          GetErrorInfo(0, errorInfo);
+          if (errorInfo !is null) {
+            scope(exit) errorInfo.Release();
+
+            wchar* bstrDesc;
+            if (SUCCEEDED(errorInfo.GetDescription(bstrDesc)))
+              errorMessage = fromBstr(bstrDesc);
+          }
+        }
+      }
+      else if (errorMessage == null) {
+        wchar[256] buffer;
+        uint r = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, hr, 0, buffer.ptr, buffer.length + 1, null);
+        if (r != 0)
+          errorMessage = .toUTF8(buffer[0 .. r]);
+        else
+          errorMessage = std.string.format("Operation 0x%08X did not succeed (0x%08X)", dispId, hr);
+      }
+
+      throw new COMException(errorMessage, hr);
+  }
+
+  /*if (FAILED(hr)) {
+    throw new COMException(fromBstr(excep.bstrDescription), hr);
+  }*/
 
   return result;
 }
 
+/**
+ * Invokes the specified member on the specified object.
+ * Params:
+ *   name = The _name of the method or property member to invoke.
+ *   flags = The type of member to invoke.
+ *   target = The object on which to invoke the specified member.
+ *   args = A list containing the arguments to pass to the member to invoke.
+ * Returns: The return value of the invoked member.
+ * Throws: MissingMemberException if the member is not found.
+ */
 VARIANT invokeMember(string name, DispatchFlags flags, IDispatch target, VARIANT[] args...) {
   int dispId = DISPID_UNKNOWN;
-  wchar* bstrName = bstr.fromString(name);
-  scope(exit) bstr.free(bstrName);
+  wchar* bstrName = name.toBstr();
+  scope(exit) freeBstr(bstrName);
 
-  if (SUCCEEDED(target.GetIDsOfNames(GUID.empty, &bstrName, 1, LOCALE_SYSTEM_DEFAULT, &dispId)) && dispId != DISPID_UNKNOWN)
+  if (SUCCEEDED(target.GetIDsOfNames(GUID.empty, &bstrName, 1, GetThreadLocale(), &dispId)) && dispId != DISPID_UNKNOWN) {
     return invokeMemberById(dispId, flags, target, args);
+  }
 
   string typeName;
   ITypeInfo typeInfo;
   if (SUCCEEDED(target.GetTypeInfo(0, 0, typeInfo))) {
-    scope(exit) typeInfo.Release();
+    scope(exit) tryRelease(typeInfo);
 
     wchar* bstrTypeName;
     typeInfo.GetDocumentation(-1, &bstrTypeName, null, null, null);
-    typeName = bstr.toString(bstrTypeName);
+    typeName = fromBstr(bstrTypeName);
   }
 
   throw new MissingMemberException(typeName, name);
 }
 
-private VARIANT[] argsToVariants(TypeInfo[] types, va_list argptr) {
+private VARIANT[] argsToVariantList(TypeInfo[] types, va_list argptr) {
   VARIANT[] list;
 
   foreach (type; types) {
-    //debug writefln(type);
     if (type == typeid(bool)) list ~= VARIANT(va_arg!(bool)(argptr));
     else if (type == typeid(ubyte)) list ~= VARIANT(va_arg!(ubyte)(argptr));
     else if (type == typeid(byte)) list ~= VARIANT(va_arg!(byte)(argptr));
@@ -3266,8 +3901,9 @@ private VARIANT[] argsToVariants(TypeInfo[] types, va_list argptr) {
     else if (type == typeid(string)) list ~= VARIANT(va_arg!(string)(argptr));
     else if (type == typeid(IDispatch)) list ~= VARIANT(va_arg!(IDispatch)(argptr));
     else if (type == typeid(IUnknown)) list ~= VARIANT(va_arg!(IUnknown)(argptr));
-    else if (type == typeid(VARIANT*)) list ~= VARIANT(va_arg!(VARIANT*)(argptr));
     else if (type == typeid(VARIANT)) list ~= va_arg!(VARIANT)(argptr);
+    //else if (type == typeid(VARIANT*)) list ~= VARIANT(va_arg!(VARIANT*)(argptr));
+    else if (type == typeid(VARIANT*)) list ~= *va_arg!(VARIANT*)(argptr);
   }
 
   return list;
@@ -3280,30 +3916,116 @@ private void fixArgs(ref TypeInfo[] args, ref va_list argptr) {
   }
 }
 
+/**
+ * Invokes the specified method on the specified object.
+ * Params:
+ *   target = The object on which to invoke the specified method.
+ *   name = The _name of the method to invoke.
+ *   _argptr = A list containing the arguments to pass to the method to invoke.
+ * Returns: The return value of the invoked method.
+ * Throws: MissingMemberException if the method is not found.
+ * Examples:
+ * ---
+ * import juno.com.core;
+ *
+ * void main() {
+ *   auto ieApp = coCreate!(IDispatch)("InternetExplorer.Application");
+ *   invokeMethod(ieApp, "Navigate", "http://www.amazon.co.uk");
+ * }
+ * ---
+ */
 R invokeMethod(R = VARIANT)(IDispatch target, string name, ...) {
   auto args = _arguments;
   auto argptr = _argptr;
   if (args.length == 2) fixArgs(args, argptr);
 
-  VARIANT ret = invokeMember(name, DispatchFlags.InvokeMethod, target, argsToVariants(args, argptr));
-  static if (is(R == VARIANT))
+  VARIANT ret = invokeMember(name, DispatchFlags.InvokeMethod, target, argsToVariantList(args, argptr));
+  static if (is(R == VARIANT)) {
     return ret;
-  else
+  }
+  else {
     return com_cast!(R)(ret);
+  }
 }
 
+/**
+ * Gets the value of the specified property on the specified object.
+ * Params:
+ *   target = The object on which to invoke the specified property.
+ *   name = The _name of the property to invoke.
+ *   _argptr = A list containing the arguments to pass to the property.
+ * Returns: The return value of the invoked property.
+ * Throws: MissingMemberException if the property is not found.
+ * Examples:
+ * ---
+ * import juno.com.core, std.stdio;
+ *
+ * void main() {
+ *   // Create an instance of the Microsoft Word automation object.
+ *   IDispatch wordApp = coCreate!(IDispatch)("Word.Application");
+ *
+ *   // Invoke the Documents property 
+ *   //   wordApp.Documents
+ *   IDispatch documents = getProperty!(IDispatch)(target, "Documents");
+ *
+ *   // Invoke the Count property on the Documents object
+ *   //   documents.Count
+ *   VARIANT count = getProperty(documents, "Count");
+ *
+ *   // Display the value of the Count property.
+ *   writefln("There are %s documents", count);
+ * }
+ * ---
+ */
 R getProperty(R = VARIANT)(IDispatch target, string name, ...) {
   auto args = _arguments;
   auto argptr = _argptr;
   if (args.length == 2) fixArgs(args, argptr);
 
-  VARIANT ret = invokeMember(name, DispatchFlags.GetProperty, target, argsToVariants(args, argptr));
+  VARIANT ret = invokeMember(name, DispatchFlags.GetProperty, target, argsToVariantList(args, argptr));
   static if (is(R == VARIANT))
     return ret;
   else
     return com_cast!(R)(ret);
 }
 
+/**
+ * Sets the value of a specified property on the specified object.
+ * Params:
+ *   target = The object on which to invoke the specified property.
+ *   name = The _name of the property to invoke.
+ *   _argptr = A list containing the arguments to pass to the property.
+ * Throws: MissingMemberException if the property is not found.
+ * Examples:
+ * ---
+ * import juno.com.core;
+ *
+ * void main() {
+ *   // Create an Excel automation object.
+ *   IDispatch excelApp = coCreate!(IDispatch)("Excel.Application");
+ *
+ *   // Set the Visible property to true
+ *   //   excelApp.Visible = true
+ *   setProperty(excelApp, "Visible", true);
+ *
+ *   // Get the Workbooks property
+ *   //   workbooks = excelApp.Workbooks
+ *   IDispatch workbooks = getProperty!(IDispatch)(excelApp, "Workbooks");
+ *
+ *   // Invoke the Add method on the Workbooks property
+ *   //   newWorkbook = workbooks.Add()
+ *   IDispatch newWorkbook = invokeMethod!(IDispatch)(workbooks, "Add");
+ *
+ *   // Get the Worksheets property and the Worksheet at index 1
+ *   //   worksheet = excelApp.Worksheets[1]
+ *   IDispatch worksheet = getProperty!(IDispatch)(excelApp, "Worksheets", 1);
+ *
+ *   // Get the Cells property and set the Cell object at column 5, row 3 to a string
+ *   //   worksheet.Cells[5, 3] = "data"
+ *   setProperty(worksheet, "Cells", 5, 3, "data");
+ * }
+ * ---
+ */
 void setProperty(IDispatch target, string name, ...) {
   auto args = _arguments;
   auto argptr = _argptr;
@@ -3313,24 +4035,76 @@ void setProperty(IDispatch target, string name, ...) {
     VARIANT v = invokeMember(name, DispatchFlags.GetProperty, target);
     if (auto indexer = v.pdispVal) {
       scope(exit) indexer.Release();
-      v = invokeMemberById(0, DispatchFlags.GetProperty, indexer, argsToVariants(args[0 .. 1], argptr));
+
+      v = invokeMemberById(0, DispatchFlags.GetProperty, indexer, argsToVariantList(args[0 .. 1], argptr));
       if (auto value = v.pdispVal) {
         scope(exit) value.Release();
-        invokeMemberById(0, DispatchFlags.PutProperty, value, argsToVariants(args[1 .. $], argptr + args[0].tsize()));
+
+        invokeMemberById(0, DispatchFlags.PutProperty, value, argsToVariantList(args[1 .. $], argptr + args[0].tsize));
         return;
       }
     }
   }
   else {
-    invokeMember(name, DispatchFlags.PutProperty, target, argsToVariants(args, argptr));
+    invokeMember(name, DispatchFlags.PutProperty, target, argsToVariantList(args, argptr));
   }
 }
 
-deprecated {
-  alias bstr.fromString toBStr;
-  alias bstr.toString fromBStr;
-  alias bstr.free freeBStr;
-  // 0.3
-  alias bstr.toString BSTRtoUTF8;
-  alias bstr.fromString UTF8toBSTR;
+/// ditto
+void setRefProperty(IDispatch target, string name, ...) {
+  auto args = _arguments;
+  auto argptr = _argptr;
+  if (args.length == 2) fixArgs(args, argptr);
+
+  invokeMember(name, DispatchFlags.PutRefProperty, target, argsToVariantList(args, argptr));
 }
+
+version(D_Version2)
+mixin("
+struct com_ref(T) if (is(T : IUnknown)) {
+
+  T obj_;
+
+  alias obj_ this;
+
+  this(U)(U obj) {
+    obj_ = cast(T)obj;
+  }
+
+  ~this() {
+    release();
+    obj_ = null;
+  }
+
+  void opAssign(IUnknown obj) {
+    release();
+    obj_ = cast(T)obj;
+    addRef();
+  }
+
+  static com_ref opCall(U)(U obj) {
+    return com_ref(obj);
+  }
+
+  void addRef() {
+    if (obj_ !is null)
+      obj_.AddRef();
+  }
+
+  void release() {
+    if (obj_ !is null) {
+      try {
+        if (obj_.Release() == 0)
+          obj_ = null;
+      }
+      catch {
+      }
+    }
+  }
+
+  bool isNull() {
+    return (obj_ is null);
+  }
+
+}
+");

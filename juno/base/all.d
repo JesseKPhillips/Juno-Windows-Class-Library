@@ -5,10 +5,18 @@ public import juno.base.core,
   juno.base.collections,
   juno.base.text,
   juno.base.math,
-  juno.base.events,
+  juno.base.environment,
   juno.base.threading,
-  juno.base.environment;
+  juno.base.time,
+  juno.base.events;
 
-// Include I/O stuff too
+public import juno.locale.constants,
+  juno.locale.core,
+  juno.locale.time,
+  juno.locale.numeric,
+  juno.locale.convert;
+
 public import juno.io.core,
-  juno.io.path;
+  juno.io.path,
+  juno.io.filesystem,
+  juno.io.zip;
