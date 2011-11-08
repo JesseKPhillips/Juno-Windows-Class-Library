@@ -1360,6 +1360,10 @@ class Parameter {
 
     if (isReservedWord(name_))
       name_ ~= "Param";
+      
+    //If name is the same as type, then rename name
+    if (name_ == parameterType.name())
+        name_ ~= "Param";
   }
 
   package static Parameter[] getParameters(MethodImpl method) {
