@@ -1409,7 +1409,16 @@ class Parameter {
               paramType.name_ = "GUID";
               attrs |= (ParameterAttributes.In | ParameterAttributes.Out);
             }
-            params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
+            
+            if (pos + 1 >= count)
+            {
+				//Handling for unamed parameters
+				params ~= new Parameter(method, "", paramType, pos, attrs);
+			}
+			else
+			{
+				params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
+			}
           }
         }
 
