@@ -250,7 +250,7 @@ template Export(T...) {
     bool success;
 
     try {
-      scope clsidKey = RegistryKey.classesRoot.openSubKey("CLSID");
+      scope clsidKey = RegistryKey.classesRoot.openSubKey("CLSID", true);
       if (clsidKey !is null)
         clsidKey.deleteSubKeyTree(uuidof!(CoClass).toString("P"));
 
