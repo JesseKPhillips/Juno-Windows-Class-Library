@@ -860,6 +860,9 @@ private bool supportsIPv6() {
     uint s = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (GetLastError() != WSAEAFNOSUPPORT)
       supportsIPv6_ = true;
+    else
+      supportsIPv6_ = false;
+
     closesocket(s);
   }
   return supportsIPv6_.value;
