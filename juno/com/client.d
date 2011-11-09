@@ -413,7 +413,13 @@ class EventProvider(T) : Implements!(T) {
     }
   }
 
+/*
   ~this() {
+    //disconnect();
+  }
+*/
+  
+  void disconnect() {
     if (connectionPoint_ !is null && cookie_ != 0) {
       try {
         connectionPoint_.Unadvise(cookie_);
