@@ -88,37 +88,30 @@ module juno.com.server;
 import juno.base.core,
   juno.base.string,
   juno.base.native,
-  juno.com.core;
+  juno.com.core,
+  juno.utils.registry;
 
-extern (C) void gc_init();
-extern (C) void gc_term();
-extern (C) void _minit();
-extern (C) void _moduleCtor();
-extern (C) void _moduleDtor();
-extern (C) void _moduleUnitTests();
+import core.runtime, core.sys.windows.dll;
 
-private Handle moduleHandle_;
-private int lockCount_;
-private string location_;
+private __gshared Handle moduleHandle_;
+private __gshared int lockCount_;
 
 ///
-Handle getHInstance() {
+ Handle getHInstance() {
   return moduleHandle_;
 }
 
 ///
-void setHInstance(Handle value) {
+void setHInstance( Handle value) {
   moduleHandle_ = value;
 }
 
 ///
-string getLocation() {
-  if (location_ == null) {
-    wchar[MAX_PATH] buffer;
-    uint len = GetModuleFileName(moduleHandle_, buffer.ptr, buffer.length);
-    location_ = juno.base.string.toUtf8(buffer.ptr, 0, len);
-  }
-  return location_;
+string getLocation()
+{
+  wchar[MAX_PATH] buffer;
+  uint len = GetModuleFileName(moduleHandle_, buffer.ptr, buffer.length);
+  return juno.base.string.toUtf8(buffer.ptr, 0, len);
 }
 
 ///
@@ -164,25 +157,98 @@ class ClassFactory(T) : Implements!(IClassFactory) {
 
 }
 
+bool registerCoClass(CoClass)() {
+ bool success;
+
+  try {
+    scope clsidKey = RegistryKey.classesRoot.createSubKey("CLSID\\" ~ uuidof!(CoClass).toString("P"));
+    if (clsidKey !is null) {
+      clsidKey.setValue!(string)(null, CoClass.classinfo.name ~ " Class");
+  
+      scope subKey = clsidKey.createSubKey("InprocServer32");
+      if (subKey !is null) {
+        subKey.setValue!(string)(null, getLocation());
+        subKey.setValue!(string)("ThreadingModel", "Apartment");
+  
+        scope progIDSubKey = clsidKey.createSubKey("ProgID");
+        if (progIDSubKey !is null) {
+          progIDSubKey.setValue!(string)(null, CoClass.classinfo.name);
+  
+          scope progIDKey = RegistryKey.classesRoot.createSubKey(CoClass.classinfo.name);
+          if (progIDKey !is null) {
+            progIDKey.setValue!(string)(null, CoClass.classinfo.name ~ " Class");
+  
+            scope clsidSubKey = progIDKey.createSubKey("CLSID");
+            if (clsidSubKey !is null)
+              clsidSubKey.setValue!(string)(null, uuidof!(CoClass).toString("P"));
+          }
+        }
+      }
+    }
+  
+    success = true;
+  }
+  catch {
+    success = false;
+  }
+
+  return success;
+}
+
+bool unregisterCoClass(CoClass)() {
+  bool success;
+
+  try {
+    scope clsidKey = RegistryKey.classesRoot.openSubKey("CLSID", true);
+      if (clsidKey !is null)
+        clsidKey.deleteSubKeyTree(uuidof!(CoClass).toString("P"));
+
+      RegistryKey.classesRoot.deleteSubKeyTree(CoClass.classinfo.name);
+
+     success = true;
+  }
+  catch {
+    success = false;
+  }
+
+  return success;
+}
+
+
+int DllMainImpl(Handle hInstance, uint dwReason, void* pvReserved)
+{
+  if (dwReason == 1 /*DLL_PROCESS_ATTACH*/) {
+        
+    dll_process_attach( hInstance, false );
+    setHInstance(hInstance);
+
+    return 1;
+  }
+  else if (dwReason == 0 /*DLL_PROCESS_DETACH*/) {
+
+    dll_process_detach( hInstance, true );
+
+    return 1;
+  }
+  return 0;
+}
+  
+int DllCanUnloadNowImpl()
+{
+  int i = getLockCount(); 
+  return (i == 0) ? S_OK : S_FALSE;
+}
+
 ///
 template Export(T...) {
 
-  extern(Windows) int DllMain(Handle hInstance, uint dwReason, void* pvReserved) {
-    if (dwReason == 1 /*DLL_PROCESS_ATTACH*/) {
-      setHInstance(hInstance);
+  import juno.base.core;
 
-      gc_init();
-      _minit();
-      _moduleCtor();
-
-      return 1;
-    }
-    else if (dwReason == 0 /*DLL_PROCESS_DETACH*/) {
-      gc_term();
-      return 1;
-    }
-    return 0;
+  extern(Windows) int DllMain(Handle hInstance, uint dwReason, void* pvReserved)
+  {
+    return DllMainImpl(hInstance, dwReason, pvReserved);
   }
+
 
   extern(Windows)
   int DllGetClassObject(ref GUID rclsid, ref GUID riid, void** ppv) {
@@ -205,70 +271,14 @@ template Export(T...) {
 
   extern(Windows)
   int DllCanUnloadNow() {
-    return (getLockCount() == 0) ? S_OK : S_FALSE;
-  }
-
-  bool registerCoClass(CoClass)() {
-    bool success;
-
-    try {
-      scope clsidKey = RegistryKey.classesRoot.createSubKey("CLSID\\" ~ uuidof!(CoClass).toString("P"));
-      if (clsidKey !is null) {
-        clsidKey.setValue!(string)(null, CoClass.classinfo.name ~ " Class");
-
-        scope subKey = clsidKey.createSubKey("InprocServer32");
-        if (subKey !is null) {
-          subKey.setValue!(string)(null, getLocation());
-          subKey.setValue!(string)("ThreadingModel", "Apartment");
-
-          scope progIDSubKey = clsidKey.createSubKey("ProgID");
-          if (progIDSubKey !is null) {
-            progIDSubKey.setValue!(string)(null, CoClass.classinfo.name);
-
-            scope progIDKey = RegistryKey.classesRoot.createSubKey(CoClass.classinfo.name);
-            if (progIDKey !is null) {
-              progIDKey.setValue!(string)(null, CoClass.classinfo.name ~ " Class");
-
-              scope clsidSubKey = progIDKey.createSubKey("CLSID");
-              if (clsidSubKey !is null)
-                clsidSubKey.setValue!(string)(null, uuidof!(CoClass).toString("P"));
-            }
-          }
-        }
-      }
-
-      success = true;
-    }
-    catch {
-      success = false;
-    }
-
-    return success;
-  }
-
-  bool unregisterCoClass(CoClass)() {
-    bool success;
-
-    try {
-      scope clsidKey = RegistryKey.classesRoot.openSubKey("CLSID", true);
-      if (clsidKey !is null)
-        clsidKey.deleteSubKeyTree(uuidof!(CoClass).toString("P"));
-
-      RegistryKey.classesRoot.deleteSubKeyTree(CoClass.classinfo.name);
-
-      success = true;
-    }
-    catch {
-      success = false;
-    }
-
-    return success;
+    return DllCanUnloadNowImpl();
   }
 
   extern(Windows) int DllRegisterServer() {
     bool success;
 
     foreach (coclass; T) {
+
       static if (is(typeof(coclass.register))) {
         static assert(is(typeof(coclass.unregister)), "'register' must be matched by a corresponding 'unregister' in '" ~ coclass.stringof ~ "'.");
 
