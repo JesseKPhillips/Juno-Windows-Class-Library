@@ -11,13 +11,7 @@ import juno.base.core,
   juno.base.string,
   juno.base.native;
 
-version(D_Version2) {
-  import core.memory;
-}
-else {
-  static import std.gc;
-  alias std.gc GC;
-}
+import core.memory;
 
 /**
  * Gets the command line.

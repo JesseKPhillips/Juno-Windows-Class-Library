@@ -256,7 +256,7 @@ private class DeflateStream : CopyFilterStream {
       do {
         size_t written = source.write(b);
         if (written <= 0)
-          return 0;
+          return;
         b = b[written .. $];
         size_ += written;
       } while (b.length > 0);

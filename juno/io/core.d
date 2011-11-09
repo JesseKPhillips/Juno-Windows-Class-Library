@@ -157,7 +157,7 @@ abstract class Reader {
  */
 abstract class Writer {
 
-  protected char[] newLine_ = [ '\r', '\n' ];
+  protected string newLine_ = [ '\r', '\n' ];
 
   protected this() {
   }
@@ -199,7 +199,7 @@ abstract class Writer {
     if (value == null)
       value = "\r\n";
     version(D_Version2) {
-      newLine_ = cast(char[])value.idup;
+      newLine_ = value.idup;
     }
     else {
       newLine_ = value.dup;

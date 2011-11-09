@@ -5,6 +5,10 @@ import juno.base.core,
   juno.locale.core,
   juno.com.core;
 import std.string : strlen;
+import std.algorithm;
+import std.conv;
+import std.exception;
+import std.range;
 debug import std.stdio : writefln;
 
 private enum {
@@ -310,9 +314,9 @@ package struct Number {
         bexp--;
       }
     }
-    
+
     // Round and scale.
-    if (cast(uint)bits & (1 << 10) != 0) {
+    if (cast(uint)(bits & (1 << 10)) != 0) {
       bits += (1 << 10) - 1 + (bits >>> 11) & 1;
       bits >>= 11;
       if (bits == 0)
@@ -557,7 +561,7 @@ package struct Number {
           currencySymbol = null;
           pos += eaten;
         }
-        else if (!(isWhitespace(c) & (styles & NumberStyles.TrailingWhite) != 0))
+        else if (!((isWhitespace(c) & (styles & NumberStyles.TrailingWhite)) != 0))
           break;
         else pos++;
       }
@@ -1196,8 +1200,8 @@ private void formatFixed(ref Number number, ref string dst, int length, int[] gr
       // Insert separator at positions specified by groupSizes.
       int end = strlen(p);
       int start = (pos < end) ? pos : end;
-      string separator = groupSeparator.reverse;
-      char[] temp;
+      auto separator = array(retro(groupSeparator));
+      dchar[] temp;
 
       index = 0;
       for (int c, i = pos - 1; i >= 0; i--) {
@@ -1214,7 +1218,7 @@ private void formatFixed(ref Number number, ref string dst, int length, int[] gr
       }
 
       // Because we built the string backwards, reverse it.
-      dst ~= temp.reverse;
+      dst ~= to!string(array(retro(temp)));
       p += start;
     }
     else while (pos > 0) {

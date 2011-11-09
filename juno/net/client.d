@@ -1048,7 +1048,7 @@ void uploadStringAsync(Uri address, string data, UploadStringCompletedCallback u
   if (address is null)
     throw new ArgumentNullException("address");
 
-  return uploadBits(address, null, Encoding.DEFAULT.encode(cast(char[])data), (ubyte[] result) {
+  uploadBits(address, null, Encoding.DEFAULT.encode(cast(char[])data), (ubyte[] result) {
     if (uploadCompleted !is null)
       uploadCompleted(cast(string)Encoding.DEFAULT.decode(result));
   }, uploadProgress, true);
@@ -1115,4 +1115,9 @@ void uploadFileAsync(Uri address, string fileName, UploadCompletedCallback uploa
 
 void uploadFileAsync(string address, string fileName, UploadCompletedCallback uploadCompleted = null, UploadProgressCallback uploadProgress = null) {
   uploadFileAsync(new Uri(address), fileName, uploadCompleted, uploadProgress);
+}
+
+void CloseInternetHandle(Handle h) {
+    throw new Exception("Unimplemented function call");
+    // I don't know what is missing but this is called
 }

@@ -9,7 +9,7 @@
  */
 module juno.base.string;
 
-import juno.base.core, 
+import juno.base.core,
   juno.locale.constants,
   juno.locale.core,
   juno.locale.time,
@@ -18,6 +18,7 @@ import std.utf : toUTF8, toUTF16, toUTF16z;
 import std.string : wcslen, strlen, toStringz;
 import std.c.string : memcpy;
 import std.stdarg;
+import std.exception;
 
 //debug import std.stdio : writeln;
 
@@ -451,7 +452,7 @@ string insert(string s, int index, string value) {
   newString[0 .. index] = s[0 .. index];
   newString[index .. index + value.length] = value;
   newString[index + value.length .. $] = s[index .. $];
-  return cast(string)newString;
+  return assumeUnique(newString);
 }
 
 /**
@@ -466,7 +467,7 @@ string remove(string s, int index, int count) {
   char[] ret = new char[s.length - count];
   memcpy(ret.ptr, s.ptr, index);
   memcpy(ret.ptr + index, s.ptr + (index + count), s.length - (index + count));
-  return cast(string)ret;
+  return assumeUnique(ret);
 }
 
 /**
@@ -697,7 +698,7 @@ string replace(string s, char oldChar, char newChar) {
   ret.length = len;
   for (int i = firstFound; i < len; i++)
     ret[i] = (s[i] == oldChar) ? newChar : s[i];
-  return cast(string)ret;
+  return assumeUnique(ret);
 }
 
 /**
@@ -737,7 +738,7 @@ string replace(string s, string oldValue, string newValue) {
   }
   else
     return s;
-  return cast(string)ret;
+  return assumeUnique(ret);
 }
 
 /**
@@ -754,7 +755,7 @@ string padLeft(string s, int totalWidth, char paddingChar = ' ') {
   char[] ret = new char[totalWidth];
   ret[totalWidth - s.length .. $] = s;
   ret[0 .. totalWidth - s.length] = paddingChar;
-  return cast(string)ret;
+  return assumeUnique(ret);
 }
 
 /**
@@ -771,7 +772,7 @@ string padRight(string s, int totalWidth, char paddingChar = ' ') {
   char[] ret = s.dup;
   ret.length = totalWidth;
   ret[s.length .. $] = paddingChar;
-  return cast(string)ret;
+  return assumeUnique(ret);
 }
 
 private enum Trim {
@@ -871,7 +872,7 @@ string substring(string s, int index, int length) {
 
   char[] ret = new char[length];
   memcpy(ret.ptr, s.ptr + index, length * char.sizeof);
-  return cast(string)ret;
+  return assumeUnique(ret);
 }
 
 /**

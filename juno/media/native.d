@@ -691,8 +691,8 @@ Status GdipAddPathPieI(Handle path, int x, int y, int width, int height, float s
 Status GdipAddPathPolygon(Handle path, PointF* points, int count);
 Status GdipAddPathPolygonI(Handle path, Point* points, int count);
 Status GdipAddPathPath(Handle path, Handle addingPath, int connect);
-Status GdipAddPathString(Handle path, in wchar* string, int length, Handle family, FontStyle style, float emSize, ref RectF layoutRect, Handle format);
-Status GdipAddPathStringI(Handle path, in wchar* string, int length, Handle family, FontStyle style, float emSize, ref Rect layoutRect, Handle format);
+Status GdipAddPathString(Handle path, in wchar* str, int length, Handle family, FontStyle style, float emSize, ref RectF layoutRect, Handle format);
+Status GdipAddPathStringI(Handle path, in wchar* str, int length, Handle family, FontStyle style, float emSize, ref Rect layoutRect, Handle format);
 Status GdipTransformPath(Handle path, Handle matrix);
 Status GdipGetPathWorldBounds(Handle path, out RectF bounds, Handle matrix, Handle pen);
 Status GdipFlattenPath(Handle path, Handle matrix, float flatness);
@@ -841,7 +841,7 @@ private void shutdown() {
   GdiplusShutdown(initToken);
 }
 
-package Exception statusException(Status status) {
+package Throwable statusException(Status status) {
   switch (status) {
     case Status.GenericError:
       return new Exception("A generic error occurred in GDI+.");

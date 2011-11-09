@@ -7,7 +7,7 @@ module juno.xml.msxml;
 /*[importlib("stdole2.tlb")]*/
 private import juno.com.core;
 
-// Enums
+// Enum
 
 // Constants that define a node's type
 enum tagDOMNodeType {
@@ -26,7 +26,7 @@ enum tagDOMNodeType {
   NODE_NOTATION = 0x0000000C,
 }
 
-// Schema Object Model Item Types
+// Schema Object Model Item Type
 enum _SOMITEMTYPE {
   SOMITEM_SCHEMA = 0x00001000,
   SOMITEM_ATTRIBUTE = 0x00001001,
@@ -103,7 +103,7 @@ enum _SOMITEMTYPE {
   SOMITEM_NULL_ELEMENT = 0x00004803,
 }
 
-// Schema Object Model Filters
+// Schema Object Model Filter
 enum _SCHEMADERIVATIONMETHOD {
   SCHEMADERIVATIONMETHOD_EMPTY = 0x00000000,
   SCHEMADERIVATIONMETHOD_SUBSTITUTION = 0x00000001,
@@ -115,7 +115,7 @@ enum _SCHEMADERIVATIONMETHOD {
   SCHEMADERIVATIONMETHOD_NONE = 0x00000100,
 }
 
-// Schema Object Model Type variety values
+// Schema Object Model Type variety value
 enum _SCHEMATYPEVARIETY {
   SCHEMATYPEVARIETY_NONE = 0xFFFFFFFF,
   SCHEMATYPEVARIETY_ATOMIC = 0x00000000,
@@ -123,7 +123,7 @@ enum _SCHEMATYPEVARIETY {
   SCHEMATYPEVARIETY_UNION = 0x00000002,
 }
 
-// Schema Object Model Whitespace facet values
+// Schema Object Model Whitespace facet value
 enum _SCHEMAWHITESPACE {
   SCHEMAWHITESPACE_NONE = 0xFFFFFFFF,
   SCHEMAWHITESPACE_PRESERVE = 0x00000000,
@@ -131,7 +131,7 @@ enum _SCHEMAWHITESPACE {
   SCHEMAWHITESPACE_COLLAPSE = 0x00000002,
 }
 
-// Schema Object Model Process Contents
+// Schema Object Model Process Content
 enum _SCHEMAPROCESSCONTENTS {
   SCHEMAPROCESSCONTENTS_NONE = 0x00000000,
   SCHEMAPROCESSCONTENTS_SKIP = 0x00000001,
@@ -139,7 +139,7 @@ enum _SCHEMAPROCESSCONTENTS {
   SCHEMAPROCESSCONTENTS_STRICT = 0x00000003,
 }
 
-// Schema Object Model Content Types
+// Schema Object Model Content Type
 enum _SCHEMACONTENTTYPE {
   SCHEMACONTENTTYPE_EMPTY = 0x00000000,
   SCHEMACONTENTTYPE_TEXTONLY = 0x00000001,
@@ -147,7 +147,7 @@ enum _SCHEMACONTENTTYPE {
   SCHEMACONTENTTYPE_MIXED = 0x00000003,
 }
 
-// Schema Object Model Attribute Uses
+// Schema Object Model Attribute Use
 enum _SCHEMAUSE {
   SCHEMAUSE_OPTIONAL = 0x00000000,
   SCHEMAUSE_PROHIBITED = 0x00000001,
@@ -180,30 +180,30 @@ enum _SXH_PROXY_SETTING {
   SXH_PROXY_SET_PROXY = 0x00000002,
 }
 
-// Aliases
+// Aliase
 
 // Constants that define a node's type
 alias tagDOMNodeType DOMNodeType;
 
-// Schema Object Model Item Types
+// Schema Object Model Item Type
 alias _SOMITEMTYPE SOMITEMTYPE;
 
-// Schema Object Model Filters
+// Schema Object Model Filter
 alias _SCHEMADERIVATIONMETHOD SCHEMADERIVATIONMETHOD;
 
-// Schema Object Model Type variety values
+// Schema Object Model Type variety value
 alias _SCHEMATYPEVARIETY SCHEMATYPEVARIETY;
 
-// Schema Object Model Whitespace facet values
+// Schema Object Model Whitespace facet value
 alias _SCHEMAWHITESPACE SCHEMAWHITESPACE;
 
-// Schema Object Model Process Contents
+// Schema Object Model Process Content
 alias _SCHEMAPROCESSCONTENTS SCHEMAPROCESSCONTENTS;
 
-// Schema Object Model Content Types
+// Schema Object Model Content Type
 alias _SCHEMACONTENTTYPE SCHEMACONTENTTYPE;
 
-// Schema Object Model Attribute Uses
+// Schema Object Model Attribute Use
 alias _SCHEMAUSE SCHEMAUSE;
 
 // Options for ServerXMLHTTPRequest Option property
@@ -215,7 +215,7 @@ alias _SXH_SERVER_CERT_OPTION SXH_SERVER_CERT_OPTION;
 // Settings for setProxy
 alias _SXH_PROXY_SETTING SXH_PROXY_SETTING;
 
-// Interfaces
+// Interface
 
 interface IXMLDOMImplementation : IDispatch {
   mixin(uuid("2933bf8f-7b36-11d2-b20e-00c04f983e60"));
@@ -245,7 +245,7 @@ interface IXMLDOMNode : IDispatch {
   /*[id(0x0000000A)]*/ int get_previousSibling(out IXMLDOMNode previousSibling);
   // right sibling of the node
   /*[id(0x0000000B)]*/ int get_nextSibling(out IXMLDOMNode nextSibling);
-  // the collection of the node's attributes
+  // the collection of the node's attribute
   /*[id(0x0000000C)]*/ int get_attributes(out IXMLDOMNamedNodeMap attributeMap);
   // insert a child node
   /*[id(0x0000000D)]*/ int insertBefore(IXMLDOMNode newChild, VARIANT refChild, out IXMLDOMNode outNewChild);
@@ -277,7 +277,7 @@ interface IXMLDOMNode : IDispatch {
   /*[id(0x0000001A)]*/ int get_dataType(out VARIANT dataTypeName);
   // the data type of the node
   /*[id(0x0000001A)]*/ int put_dataType(wchar* dataTypeName);
-  // return the XML source for the node and each of its descendants
+  // return the XML source for the node and each of its descendant
   /*[id(0x0000001B)]*/ int get_xml(out wchar* xmlString);
   // apply the stylesheet to the subtree
   /*[id(0x0000001C)]*/ int transformNode(IXMLDOMNode stylesheet, out wchar* xmlString);
@@ -299,7 +299,7 @@ interface IXMLDOMNode : IDispatch {
 
 interface IXMLDOMNodeList : IDispatch {
   mixin(uuid("2933bf82-7b36-11d2-b20e-00c04f983e60"));
-  // collection of nodes
+  // collection of node
   /*[id(0x00000000)]*/ int get_item(int index, out IXMLDOMNode listItem);
   // number of nodes in the collection
   /*[id(0x0000004A)]*/ int get_length(out int listLength);
@@ -318,7 +318,7 @@ interface IXMLDOMNamedNodeMap : IDispatch {
   /*[id(0x00000054)]*/ int setNamedItem(IXMLDOMNode newItem, out IXMLDOMNode nameItem);
   // remove item by name
   /*[id(0x00000055)]*/ int removeNamedItem(wchar* name, out IXMLDOMNode namedItem);
-  // collection of nodes
+  // collection of node
   /*[id(0x00000000)]*/ int get_item(int index, out IXMLDOMNode listItem);
   // number of nodes in the collection
   /*[id(0x0000004A)]*/ int get_length(out int listLength);
@@ -497,7 +497,7 @@ interface IXMLDOMEntityReference : IXMLDOMNode {
   mixin(uuid("2933bf8e-7b36-11d2-b20e-00c04f983e60"));
 }
 
-// structure for reporting parser errors
+// structure for reporting parser error
 interface IXMLDOMParseError : IDispatch {
   mixin(uuid("3efaa426-272f-11d2-836f-0000f87a7782"));
   // the error code
@@ -527,20 +527,20 @@ interface IXMLDOMDocument2 : IXMLDOMDocument {
   // perform runtime validation on the currently loaded XML document
   /*[id(0x000000CB)]*/ int validate(out IXMLDOMParseError errorObj);
   // set the value of the named property
-  /*[id(0x000000CC)]*/ int setProperty(wchar* name, VARIANT value);
+  /*[id(0x000000CC)]*/ int setProperty(in wchar* name, VARIANT value);
   // get the value of the named property
-  /*[id(0x000000CD)]*/ int getProperty(wchar* name, out VARIANT value);
+  /*[id(0x000000CD)]*/ int getProperty(in wchar* name, out VARIANT value);
 }
 
 // XML Schemas Collection
 interface IXMLDOMSchemaCollection : IDispatch {
   mixin(uuid("373984c8-b845-449b-91e7-45ac83036ade"));
   // add a new schema
-  /*[id(0x00000003)]*/ int add(wchar* namespaceURI, VARIANT var);
+  /*[id(0x00000003)]*/ int add(in wchar* namespaceURI, VARIANT var);
   // lookup schema by namespaceURI
-  /*[id(0x00000004)]*/ int get(wchar* namespaceURI, out IXMLDOMNode schemaNode);
+  /*[id(0x00000004)]*/ int get(in wchar* namespaceURI, out IXMLDOMNode schemaNode);
   // remove schema by namespaceURI
-  /*[id(0x00000005)]*/ int remove(wchar* namespaceURI);
+  /*[id(0x00000005)]*/ int remove(in wchar* namespaceURI);
   // number of schemas in collection
   /*[id(0x00000006)]*/ int get_length(out int length);
   // Get namespaceURI for schema by index
@@ -576,7 +576,7 @@ interface IXMLDOMEntity : IXMLDOMNode {
   /*[id(0x0000008E)]*/ int get_notationName(out wchar* name);
 }
 
-// structure for reporting parser errors
+// structure for reporting parser error
 interface IXMLDOMParseError2 : IXMLDOMParseError {
   mixin(uuid("3efaa428-272f-11d2-836f-0000f87a7782"));
   /*[id(0x000000BE)]*/ int get_errorXPath(out wchar* xpathexpr);
@@ -585,7 +585,7 @@ interface IXMLDOMParseError2 : IXMLDOMParseError {
   /*[id(0x000000BD)]*/ int get_errorParametersCount(out int count);
 }
 
-// structure for reporting parser errors
+// structure for reporting parser error
 interface IXMLDOMParseErrorCollection : IDispatch {
   mixin(uuid("3efaa429-272f-11d2-836f-0000f87a7782"));
   /*[id(0x00000000)]*/ int get_item(int index, out IXMLDOMParseError2 error);
@@ -612,9 +612,9 @@ interface IXTLRuntime : IXMLDOMNode {
 // IXSLTemplate Interface
 interface IXSLTemplate : IDispatch {
   mixin(uuid("2933bf93-7b36-11d2-b20e-00c04f983e60"));
-  // stylesheet to use with processors
+  // stylesheet to use with processor
   /*[id(0x00000002)]*/ int putref_stylesheet(IXMLDOMNode stylesheet);
-  // stylesheet to use with processors
+  // stylesheet to use with processor
   /*[id(0x00000002)]*/ int get_stylesheet(out IXMLDOMNode stylesheet);
   // create a new processor object
   /*[id(0x00000003)]*/ int createProcessor(out IXSLProcessor ppProcessor);
@@ -639,13 +639,13 @@ interface IXSLProcessor : IDispatch {
   /*[id(0x00000007)]*/ int put_output(VARIANT pOutput);
   // custom stream object for transform output
   /*[id(0x00000007)]*/ int get_output(out VARIANT pOutput);
-  // start/resume the XSL transformation process
+  // start/resume the XSL transformation proce
   /*[id(0x00000008)]*/ int transform(out short pDone);
   // reset state of processor and abort current transform
   /*[id(0x00000009)]*/ int reset();
   // current state of the processor
   /*[id(0x0000000A)]*/ int get_readyState(out int pReadyState);
-  // set <xsl:param> values
+  // set <xsl:param> value
   /*[id(0x0000000B)]*/ int addParameter(wchar* baseName, VARIANT parameter, wchar* namespaceURI);
   // pass object to stylesheet
   /*[id(0x0000000C)]*/ int addObject(IDispatch obj, wchar* namespaceURI);
@@ -1254,7 +1254,7 @@ interface IXMLHTTPRequest : IDispatch {
   /*[id(0x00000002)]*/ int setRequestHeader(wchar* bstrHeader, wchar* bstrValue);
   // Get HTTP response header
   /*[id(0x00000003)]*/ int getResponseHeader(wchar* bstrHeader, out wchar* pbstrValue);
-  // Get all HTTP response headers
+  // Get all HTTP response header
   /*[id(0x00000004)]*/ int getAllResponseHeaders(out wchar* pbstrHeaders);
   // Send HTTP request
   /*[id(0x00000005)]*/ int send(VARIANT varBody);
@@ -1296,7 +1296,7 @@ interface IServerXMLHTTPRequest2 : IServerXMLHTTPRequest {
   mixin(uuid("2e01311b-c322-4b0a-bd77-b90cfdc8dce7"));
   // Specify proxy configuration
   /*[id(0x00000013)]*/ int setProxy(SXH_PROXY_SETTING proxySetting, VARIANT varProxyServer, VARIANT varBypassList);
-  // Specify proxy authentication credentials
+  // Specify proxy authentication credential
   /*[id(0x00000014)]*/ int setProxyCredentials(wchar* bstrUserName, wchar* bstrPassword);
 }
 
@@ -1339,7 +1339,7 @@ interface IMXNamespaceManager : IUnknown {
   /*[id(0x60010009)]*/ int getURI(in wchar* pwchPrefix, IXMLDOMNode pContextNode, wchar* pwchUri, ref int pcchUri);
 }
 
-// CoClasses
+// CoClasse
 
 // W3C-DOM XML Document (Apartment)
 abstract final class DOMDocument {
@@ -1539,19 +1539,19 @@ abstract final class ServerXMLHTTP60 {
   mixin Interfaces!(IServerXMLHTTPRequest2);
 }
 
-// SAX XML Reader (version independent) coclass
+// SAX XML Reader (version independent) cocla
 abstract final class SAXXMLReader {
   mixin(uuid("079aa557-4a18-424a-8eee-e39f0a8d41b9"));
   mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
 }
 
-// SAX XML Reader 3.0 coclass
+// SAX XML Reader 3.0 cocla
 abstract final class SAXXMLReader30 {
   mixin(uuid("3124c396-fb13-4836-a6ad-1317f1713688"));
   mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader, IMXReaderControl);
 }
 
-// SAX XML Reader 4.0 coclass
+// SAX XML Reader 4.0 cocla
 abstract final class SAXXMLReader40 {
   mixin(uuid("7c6e29bc-8b8b-4c3d-859e-af6cd158be0f"));
   mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader);
@@ -1563,19 +1563,19 @@ abstract final class SAXXMLReader60 {
   mixin Interfaces!(IVBSAXXMLReader, ISAXXMLReader);
 }
 
-// Microsoft XML Writer (version independent) coclass
+// Microsoft XML Writer (version independent) cocla
 abstract final class MXXMLWriter {
   mixin(uuid("fc220ad8-a72a-4ee8-926e-0b7ad152a020"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
-// Microsoft XML Writer 3.0 coclass
+// Microsoft XML Writer 3.0 cocla
 abstract final class MXXMLWriter30 {
   mixin(uuid("3d813dfe-6c91-4a4e-8f41-04346a841d9c"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
-// Microsoft XML Writer 4.0 coclass
+// Microsoft XML Writer 4.0 cocla
 abstract final class MXXMLWriter40 {
   mixin(uuid("88d969c8-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
@@ -1587,19 +1587,19 @@ abstract final class MXXMLWriter60 {
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
-// Microsoft HTML Writer (version independent) coclass
+// Microsoft HTML Writer (version independent) cocla
 abstract final class MXHTMLWriter {
   mixin(uuid("a4c23ec3-6b70-4466-9127-550077239978"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXErrorHandler, ISAXDTDHandler, ISAXLexicalHandler, ISAXDeclHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
-// Microsoft HTML Writer 3.0 coclass
+// Microsoft HTML Writer 3.0 cocla
 abstract final class MXHTMLWriter30 {
   mixin(uuid("853d1540-c1a7-4aa9-a226-4d3bd301146d"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
-// Microsoft HTML Writer 4.0 coclass
+// Microsoft HTML Writer 4.0 cocla
 abstract final class MXHTMLWriter40 {
   mixin(uuid("88d969c9-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
@@ -1611,19 +1611,19 @@ abstract final class MXHTMLWriter60 {
   mixin Interfaces!(IMXWriter, ISAXContentHandler, ISAXDeclHandler, ISAXDTDHandler, ISAXErrorHandler, ISAXLexicalHandler, IVBSAXContentHandler, IVBSAXDeclHandler, IVBSAXDTDHandler, IVBSAXErrorHandler, IVBSAXLexicalHandler);
 }
 
-// SAX Attributes (version independent) coclass
+// SAX Attributes (version independent) cocla
 abstract final class SAXAttributes {
   mixin(uuid("4dd441ad-526d-4a77-9f1b-9841ed802fb0"));
   mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
-// SAX Attributes 3.0 coclass
+// SAX Attributes 3.0 cocla
 abstract final class SAXAttributes30 {
   mixin(uuid("3e784a01-f3ae-4dc0-9354-9526b9370eba"));
   mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
-// SAX Attributes 4.0 coclass
+// SAX Attributes 4.0 cocla
 abstract final class SAXAttributes40 {
   mixin(uuid("88d969ca-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
@@ -1635,13 +1635,13 @@ abstract final class SAXAttributes60 {
   mixin Interfaces!(IMXAttributes, IVBSAXAttributes, ISAXAttributes);
 }
 
-// MX Namespace Manager coclass
+// MX Namespace Manager cocla
 abstract final class MXNamespaceManager {
   mixin(uuid("88d969d5-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IVBMXNamespaceManager, IMXNamespaceManager);
 }
 
-// MX Namespace Manager 4.0 coclass
+// MX Namespace Manager 4.0 cocla
 abstract final class MXNamespaceManager40 {
   mixin(uuid("88d969d6-f192-11d4-a65f-0040963251e5"));
   mixin Interfaces!(IVBMXNamespaceManager, IMXNamespaceManager);

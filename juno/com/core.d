@@ -16,10 +16,11 @@ import juno.base.core,
   std.typetuple,
   std.traits,
   std.stdarg;
+import std.algorithm;
+import std.array;
 version(D_Version2) {
   import core.exception, core.memory;
   //static import core.exception, core.memory;
-  alias indexOf find;
 }
 else {
   import std.outofmemory, std.gc;
@@ -109,7 +110,7 @@ class COMException : Exception {
     if (result != 0) {
       string s = .toUTF8(buffer[0 .. result]);
 
-      // Remove trailing characters
+      // Remove trailing character
       while (result > 0) {
         char c = s[result - 1];
         if (c > ' ' && c != '.')
@@ -126,41 +127,37 @@ class COMException : Exception {
 }
 
 /// Converts an HRESULT error code to a corresponding Exception object.
-Exception exceptionForHR(int errorCode) {
-  switch (errorCode) {
-    case E_NOTIMPL:
-      return new NotImplementedException;
-    case E_NOINTERFACE:
-      return new InvalidCastException;
-    case E_POINTER:
-      return new NullReferenceException;
-    case E_ACCESSDENIED:
-      return new UnauthorizedAccessException;
-    case E_OUTOFMEMORY:
-      return new OutOfMemoryException;
-    case E_INVALIDARG:
-      return new ArgumentException;
-    default:
-  }
-  return new COMException(errorCode);
-}
-
 /// Throwns an exception with a specific failure HRESULT value.
 void throwExceptionForHR(int errorCode)
 in {
-  assert(FAILED(errorCode));
+    assert(FAILED(errorCode));
 }
 body {
-  if (FAILED(errorCode))
-    throw exceptionForHR(errorCode);
+    switch (errorCode) {
+        case E_NOTIMPL:
+            throw new NotImplementedException;
+        case E_NOINTERFACE:
+            throw new InvalidCastException;
+        case E_POINTER:
+            throw new NullReferenceException;
+        case E_ACCESSDENIED:
+            throw new UnauthorizedAccessException;
+        case E_OUTOFMEMORY:
+            throw new OutOfMemoryError;
+        case E_INVALIDARG:
+            throw new ArgumentException;
+        default:
+    }
+    throw new COMException(errorCode);
 }
+
 
 /**
  * Represents a globally unique identifier.
  */
 struct GUID {
 
-  // Slightly different layout from the Windows SDK, but means we can use fewer brackets
+  // Slightly different layout from the Windows SDK, but means we can use fewer bracket
   // when defining GUIDs.
   uint a;
   ushort b, c;
@@ -218,7 +215,7 @@ struct GUID {
    * Returns: The resulting GUID.
    */
   static GUID opCall(string s) {
-    
+
     ulong parse(string s) {
 
       bool hexToInt(char c, out uint result) {
@@ -252,7 +249,7 @@ struct GUID {
         s = s[0 .. $ - 1];
     }
 
-    if (s.find('-') == -1)
+    if (s.find("-").empty)
       throw new FormatException("Unrecognised GUID format.");
 
     GUID self;
@@ -282,7 +279,7 @@ struct GUID {
 
     int hr = CoCreateGuid(self);
     if (FAILED(hr))
-      throw exceptionForHR(hr);
+        throwExceptionForHR(hr);
 
     return self;
   }
@@ -455,7 +452,7 @@ string uuid(string g) {
  * Retrieves the GUID associated with the specified variable or type.
  * Examples:
  * ---
- * import juno.com.core, 
+ * import juno.com.core,
  *   std.stdio;
  *
  * void main() {
@@ -862,6 +859,43 @@ struct DECIMAL {
     return fromBstr(str);
   }
 
+  bool opEquals(const inout DECIMAL d) {
+    return opCmp(d) == 0;
+  }
+
+  DECIMAL opBinary(string op)(const inout DECIMAL d) {
+    DECIMAL ret;
+    static if(op == "+")
+        VarDecAdd(&this, &d, &ret);
+    else static if(op == "-")
+        VarDecSub(&this, &d, &ret);
+    else static if(op == "*")
+        VarDecMul(&this, &d, &ret);
+    else static if(op == "/")
+        VarDecDiv(&this, &d, &ret);
+    else static if(op == "%")
+        return remainder(this, d);
+    return ret;
+  }
+
+  DECIMAL opUnary(string op)() {
+    DECIMAL ret;
+    static if(op == "+")
+        return this;
+    else static if(op == "-")
+        VarDecNeg(this, &ret);
+    else static if(op == "--")
+        return this = this - cast(DECIMAL)1;
+    else static if(op == "++")
+        return this = this + cast(DECIMAL)1;
+    return ret;
+  }
+
+  DECIMAL opOpAssign(string op)(const inout DECIMAL d) {
+    mixin("this = this " ~ op ~ "d;");
+    return this;
+  }
+
   /// Compares two values.
   static int compare(DECIMAL d1, DECIMAL d2) {
     return VarDecCmp(d1, d2) - 1;
@@ -1154,33 +1188,6 @@ template VariantType(T) {
     const VariantType = VT_VOID;
 }
 
-version(D_Version2) {
-  string variant_operator(string name) {
-    return "VARIANT op" ~ name ~ "(VARIANT that) { \n"
-      "  VARIANT result; \n"
-      "  Var" ~ name ~ "(this, that, result); \n"
-      "  return result; \n"
-      "} \n"
-      "void op" ~ name ~ "Assign" ~ "(VARIANT that) { \n"
-      "  if (!isEmpty) clear(); \n"
-      "  Var" ~ name ~ "(this, that, this); \n"
-      "}";
-  }
-}
-else {
-  string variant_operator(string name) {
-    return "VARIANT op" ~ name ~ "(VARIANT that) { \n"
-      "  VARIANT result; \n"
-      "  Var" ~ name ~ "(*this, that, result); \n"
-      "  return result; \n"
-      "} \n"
-      "void op" ~ name ~ "Assign" ~ "(VARIANT that) { \n"
-      "  if (!isEmpty) clear(); \n"
-      "  Var" ~ name ~ "(*this, that, *this); \n"
-      "}";
-  }
-}
-
 /**
  * A container for many different types.
  * Examples:
@@ -1248,227 +1255,73 @@ struct VARIANT {
     DECIMAL decVal;
   }
 
+  //TODO:
   /// Represents the _missing value.
-  static VARIANT Missing = { vt: VT_ERROR, scode: DISP_E_PARAMNOTFOUND };
+  version(none)static VARIANT Missing = { vt: VT_ERROR, scode: DISP_E_PARAMNOTFOUND };
 
+  //TODO:
   /// Represents the _nothing value.
-  static VARIANT Nothing = { vt: VT_DISPATCH, pdispVal: null };
+  version(none)static VARIANT Nothing = { vt: VT_DISPATCH, pdispVal: null };
 
+  //TODO:
   /// Represents the _null value.
-  static VARIANT Null = { vt: VT_NULL };
+  version(none)static VARIANT Null = { vt: VT_NULL };
 
-  version(D_Version2) {
-    /**
-     * Initializes a new instance using the specified _value and _type.
-     * Params:
-     *   value = A _value of one of the acceptable types.
-     *   type = The ushort identifying the _type of value.
-     */
-    mixin("
-    this(T)(T value, ushort type = VariantType!(T)) {
-      initialize(this, value, type);
+  /**
+   * Initializes a new instance using the specified _value and _type.
+   * Params:
+   *   value = A _value of one of the acceptable types.
+   *   type = The VARTYPE identifying the _type of value.
+   * Returns: The resulting VARIANT.
+   */
+  static VARIANT opCall(T)(T value, VARTYPE type = VariantType!(T)) {
+    static if (is(T E == enum)) {
+      return opCall(cast(E)value, type);
     }
-    ");
-
-    static VARIANT opCall(T)(T value, ushort type = VariantType!(T)) {
-      return VARIANT(value, type);
-    }
-
-    ~this() {
-      if (isCOMAlive && !(isNull || isEmpty)) {
-        clear();
-      }
-    }
-  }
-  else {
-    /**
-     * Initializes a new instance using the specified _value and _type.
-     * Params:
-     *   value = A _value of one of the acceptable types.
-     *   type = The ushort identifying the _type of value.
-     * Returns: The resulting VARIANT.
-     */
-    static VARIANT opCall(T)(T value, ushort type = VariantType!(T)) {
+    else {
       VARIANT self;
-      initialize(self, value, type);
+      self = value;
+      if (type != self.vt)
+        VariantChangeType(self, self, VARIANT_ALPHABOOL, type);
+
       return self;
     }
   }
 
-  private static void initialize(T)(ref VARIANT ret, T value, ushort type = VariantType!(T)) {
-    static if (is(T E == enum)) {
-      initialize(ret, cast(E)value, type);
-    }
-    else {
-      ret = value;
-      if (type != ret.vt)
-        VariantChangeTypeEx(ret, ret, GetThreadLocale(), VARIANT_ALPHABOOL, type);
-    }
-  }
-
-  /*void opAssign(T)(T value) {
-    if (!isEmpty)
+  void opAssign(T)(T value) {
+    if (vt != VT_EMPTY)
       clear();
 
-    static if (is(T == long)) llVal = value;
-    else static if (is(T == int)) lVal = value;
-    else static if (is(T == ubyte)) bVal = value;
-    else static if (is(T == short)) iVal = value;
-    else static if (is(T == float)) fltVal = value;
-    else static if (is(T == double)) dblVal = value;
-    else static if (is(T == VARIANT_BOOL)) boolVal = value;
+    static if (is(T == VARIANT_BOOL)) boolVal = value;
     else static if (is(T == bool)) boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
-    else static if (is(T : string) || is(T : wstring) || is(T : dstring)) bstrVal = toBstr(value);
-    else static if (is(T : IDispatch)) pdispVal = value, value.AddRef();
-    else static if (is(T : IUnknown)) punkVal = value, value.AddRef();
-    else static if (is(T == SAFEARRAY*)) parray = value;
-    else static if (isArray!(T)) parray = SAFEARRAY(value);
-    else static if (is(T == VARIANT*)) pvarVal = value;
-    else static if (is(T : Object)) byref = cast(void*)value;
-    else static if (isPointer!(T)) byref = cast(void*)value;
+    else static if (is(T == ubyte)) bVal = value;
     else static if (is(T == byte)) cVal = value;
     else static if (is(T == ushort)) uiVal = value;
+    else static if (is(T == short)) iVal = value;
     else static if (is(T == uint)) ulVal = value;
+    else static if (is(T == int)) lVal = value;
     else static if (is(T == ulong)) ullVal = value;
+    else static if (is(T == long)) llVal = value;
+    else static if (is(T == float)) fltVal = value;
+    else static if (is(T == double)) dblVal = value;
     else static if (is(T == DECIMAL)) decVal = value;
-    else static if (is(T == VARIANT)) {}
+    else static if (is(T : string)) bstrVal = toBstr(value);
+    else static if (is(T : IDispatch)) pdispVal = value, value.AddRef();
+    else static if (is(T : IUnknown)) punkVal = value, value.AddRef();
+    else static if (is(T : Object)) byref = cast(void*)value;
+    else static if (is(T == VARIANT*)) pvarVal = value;
+    else static if (is(T == VARIANT)) this = value;
+    else static if (is(T == SAFEARRAY*)) parray = value;
+    else static if (isArray!(T)) parray = SAFEARRAY.from(value);
     else static assert(false, "'" ~ T.stringof ~ "' is not one of the allowed types.");
 
     vt = VariantType!(T);
 
     static if (is(T == SAFEARRAY*)) {
-      ushort type;
+      VARTYPE type;
       SafeArrayGetVartype(value, type);
       vt |= type;
     }
-    else static if (is(T == VARIANT)) {
-      value.copyTo(*this);
-    }
-  }*/
-
-  void opAssign(long value) {
-    if (!isEmpty) clear();
-    llVal = value;
-    vt = VT_I8;
-  }
-
-  void opAssign(int value) {
-    if (!isEmpty) clear();
-    lVal = value;
-    vt = VT_I4;
-  }
-
-  void opAssign(ubyte value) {
-    if (!isEmpty) clear();
-    bVal = value;
-    vt = VT_UI1;
-  }
-
-  void opAssign(short value) {
-    if (!isEmpty) clear();
-    iVal = value;
-    vt = VT_I2;
-  }
-
-  void opAssign(float value) {
-    if (!isEmpty) clear();
-    fltVal = value;
-    vt = VT_R4;
-  }
-
-  void opAssign(double value) {
-    if (!isEmpty) clear();
-    dblVal = value;
-    vt = VT_R8;
-  }
-
-  void opAssign(bool value) {
-    if (!isEmpty) clear();
-    boolVal = value ? VARIANT_TRUE : VARIANT_FALSE;
-    vt = VT_BOOL;
-  }
-
-  void opAssign(VARIANT_BOOL value) {
-    if (!isEmpty) clear();
-    boolVal = value;
-    vt = VT_BOOL;
-  }
-
-  void opAssign(string value) {
-    if (!isEmpty) clear();
-    bstrVal = toBstr(value);
-    vt = VT_BSTR;
-  }
-
-  void opAssign(IUnknown value) {
-    if (!isEmpty) clear();
-    if (auto disp = com_cast!(IDispatch)(value)) {
-      pdispVal = disp;
-      vt = VT_DISPATCH;
-    }
-    else {
-      value.AddRef();
-      punkVal = value;
-      vt = VT_UNKNOWN;
-    }
-  }
-
-  void opAssign(SAFEARRAY* value) {
-    if (!isEmpty) clear();
-    parray = value;
-    ushort type;
-    SafeArrayGetVartype(value, type);
-    vt = VT_ARRAY | type;
-  }
-
-  void opAssign(byte value) {
-    if (!isEmpty) clear();
-    cVal = value;
-    vt = VT_I1;
-  }
-
-  void opAssign(ushort value) {
-    if (!isEmpty) clear();
-    uiVal = value;
-    vt = VT_UI2;
-  }
-
-  void opAssign(uint value) {
-    if (!isEmpty) clear();
-    ulVal = value;
-    vt = VT_UI4;
-  }
-
-  void opAssign(ulong value) {
-    if (!isEmpty) clear();
-    ullVal = value;
-    vt = VT_UI4;
-  }
-
-  void opAssign(DECIMAL value) {
-    if (!isEmpty) clear();
-    decVal = value;
-    vt = VT_DECIMAL;
-  }
-
-  version(D_Version2) {
-    // Illegal in 1.0
-    void opAssign(VARIANT value) {
-      if (!isEmpty) clear();
-      VariantCopy(this, value);
-    }
-
-    /*void opAssign(VARIANT* value) {
-      if (!isEmpty) clear();
-      pvarVal = value;
-      vt = VT_BYREF | VT_VARIANT;
-    }*/
-  }
-
-  void opAssign(ubyte[] value) {
-    if (!isEmpty) clear();
-    parray = SAFEARRAY(value);
-    vt = VT_ARRAY | VT_UI1;
   }
 
   /**
@@ -1476,14 +1329,8 @@ struct VARIANT {
    * See_Also: $(LINK2 http://msdn2.microsoft.com/en-us/library/ms221165.aspx, VariantClear).
    */
   void clear() {
-    if (isCOMAlive && !(isNull || isEmpty)) {
-      version(D_Version2) {
-        VariantClear(this);
-      }
-    else {
-        VariantClear(*this);
-      }
-    }
+    if (isCOMAlive && !(isNull || isEmpty))
+      VariantClear(this);
   }
 
   /**
@@ -1491,12 +1338,7 @@ struct VARIANT {
    * Params: dest = The variant to copy into.
    */
   void copyTo(out VARIANT dest) {
-    version(D_Version2) {
-      VariantCopy(dest, this);
-    }
-    else {
-      VariantCopy(dest, *this);
-    }
+    VariantCopy(dest, this);
   }
 
   /**
@@ -1505,12 +1347,7 @@ struct VARIANT {
    */
   VARIANT changeType(ushort newType) {
     VARIANT dest;
-    version(D_Version2) {
-      VariantChangeTypeEx(dest, this, GetThreadLocale(), VARIANT_ALPHABOOL, newType);
-    }
-    else {
-      VariantChangeTypeEx(dest, *this, GetThreadLocale(), VARIANT_ALPHABOOL, newType);
-    }
+    VariantChangeTypeEx(dest, this, GetThreadLocale(), VARIANT_ALPHABOOL, newType);
     return dest;
   }
 
@@ -1525,20 +1362,13 @@ struct VARIANT {
     if (vt == VT_BSTR)
       return fromBstr(bstrVal);
 
-    int hr;
     VARIANT temp;
-    version(D_Version2) {
-      hr = VariantChangeTypeEx(temp, this, GetThreadLocale(), VARIANT_ALPHABOOL, VT_BSTR);
-    }
-    else {
-      hr = VariantChangeTypeEx(temp, *this, GetThreadLocale(), VARIANT_ALPHABOOL, VT_BSTR);
-    }
-    if (SUCCEEDED(hr))
+    if (SUCCEEDED(VariantChangeType(temp, this, VARIANT_ALPHABOOL | VARIANT_LOCALBOOL, VT_BSTR)))
       return fromBstr(temp.bstrVal);
 
     return null;
   }
-  
+
   /**
    * Returns the _value contained in this instance.
    */
@@ -1602,16 +1432,6 @@ struct VARIANT {
   bool opEquals(VARIANT that) {
     return opCmp(that) == 0;
   }
-
-  mixin(variant_operator("Cat"));
-  mixin(variant_operator("Add"));
-  mixin(variant_operator("Sub"));
-  mixin(variant_operator("Div"));
-  mixin(variant_operator("Mul"));
-  mixin(variant_operator("Mod"));
-  mixin(variant_operator("And"));
-  mixin(variant_operator("Or"));
-  mixin(variant_operator("Xor"));
 
 }
 
@@ -1730,6 +1550,7 @@ interface IMalloc : IUnknown {
 }
 
 int CoGetMalloc(uint dwMemContext/* = 1*/, out IMalloc ppMalloc);
+
 
 interface IMarshal : IUnknown {
   mixin(uuid("00000003-0000-0000-c000-000000000046"));
@@ -2755,11 +2576,11 @@ interface ICatInformation : IUnknown {
   mixin(uuid("0002E013-0000-0000-c000-000000000046"));
 
   int EnumCategories(uint lcid, out IEnumCATEGORYINFO ppenumCategoryInfo);
-  int GetCategoryDesc(inout GUID rcatid, uint lcid, out wchar* pszDesc);
+  int GetCategoryDesc(ref GUID rcatid, uint lcid, out wchar* pszDesc);
   int EnumClassesOfCategories(uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq, out IEnumGUID ppenumClsid);
-  int IsClassOfCategories(inout GUID rclsid, uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq);
-  int EnumImplCategoriesOfClass(inout GUID rclsid, out IEnumGUID ppenumCatid);
-  int EnumReqCategoriesOfClass(inout GUID rclsid, out IEnumGUID ppenumCatid);
+  int IsClassOfCategories(ref GUID rclsid, uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq);
+  int EnumImplCategoriesOfClass(ref GUID rclsid, out IEnumGUID ppenumCatid);
+  int EnumReqCategoriesOfClass(ref GUID rclsid, out IEnumGUID ppenumCatid);
 }
 
 abstract final class StdComponentCategoriesMgr {
@@ -3082,7 +2903,7 @@ template com_cast_impl(T, ExceptionPolicy policy) {
             static if (type == VT_BOOL) {
               static if (is(T == bool))
                 return (boolVal == VARIANT_TRUE) ? true : false;
-              else 
+              else
                 return boolVal;
             }
             else static if (type == VT_UI1) return bVal;
@@ -3099,7 +2920,7 @@ template com_cast_impl(T, ExceptionPolicy policy) {
             else static if (type == VT_BSTR) {
               static if (is(T : string))
                 return fromBstr(bstrVal);
-              else 
+              else
                 return bstrVal;
             }
             else static if (type == VT_UNKNOWN) return com_cast_impl(obj.punkVal);
@@ -3122,7 +2943,7 @@ template com_cast_impl(T, ExceptionPolicy policy) {
 /**
  * Invokes the conversion operation to convert from one COM type to another.
  *
- * If the operand is a VARIANT, this function converts its value to the type represented by $(I T). If the operand is an IUnknown-derived object, this function 
+ * If the operand is a VARIANT, this function converts its value to the type represented by $(I T). If the operand is an IUnknown-derived object, this function
  * calls the object's QueryInterface method. If the conversion operation fails, the function returns T.init.
  *
  * Examples:
@@ -3377,7 +3198,7 @@ template ReferenceCountImpl() {
   new(size_t sz) {
     void* p = std.c.stdlib.malloc(sz);
     if (p is null)
-      throw new OutOfMemoryException;
+      throw new OutOfMemoryError;
 
     version(D_Version2) {
       core.memory.GC.addRange(p, sz);
@@ -3400,8 +3221,8 @@ template InterfacesTuple(T) {
   }
   else {
     alias std.typetuple.NoDuplicates!(
-      TypeTuple!(BaseTypeTuple!(T)[1 .. $], 
-        InterfacesTuple!(BaseTypeTuple!(T)[0]))) 
+      TypeTuple!(BaseTypeTuple!(T)[1 .. $],
+        InterfacesTuple!(BaseTypeTuple!(T)[0])))
       InterfacesTuple;
   }
 
@@ -3465,7 +3286,7 @@ template AllBaseTypesOf(T...) {
 /**
  * The abstract base class for COM objects that derive from IUnknown or IDispatch.
  *
- * The Implements class provides default implementations of methods required by those interfaces. Therefore, subclasses need only override them when they 
+ * The Implements class provides default implementations of methods required by those interfaces. Therefore, subclasses need only override them when they
  * specifically need to provide extra functionality. This class also overrides the new operator so that instances are not garbage collected.
  * Examples:
  * ---
@@ -3516,7 +3337,7 @@ bool isCOMObject(Object obj) {
 }
 
 /**
- * Wraps a manually reference counted IUnknown-derived object so that its 
+ * Wraps a manually reference counted IUnknown-derived object so that its
  * memory can be managed automatically by the D runtime's garbage collector.
  */
 final class COMObject {
@@ -3964,8 +3785,8 @@ R invokeMethod(R = VARIANT)(IDispatch target, string name, ...) {
  *   // Create an instance of the Microsoft Word automation object.
  *   IDispatch wordApp = coCreate!(IDispatch)("Word.Application");
  *
- *   // Invoke the Documents property 
- *   //   wordApp.Documents
+ *   // Invoke the Documents property
+ *   //   wordApp.Document
  *   IDispatch documents = getProperty!(IDispatch)(target, "Documents");
  *
  *   // Invoke the Count property on the Documents object
@@ -4009,7 +3830,7 @@ R getProperty(R = VARIANT)(IDispatch target, string name, ...) {
  *   setProperty(excelApp, "Visible", true);
  *
  *   // Get the Workbooks property
- *   //   workbooks = excelApp.Workbooks
+ *   //   workbooks = excelApp.Workbook
  *   IDispatch workbooks = getProperty!(IDispatch)(excelApp, "Workbooks");
  *
  *   // Invoke the Add method on the Workbooks property

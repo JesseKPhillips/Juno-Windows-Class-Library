@@ -15,7 +15,8 @@ import juno.base.core,
   juno.com.core,
   juno.xml.core,
   std.stream;
-static import std.base64;
+import std.base64;
+import std.exception;
 
 enum XmlReaderProperty : uint {
   MultiLanguage,
@@ -1357,7 +1358,7 @@ abstract class XmlWriter {
   /**
    * Writes raw markup from a character buffer.
    */
-  abstract void writeRaw(char[] buffer, int index, int count);
+  abstract void writeRaw(string buffer, int index, int count);
 
   /**
    * Writes the XML declaration.
@@ -1539,7 +1540,7 @@ private final class XmlLiteWriter : XmlWriter {
     writerImpl_.WriteRaw(data.toUtf16z());
   }
 
-  override void writeRaw(char[] buffer, int index, int count) {
+  override void writeRaw(string buffer, int index, int count) {
     writerImpl_.WriteRawChars(buffer.toUtf16z(index), count);
   }
 
@@ -1568,7 +1569,8 @@ private final class XmlLiteWriter : XmlWriter {
   }
 
   override void writeBase64(void[] buffer, int index, int count) {
-    writeChars(std.base64.encode(cast(string)buffer), index, count);
+    auto data = Base64.encode(cast(ubyte[])buffer);
+    writeChars(assumeUnique(data), index, count);
   }
 
 }

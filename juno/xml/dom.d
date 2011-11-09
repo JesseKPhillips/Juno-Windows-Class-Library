@@ -839,7 +839,7 @@ class XmlNode {
         if (auto doc2 = com_cast!(IXMLDOMDocument2)(doc)) {
           scope(exit) tryRelease(doc2);
 
-          doc2.setProperty(cast(wchar*)"SelectionNamespaces", selectionNs);
+          doc2.setProperty(toUTF16z("SelectionNamespaces"), selectionNs);
         }
       }
     }

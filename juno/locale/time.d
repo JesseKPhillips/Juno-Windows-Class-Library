@@ -66,7 +66,7 @@ private int getDatePart(long ticks, DatePart part) {
   if (part == DatePart.DayOfYear)
     return n + 1;
   bool leap = y1 == 3 && (y4 != 24 || y100 == 3);
-  int[] days = leap ? DaysToMonth366 : DaysToMonth365;
+  const(int[]) days = leap ? DaysToMonth366 : DaysToMonth365;
   int m = n >> 5 + 1;
   while (n >= days[m]) m++;
   if (part == DatePart.Month) return m;
@@ -511,7 +511,7 @@ class GregorianCalendar : Calendar {
       y += n / 12;
     }
 
-    int[] daysToMonth = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+    auto daysToMonth = (y % 4 == 0 && (y % 100 != 0 || y % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
     int days = daysToMonth[m] - daysToMonth[m - 1];
     if (d > days)
       d = days;
@@ -568,7 +568,7 @@ class GregorianCalendar : Calendar {
 
   alias Calendar.getDaysInMonth getDaysInMonth;
   override int getDaysInMonth(int year, int month, int era) {
-    int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+    auto days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
     return days[month] - days[month - 1];
   }
 
@@ -614,7 +614,7 @@ class GregorianCalendar : Calendar {
   }
 
   private static long dateToTicks(int year, int month, int day) {
-    int[] days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
+    auto days = (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) ? DaysToMonth366 : DaysToMonth365;
     int y = year - 1;
     int n = y * 365 + y / 4 - y / 100 + y / 400 + days[month - 1] + day - 1;
     return n * TicksPerDay;
@@ -1497,7 +1497,7 @@ struct DateTime {
    *   month = The _month.
    */
   static int daysInMonth(int year, int month) {
-    int[] days = isLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+    auto days = isLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
     return days[month] - days[month - 1];
   }
 
@@ -1612,7 +1612,7 @@ struct DateTime {
   }
 
   private static long dateToTicks(int year, int month, int day) {
-    int[] days = isLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
+    auto days = isLeapYear(year) ? DaysToMonth366 : DaysToMonth365;
     int y = year - 1;
     int n = y * 365 + y / 4 - y / 100 + y / 400 + days[month - 1] + day - 1;
     return n * TicksPerDay;

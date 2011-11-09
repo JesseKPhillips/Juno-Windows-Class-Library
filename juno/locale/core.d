@@ -12,7 +12,7 @@ import juno.base.core,
   juno.locale.constants;
 import juno.locale.time : Calendar,
   CalendarData,
-  GregorianCalendar, 
+  GregorianCalendar,
   JapaneseCalendar,
   TaiwanCalendar,
   KoreanCalendar,
@@ -21,6 +21,10 @@ import std.utf : toUTF8;
 import std.string : icmp, tolower, toupper, wcslen;
 import std.c.stdio : sprintf;
 import std.c.string : memcmp, memicmp;
+import std.exception;
+import std.range;
+import std.conv;
+
 version(D_Version2) {
   import std.string : indexOf, lastIndexOf;
   alias indexOf find;
@@ -51,7 +55,7 @@ package wchar* toUTF16zNls(string s, int offset, int length, out int translated)
 
   auto pChars = s.ptr + offset;
   int cch = MultiByteToWideChar(CP_UTF8, 0, pChars, length, null, 0);
-  if (cch == 0) 
+  if (cch == 0)
     return null;
 
   wchar[] result = new wchar[cch];
@@ -74,7 +78,7 @@ package string toUTF8Nls(in wchar* pChars, int cch, out int translated) {
 package string getLocaleInfo(uint locale, uint field, bool userOverride = true) {
   wchar[80] buffer;
   int cch = GetLocaleInfo(locale, field | (!userOverride ? LOCALE_NOUSEROVERRIDE : 0), buffer.ptr, buffer.length);
-  if (cch == 0) 
+  if (cch == 0)
     return null;
 
   return toUTF8(buffer[0 .. cch - 1]);
@@ -89,7 +93,7 @@ package int getLocaleInfoI(uint locale, uint field, bool userOverride = true) {
 package string getCalendarInfo(uint locale, uint calendar, uint field, bool userOverride = true) {
   wchar[80] buffer;
   int cch = GetCalendarInfo(locale, calendar, field | (!userOverride ? CAL_NOUSEROVERRIDE : 0), buffer.ptr, buffer.length, null);
-  if (cch == 0) 
+  if (cch == 0)
     return null;
 
   return toUTF8(buffer[0 .. cch - 1]);
@@ -389,7 +393,7 @@ class Culture : IFormatProvider {
     lcidCultures_ = null;
   }
 
-  /** 
+  /**
    * Initializes a new instance based on the _culture specified by the _culture identifier.
    * Params: culture = A predefined Culture identifier.
    */
@@ -400,7 +404,7 @@ class Culture : IFormatProvider {
       !findCultureById(culture, cultureName_, cultureId_)) {
       scope buffer = new char[100];
       int len = sprintf(buffer.ptr, "Culture ID %d (0x%04x) is not a supported culture.", culture, culture);
-      throw new ArgumentException(cast(string)buffer[0 .. len], "culture");
+      throw new ArgumentException(assumeUnique(buffer[0 .. len]), "culture");
     }
 
     isInherited_ = (typeid(typeof(this)) != typeid(Culture));
@@ -413,7 +417,7 @@ class Culture : IFormatProvider {
   this(string name) {
     if (!findCultureByName(name, cultureName_, cultureId_))
       throw new ArgumentException("Culture name '" ~ name ~ "' not supported.", "name");
-    
+
     isInherited_ = (typeid(typeof(this)) != typeid(Culture));
   }
 
@@ -444,7 +448,7 @@ class Culture : IFormatProvider {
     if (ret is null) {
       scope buffer = new char[100];
       int len = sprintf(buffer.ptr, "Culture ID %d (0x%04x) is not a supported culture.", culture, culture);
-      throw new ArgumentException(cast(string)buffer[0 .. len], "culture");
+      throw new ArgumentException(assumeUnique(buffer[0 .. len]), "culture");
     }
 
     return ret;
@@ -569,7 +573,7 @@ class Culture : IFormatProvider {
     currentUI_ = value;
   }
 
-  /** 
+  /**
    * ditto
    */
   static Culture currentUI() {
@@ -616,7 +620,8 @@ class Culture : IFormatProvider {
   }
 
   /**
-   * Gets the culture name in the format "&lt;language&gt; (&lt;region&gt;)" in the language of the culture.
+   * Gets the culture name in the format "&lt;language&gt; (&lt;region&gt;)" in
+   * the language of the culture.
    * Returns: The culture name in the language of the culture.
    */
   string nativeName() {
@@ -627,6 +632,18 @@ class Culture : IFormatProvider {
       int i = s.rfind("(");
       if (i != -1 && s.rfind(")") != -1)
         s.length = i - 1;
+    }
+    return s;
+  }
+  // May reuse this implementation but behavior is different
+  // so I will go with this other form
+  version(none)
+  string nativeName() {
+    string s = getLocaleInfo(cultureId_, LOCALE_SNATIVELANGNAME);
+    if (!isNeutral)
+      s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SNATIVECTRYNAME) ~ ")";
+    else {
+      s = removeCountry(s);
     }
     return s;
   }
@@ -643,6 +660,18 @@ class Culture : IFormatProvider {
       int i = s.rfind("(");
       if (i != -1 && s.rfind(")") != -1)
         s.length = i - 1;
+    }
+    return s;
+  }
+  // May reuse this implementation but behavior is different
+  // so I will go with this other form
+  version(none)
+  string englishName() {
+    string s = getLocaleInfo(cultureId_, LOCALE_SENGLANGUAGE);
+    if (!isNeutral)
+      s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SENGCOUNTRY) ~ ")";
+    else {
+      s = removeCountry(s);
     }
     return s;
   }
@@ -669,6 +698,42 @@ class Culture : IFormatProvider {
     if (s != null)
       return s;
     return nativeName;
+  }
+  // May reuse this implementation but behavior is different
+  // so I will go with this other form
+  version(none)
+  string displayName() {
+    string s = getLocaleInfo(cultureId_, LOCALE_SLANGUAGE);
+    if (s != null && isNeutral && cultureId_ != LOCALE_INVARIANT) {
+      s = removeCountry(s);
+    }
+
+    if (s != null && !isNeutral && cultureId_ != LOCALE_INVARIANT) {
+      s = addCountry(s);
+    }
+
+    if (s != null)
+      return s;
+    return nativeName;
+  }
+
+  // May reuse this implementation but behavior is different
+  // so I will go with this other form
+  version(none) {
+  // Remove country from neutral cultures.
+  private string removeCountry(string s) {
+      auto s2 = find(s.retro, "(");
+      s2.popFront;
+      return to!string(retro(s2));
+  }
+
+  // Add country to specific cultures.
+  private string addCountry(string s) {
+      if (s.find("(").empty && s.find(")").empty)
+          s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SCOUNTRY) ~ ")";
+
+      return s;
+  }
   }
 
   /**
@@ -824,10 +889,10 @@ class Culture : IFormatProvider {
     // We only implement calendars that Windows supports.
     switch (calendarId) {
       case CAL_GREGORIAN,
-        CAL_GREGORIAN_US, 
-        CAL_GREGORIAN_ME_FRENCH, 
-        CAL_GREGORIAN_ARABIC, 
-        CAL_GREGORIAN_XLIT_ENGLISH, 
+        CAL_GREGORIAN_US,
+        CAL_GREGORIAN_ME_FRENCH,
+        CAL_GREGORIAN_ARABIC,
+        CAL_GREGORIAN_XLIT_ENGLISH,
         CAL_GREGORIAN_XLIT_FRENCH:
         return new GregorianCalendar(cast(GregorianCalendarType)calendarId);
       case CAL_JAPAN:
@@ -937,11 +1002,6 @@ class NumberFormat : IFormatProvider {
   private int currencyPositivePattern_;
   private int numberNegativePattern_;
   private int currencyNegativePattern_;
-
-  static ~this() {
-    constant_ = null;
-    current_ = null;
-  }
 
   /**
    * Initializes a new instance.
@@ -1316,6 +1376,7 @@ class NumberFormat : IFormatProvider {
   }
 
 }
+
 
 package const char[] allStandardFormats = [ 'd', 'D', 'f', 'F', 'g', 'G', 'r', 'R', 's', 't', 'T', 'u', 'U', 'y', 'Y' ];
 
@@ -2364,8 +2425,8 @@ class Collator {
   }
 
   private static int compareStringOrdinal(string string1, int offset1, int length1, string string2, int offset2, int length2, bool ignoreCase) {
-    int count = (length2 < length1) 
-      ? length2 
+    int count = (length2 < length1)
+      ? length2
       : length1;
     int ret = ignoreCase
       ? memicmp(string1.ptr + offset1, string2.ptr + offset2, count)
@@ -2376,7 +2437,7 @@ class Collator {
   }
 
   private bool isPrefix(string source, int start, int length, string prefix, uint flags) {
-    // Call FindNLSString if the API is present on the system, otherwise call CompareString. 
+    // Call FindNLSString if the API is present on the system, otherwise call CompareString.
     int i = findString(sortingId_, 0, source, start, length, prefix, prefix.length);
     if (i >= -1)
       return (i != -1);
@@ -2389,7 +2450,7 @@ class Collator {
   }
 
   private bool isSuffix(string source, int end, int length, string suffix, uint flags) {
-    // Call FindNLSString if the API is present on the system, otherwise call CompareString. 
+    // Call FindNLSString if the API is present on the system, otherwise call CompareString.
     int i = findString(sortingId_, flags | FIND_ENDSWITH, source, 0, length, suffix, suffix.length);
     if (i >= -1)
       return (i != -1);

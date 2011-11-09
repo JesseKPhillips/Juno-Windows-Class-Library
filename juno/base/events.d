@@ -154,8 +154,12 @@ struct Event(R, T...) {
     size_ = 0;
   }
 
-  bool isEmpty() {
+  bool isEmpty() const {
     return (size_ == 0);
+  }
+
+  const bool opEquals(ref const(void*) a) {
+    return isEmpty;
   }
 
   uint count() {

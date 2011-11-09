@@ -1278,7 +1278,7 @@ enum : uint {
   FO_RENAME                 = 0x0004
 }
 
-// fFlags
+// fFlag
 enum : uint {
   FOF_MULTIDESTFILES        = 0x0001,
   FOF_CONFIRMMOUSE          = 0x0002,
@@ -2038,7 +2038,7 @@ enum TOKEN_INFORMATION_CLASS : uint {
   TokenUIAccess,
   TokenMandatoryPolicy,
   TokenLogonSid,
-  MaxTokenInfoClass
+  MaxTokenInfoCla
 }
 
 int GetTokenInformation(Handle TokenHandle, TOKEN_INFORMATION_CLASS TokenInformationClass, void* TokenInformation, uint TokenInformationLength, ref uint ReturnLength);
@@ -2794,7 +2794,7 @@ enum : uint {
   CERT_QUERY_CONTENT_PFX                = 12
 }
 
-// dwExpectedConentTypeFlags
+// dwExpectedConentTypeFlag
 enum : uint {
   CERT_QUERY_CONTENT_FLAG_CERT = 1 << CERT_QUERY_CONTENT_CERT,
   CERT_QUERY_CONTENT_FLAG_SERIALIZED_STORE = 1 << CERT_QUERY_CONTENT_SERIALIZED_STORE,
@@ -2819,7 +2819,7 @@ enum : uint {
   CERT_QUERY_FORMAT_ASN_ASCII_HEX_ENCODED = 3
 }
 
-// dwExpectedFormatTypeFlags
+// dwExpectedFormatTypeFlag
 enum : uint {
   CERT_QUERY_FORMAT_FLAG_BINARY = 1 << CERT_QUERY_FORMAT_BINARY,
   CERT_QUERY_FORMAT_FLAG_BASE64_ENCODED = 1 << CERT_QUERY_FORMAT_BASE64_ENCODED,

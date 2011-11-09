@@ -143,7 +143,7 @@ class DispatchObject {
   /**
    * ditto
    */
-  this(VARIANT target) {
+  this(VARIANT result) {
     if (auto target = com_cast!(IDispatch)(result)) {
       target_ = target;
     }

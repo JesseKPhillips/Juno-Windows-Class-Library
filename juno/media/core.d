@@ -23,6 +23,7 @@ import juno.base.core,
   juno.media.native,
   std.string,
   std.stream;
+import std.ascii;
 static import std.file,
   std.math,
   std.conv;
@@ -55,10 +56,10 @@ private int stringToInt(string value, int fromBase) {
 
   while (i < len) {
     char c = value[i++];
-    if (std.ctype.isdigit(c))
+    if (isDigit(c))
       n = c - '0';
-    else if (std.ctype.isalpha(c))
-      n = std.ctype.tolower(c) - 'a' + 10;
+    else if (isAlpha(c))
+      n = toLower(c) - 'a' + 10;
 
     result = fromBase * result + n;
   }
