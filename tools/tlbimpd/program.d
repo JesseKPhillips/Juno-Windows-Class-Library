@@ -1,19 +1,22 @@
 module tlbimpd.program;
 
-import juno.base.all,
-  juno.locale.all,
-  juno.com.all,
-  tlbimpd.utils,
-  tlbimpd.options,
-  tlbimpd.codegen;
+import tlbimpd.utils,
+       tlbimpd.options,
+       tlbimpd.codegen;
 
-import std.stdio : writefln;
+import juno.base.core,
+       juno.base.string,
+       juno.com.reflect,
+       juno.io.core,
+       juno.locale.convert;
+
+import std.stdio : writefln, writeln;
 import std.path : getBaseName, getExt;
 import std.stream : File, FileMode;
 
 void printLogo() {
   writefln("Type Library to D Module Converter 1.0");
-  writefln();
+  writeln();
 }
 
 void printUsage() {
@@ -34,7 +37,7 @@ void printUsage() {
   writefln("    /unnamed:value        Value for unnamed parameters");
   writefln("    /order:verbatim       Generate types in original order");
   writefln("    /? or /help           Displays this usage message");
-  writefln();
+  writeln();
 }
 
 private string actualTypeLibPath;
@@ -92,7 +95,7 @@ void main(string[] args) {
       typeLibPath = null;
 
       while (!s.eof) {
-        string line = s.readLine();
+        string line = s.readLine().idup;
         if (line.indexOf("/+") != -1 && line.indexOf("@import") != -1 && line.indexOf("+/") != -1) {
           int start = line.indexOf("@import") + "@import".length + 1;
           int end = line[start .. $].indexOf(';');
@@ -162,12 +165,12 @@ void main(string[] args) {
       }
       catch (Exception ex) {
         writefln(ex.msg);
-        writefln();
+        writeln();
       }
       finally {
         if (!slientMode && succeeded) {
           writefln("Type library '" ~ getBaseName(actualTypeLibPath) ~ "' exported to '" ~ outputFileName ~ "'.");
-          writefln();
+          writeln();
         }
       }
     }
