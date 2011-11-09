@@ -338,12 +338,12 @@ struct GUID {
    * Returns a string representation of the value of this instance in registry format.
    * Returns: A string formatted in this pattern: {xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx} where the GUID is represented as a series of lowercase hexadecimal digits in groups of 8, 4, 4, 4 and 12 and separated by hyphens.
    */
-  string toString() {
+  string toString() const {
     return toString("D");
   }
 
   /// ditto
-  string toString(string format) {
+  string toString(string format) const {
 
     void hexToString(ref char[] s, ref uint index, uint a, uint b) {
 
