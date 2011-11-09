@@ -81,6 +81,7 @@ final class RegistryKey {
   private static RegistryKey currentConfig_;
   private static RegistryKey dynData_; // Win9x only
 
+/*
   static ~this() {
     classesRoot_ = null;
     currentUser_ = null;
@@ -90,6 +91,7 @@ final class RegistryKey {
     currentConfig_ = null;
     dynData_ = null;
   }
+*/
 
   private Handle hkey_;
   private string name_;
