@@ -143,7 +143,7 @@ class ClassFactory(T) : Implements!(IClassFactory) {
     if (pUnkOuter !is null && riid != uuidof!(IUnknown))
       return CLASS_E_NOAGGREGATION;
 
-    ppvObject = null;
+    *ppvObject = null;
     int hr = E_OUTOFMEMORY;
 
     T obj = new T;
@@ -250,7 +250,7 @@ template Export(T...) {
     bool success;
 
     try {
-      scope clsidKey = RegistryKey.classesRoot.openSubKey("CLSID");
+      scope clsidKey = RegistryKey.classesRoot.openSubKey("CLSID", true);
       if (clsidKey !is null)
         clsidKey.deleteSubKeyTree(uuidof!(CoClass).toString("P"));
 
