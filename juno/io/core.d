@@ -9,7 +9,7 @@ import juno.base.core,
   juno.base.string,
   juno.base.text,
   juno.base.native,
-  std.stdarg,
+  core.vararg,
   std.stream;
 debug import std.stdio : writefln;
 

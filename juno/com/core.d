@@ -15,7 +15,7 @@ import juno.base.core,
   std.stream,
   std.typetuple,
   std.traits,
-  std.stdarg;
+  core.vararg;
 import std.algorithm;
 import std.array;
 version(D_Version2) {

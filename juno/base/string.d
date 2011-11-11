@@ -17,7 +17,7 @@ import juno.base.core,
 import std.utf : toUTF8, toUTF16, toUTF16z;
 import std.string : wcslen, strlen, toStringz;
 import std.c.string : memcpy;
-import std.stdarg;
+import core.vararg;
 import std.exception;
 
 //debug import std.stdio : writeln;
