@@ -1,6 +1,6 @@
 module juno.examples.com.events;
 
-import juno.com.core, juno.com.client;
+import juno.com.core, juno.com.client, juno.xml.msxml;
 import std.stdio : writefln;
 
 void main() {
