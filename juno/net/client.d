@@ -907,7 +907,7 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
   state.progress.uploadProgress = uploadProgress;
 
   Handle session = state.session = InternetOpen(null, INTERNET_OPEN_TYPE_PRECONFIG, null, null, async ? INTERNET_FLAG_ASYNC : 0);
-  if (!async) scope(exit) CloseInternetHandle(session);
+  if (!async) scope(exit) InternetCloseHandle(session);
 
   if (session == Handle.init)
     throw new NetException;
@@ -926,7 +926,7 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
                                       schemeIsFtp ? INTERNET_SERVICE_FTP : INTERNET_SERVICE_HTTP, 
                                       INTERNET_FLAG_PASSIVE | INTERNET_FLAG_DONT_CACHE,
                                       cast(uint)state);
-  if (!async) scope(exit) CloseInternetHandle(connection);
+  if (!async) scope(exit) InternetCloseHandle(connection);
 
   if ((async && connection == Handle.init && GetLastError() != ERROR_IO_PENDING) || (!async && connection == Handle.init))
     throw new NetException;
@@ -1115,9 +1115,4 @@ void uploadFileAsync(Uri address, string fileName, UploadCompletedCallback uploa
 
 void uploadFileAsync(string address, string fileName, UploadCompletedCallback uploadCompleted = null, UploadProgressCallback uploadProgress = null) {
   uploadFileAsync(new Uri(address), fileName, uploadCompleted, uploadProgress);
-}
-
-void CloseInternetHandle(Handle h) {
-    throw new Exception("Unimplemented function call");
-    // I don't know what is missing but this is called
 }
