@@ -13,8 +13,7 @@ version(D_Version2) {
 else {
   import std.thread;
 }
-static import std.path,
-  std.regexp;
+static import std.path;
 
 /// Returns an array of strings containing the names of the logical drives on the current computer.
 string[] logicalDrives() {
