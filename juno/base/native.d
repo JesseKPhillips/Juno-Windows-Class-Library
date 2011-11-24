@@ -222,7 +222,6 @@ enum : uint {
 Handle LocalAlloc(uint uFlags, size_t cb);
 
 Handle LocalFree(Handle hMem);
-void* LocalFree(void* hMem);
 
 enum : uint {
   GMEM_FIXED          = 0x0000,

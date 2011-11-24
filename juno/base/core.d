@@ -5,7 +5,7 @@
  */
 module juno.base.core;
 
-typedef void* Handle = null;
+alias void* Handle;
 
 size_t offsetof(alias F)() {
   return F.offsetof;

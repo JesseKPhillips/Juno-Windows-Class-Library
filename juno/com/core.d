@@ -1096,7 +1096,7 @@ enum : short {
   VARIANT_TRUE = -1, /// Represents the boolean value _true (-1).
   VARIANT_FALSE = 0  /// Represents the boolean value _false (0).
 }
-typedef short VARIANT_BOOL;
+alias short VARIANT_BOOL;
 
 enum : VARIANT_BOOL {
   com_true = VARIANT_TRUE,

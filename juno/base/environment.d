@@ -33,7 +33,7 @@ string[] getCommandLineArgs() {
     a[i] = .toUtf8(argv[i]);
   }
 
-  LocalFree(cast(Handle)argv);
+  LocalFree(argv);
   return a[0 .. argc];
 }
 
