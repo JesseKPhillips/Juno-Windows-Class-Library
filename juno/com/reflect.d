@@ -1360,6 +1360,10 @@ class Parameter {
 
     if (isReservedWord(name_))
       name_ ~= "Param";
+      
+    //If name is the same as type, then rename name
+    if (name_ == parameterType.name())
+        name_ ~= "Param";
   }
 
   package static Parameter[] getParameters(MethodImpl method) {
@@ -1405,7 +1409,16 @@ class Parameter {
               paramType.name_ = "GUID";
               attrs |= (ParameterAttributes.In | ParameterAttributes.Out);
             }
-            params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
+            
+            if (pos + 1 >= count)
+            {
+				//Handling for unamed parameters
+				params ~= new Parameter(method, "", paramType, pos, attrs);
+			}
+			else
+			{
+				params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
+			}
           }
         }
 
