@@ -4,8 +4,7 @@ import juno.base.core,
   juno.base.string,
   juno.base.threading,
   juno.base.native,
-  juno.com.core,
-  juno.security.crypto;
+  juno.com.core;
 static import juno.io.path;
 import std.c.stdlib : malloc, realloc, free;
 

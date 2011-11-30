@@ -292,6 +292,10 @@ private struct MethodProxy {
     return self;
   }
 
+  void opAssign()(MethodProxy mp) {
+	  this = mp;
+  }
+
   void opAssign(R, T...)(R delegate(T) dg) {
     alias ParameterTypeTuple!(dg) params;
 
