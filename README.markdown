@@ -17,8 +17,11 @@ make juno
 Further more the make file includes some examples
 
 make events
+
 make latebinding
+
 make messagebeep
+
 make relativepath
 
 Of which I've only seen the last two work.
