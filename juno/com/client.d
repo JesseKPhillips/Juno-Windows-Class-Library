@@ -293,7 +293,9 @@ private struct MethodProxy {
   }
 
   void opAssign()(MethodProxy mp) {
-	  this = mp;
+    method = mp.method;
+    returnType = mp.returnType;
+    paramTypes = mp.paramTypes;
   }
 
   void opAssign(R, T...)(R delegate(T) dg) {
