@@ -10,6 +10,10 @@ juno.lib: dom.obj mail.obj $(DEPS)
 	dmd -lib -ofjuno.lib $(args) @juno/juno.args dom.obj mail.obj
 
 events: juno examples/com/events.d
-	dmd $(args) examples/com/events.d @juno/juno.args dom.obj mail.obj juno.lib
+	dmd $(args) examples/com/events.d juno.lib -Ijuno
 latebinding: juno examples/com/latebinding.d
-	dmd $(args) examples/com/latebinding.d @juno/juno.args dom.obj mail.obj juno.lib
+	dmd $(args) examples/com/latebinding.d juno.lib -Ijuno
+messagebeep: juno
+	dmd $(args) examples/dll/messagebeep.d juno.lib -Ijuno
+relativepath: juno
+	dmd $(args) examples/dll/relativepath.d juno.lib -Ijuno
