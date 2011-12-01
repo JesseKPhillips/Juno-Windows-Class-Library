@@ -30,11 +30,5 @@ juno\xml\streaming.d
 juno\net\all.d
 juno\net\core.d
 juno\net\client.d
-juno\security\crypto.d
 juno\utils\process.d
 juno\utils\registry.d
-juno\media\constants.d
-juno\media\geometry.d
-juno\media\core.d
-juno\media\imaging.d
-juno\media\native.d

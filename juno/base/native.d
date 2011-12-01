@@ -18,8 +18,7 @@ static import std.string,
 pragma(lib, "kernel32.lib");
 pragma(lib, "advapi32.lib");
 pragma(lib, "shell32.lib");
-pragma(lib, "version.lib");
-pragma(lib, "crypt32.lib");
+//pragma(lib, "version.lib");
 
 extern(Windows):
 

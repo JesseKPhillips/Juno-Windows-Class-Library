@@ -20,6 +20,8 @@ static import std.string;
 import std.c.string : memmove;
 import std.c.stdlib : malloc, free;
 
+pragma(lib, "crypt32.lib");
+
 debug import std.stdio : writefln;
 
 extern(Windows):
