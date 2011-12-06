@@ -1310,12 +1310,14 @@ struct VARIANT {
     else static if (is(T : IUnknown)) punkVal = value, value.AddRef();
     else static if (is(T : Object)) byref = cast(void*)value;
     else static if (is(T == VARIANT*)) pvarVal = value;
-    else static if (is(T == VARIANT)) this = value;
+    else static if (is(T == VARIANT)) value.copyTo(this);
     else static if (is(T == SAFEARRAY*)) parray = value;
     else static if (isArray!(T)) parray = SAFEARRAY.from(value);
     else static assert(false, "'" ~ T.stringof ~ "' is not one of the allowed types.");
 
-    vt = VariantType!(T);
+    //if value is a VARIANT, then VariantCopy will have set the type already.
+    static if (!is(T == VARIANT))
+      vt = VariantType!(T);
 
     static if (is(T == SAFEARRAY*)) {
       VARTYPE type;
