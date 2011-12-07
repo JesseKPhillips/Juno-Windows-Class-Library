@@ -20,5 +20,5 @@ void main() {
   graphics.drawString("Hello, Juno!", font, brush, 10, 10);
 
   // Save the image to a file
-  image.save("hello.gif");
+  image.save("hello.png");
 }
