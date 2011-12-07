@@ -38,3 +38,4 @@ juno\media\geometry.d
 juno\media\core.d
 juno\media\imaging.d
 juno\media\native.d
+juno\media\all.d
