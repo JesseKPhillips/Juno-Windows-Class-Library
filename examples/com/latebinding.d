@@ -10,7 +10,7 @@ void main() {
   message.set("Subject", "Hello, World!");
   message.set("TextBody", "Just saying Hello.");
   message.set("From", "me@home.com"); // Replace 'me@home.com' with your email address
-  message.set("To", "world@large.com"); // Replace 'world@large.com' with the recipient's email address
+  message.set("To", "someone@example.com"); // Replace 'someone@example.com' with the recipient's email address
 
   // Configure CDOSYS to send via a remote SMTP server
 
@@ -21,7 +21,7 @@ void main() {
 
   config.set("Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserverport", 25);
 
-  config.set("Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserver", "mail.remote.com"); // Replace 'mail.remote.com' with your remote server's address
+  config.set("Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserver", "127.0.0.1"); // Replace '127.0.0.1' with your remote server's address
 
   // Set the authentication type, user name and password
 
