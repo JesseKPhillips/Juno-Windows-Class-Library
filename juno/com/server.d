@@ -230,6 +230,19 @@ int DllMainImpl(Handle hInstance, uint dwReason, void* pvReserved)
 
     return 1;
   }
+  else if (dwReason == 2 /*DLL_THREAD_ATTACH*/) {
+
+    dll_thread_attach( true, true );
+
+    return 1;
+  }
+  else if (dwReason == 3 /*DLL_THREAD_DETACH*/) {
+
+    dll_thread_detach( true, true );
+
+    return 1;
+  }
+
   return 0;
 }
   
