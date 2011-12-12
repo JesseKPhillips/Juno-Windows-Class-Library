@@ -421,7 +421,7 @@ private class DocumentXPathNavigator : XPathNavigator {
     return false;
   }
 
-  XmlNodeList select(string xpath) { 
+  override XmlNodeList select(string xpath) { 
     wchar* bstrExpression = toBstr(xpath);
     scope(exit) freeBstr(bstrExpression);
 
@@ -1828,7 +1828,7 @@ class XmlDeclaration : XmlLinkedNode {
     return "xml";
   }
 
-  final void value(string value) {
+  final override void value(string value) {
     text = value;
   }
 

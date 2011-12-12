@@ -585,7 +585,7 @@ private class CredentialKey {
     return false;
   }
 
-  uint toHash() {
+  override uint toHash() {
     return typeid(string).getHash(&authType) + uriPrefixLength + uriPrefix.toHash();
   }
 
@@ -619,7 +619,7 @@ private class CredentialHostKey {
     return false;
   }
 
-  uint toHash() {
+  override uint toHash() {
     return (typeid(string).getHash(&host) + typeid(string).getHash(&authType) + port);
   }
 
@@ -1167,7 +1167,7 @@ class IPAddress {
   }
 
   /// Converts an IPAddress to its standard notation.
-  final string toString() {
+  final override string toString() {
     if (string_ == null) {
       // inet_ntoa only works on IPv4 addresses.
       // Try to use WSAAddressToString on platforms that support IPv6 (WinXP+).

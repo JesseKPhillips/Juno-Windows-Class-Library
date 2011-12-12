@@ -677,7 +677,7 @@ abstract class Type : Member {
 
   /**
    */
-  string toString() {
+  override string toString() {
     return "Type: " ~ name;
   }
 
