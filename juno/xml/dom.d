@@ -42,7 +42,7 @@ class XmlNamespaceManager {
   this() {
     if ((nsmgrImpl_ = MXNamespaceManager60.coCreate!(IMXNamespaceManager)) is null) {
       if ((nsmgrImpl_ = MXNamespaceManager40.coCreate!(IMXNamespaceManager)) is null) {
-        nsmgrImpl_ = MXNamespaceManager.coCreate!(IMXNamespaceManager, ExceptionPolicy.Throw);
+        nsmgrImpl_ = MXNamespaceManager.coCreate!(IMXNamespaceManager, ExceptionPolicy.Throw)();
       }
     }
   }

@@ -298,7 +298,7 @@ class StreamWriter : Writer {
    *   stream = The _stream to write to.
    *   encoding = The character _encoding to use.
    */
-  this(Stream stream, Encoding encoding = Encoding.UTF8) {
+  this(Stream stream, Encoding encoding = Encoding.UTF8()) {
     stream_ = stream;
     encoding_ = encoding;
   }
