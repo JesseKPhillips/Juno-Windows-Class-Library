@@ -250,7 +250,7 @@ abstract class XmlNodeList {
    * Gets the number of nodes in the collection.
    * Returns: The number of nodes.
    */
-  abstract int size();
+  @property abstract int size();
 
   /**
    * Provides foreach iteration over the collection of nodes.
@@ -298,7 +298,7 @@ private class XmlChildNodes : XmlNodeList {
     return result;
   }
 
-  override int size() {
+  @property override int size() {
     int length;
     return SUCCEEDED(listImpl_.get_length(length)) ? length : 0;
   }
@@ -326,7 +326,7 @@ private class XPathNodeList : XmlNodeList {
     return getNodeShim(listItem);
   }
 
-  override int size() {
+  @property override int size() {
     int listLength;
     iterator_.get_length(listLength);
     return listLength;
@@ -563,7 +563,7 @@ class XmlNamedNodeMap {
    * Gets the number of nodes.
    * Returns: The number of nodes.
    */
-  int size() {
+  @property int size() {
     int length;
     return (SUCCEEDED(mapImpl_.get_length(length))) ? length : 0;
   }
@@ -856,13 +856,13 @@ class XmlNode {
    * Gets the type of the current node.
    * Returns: One of the XmlNodeType values.
    */
-  abstract XmlNodeType nodeType();
+  @property abstract XmlNodeType nodeType();
 
   /**
    * Gets the namespace _prefix of this node.
    * Returns: The namespace _prefix for this node. For example, prefix is 'bk' for the element &lt;bk:book&gt;.
    */
-  string prefix() {
+  @property string prefix() {
     return "";
   }
 
@@ -870,7 +870,7 @@ class XmlNode {
    * Gets the local name of the node.
    * Returns: The name of the node with the prefix removed.
    */
-  abstract string localName() {
+  @property abstract string localName() {
     wchar* bstrName;
     if (nodeImpl_.get_baseName(bstrName) == S_OK)
       return fromBstr(bstrName);
@@ -881,7 +881,7 @@ class XmlNode {
    * Gets the qualified _name of the node.
    * Returns: The qualified _name of the node.
    */
-  abstract string name() {
+  @property abstract string name() {
     wchar* bstrName;
     if (nodeImpl_.get_nodeName(bstrName) == S_OK)
       return fromBstr(bstrName);
@@ -892,7 +892,7 @@ class XmlNode {
    * Gets the namespace URI of the node.
    * Returns: The namespace URI of the node.
    */
-  string namespaceURI() {
+  @property string namespaceURI() {
     return "";
   }
 
@@ -900,7 +900,7 @@ class XmlNode {
    * Gets or sets the values of the node and its child nodes.
    * Returns: The values of the node and its child nodes.
    */
-  void text(string value) {
+  @property void text(string value) {
     wchar* bstrValue = toBstr(value);
     if (bstrValue != null) {
       nodeImpl_.put_text(bstrValue);
@@ -911,7 +911,7 @@ class XmlNode {
   /**
    * ditto
    */
-  string text() {
+  @property string text() {
     wchar* bstrValue;
     if (nodeImpl_.get_text(bstrValue) == S_OK)
       return fromBstr(bstrValue);
@@ -922,14 +922,14 @@ class XmlNode {
    * Gets or sets the markup representing the child nodes.
    * Returns: The markup of the child nodes.
    */
-  void xml(string value) {
+  @property void xml(string value) {
     throw new InvalidOperationException;
   }
 
   /**
    * ditto
    */
-  string xml() {
+  @property string xml() {
     wchar* bstrXml;
     nodeImpl_.get_xml(bstrXml);
     return fromBstr(bstrXml).trim();
@@ -938,14 +938,14 @@ class XmlNode {
   /**
    * Gets or sets the _value of this node.
    */
-  void value(string value) {
+  @property void value(string value) {
     throw new InvalidOperationException;
   }
 
   /**
    * ditto
    */
-  string value() {
+  @property string value() {
     return null;
   }
 
@@ -953,7 +953,7 @@ class XmlNode {
    * Gets a value indicating whether this node has any child nodes.
    * Returns: true if the node has child nodes; otherwise, false.
    */
-  bool hasChildNodes() {
+  @property bool hasChildNodes() {
     VARIANT_BOOL result;
     if (SUCCEEDED(nodeImpl_.hasChildNodes(result)))
       return result == VARIANT_TRUE;
@@ -964,7 +964,7 @@ class XmlNode {
    * Gets all the child nodes of the node.
    * Returns: An XmlNodeList containing all the child nodes of the node.
    */
-  XmlNodeList childNodes() {
+  @property XmlNodeList childNodes() {
     IXMLDOMNodeList list;
     if (SUCCEEDED(nodeImpl_.get_childNodes(list)))
       return new XmlChildNodes(list);
@@ -975,7 +975,7 @@ class XmlNode {
    * Gets the first child of the node.
    * Returns: The first child of the node. If there is no such node, null is returned.
    */
-  XmlNode firstChild() {
+  @property XmlNode firstChild() {
     IXMLDOMNode node;
     if (SUCCEEDED(nodeImpl_.get_firstChild(node)))
       return getNodeShim(node);
@@ -986,7 +986,7 @@ class XmlNode {
    * Gets the last child of the node.
    * Returns: The last child of the node. If there is no such node, null is returned.
    */
-  XmlNode lastChild() {
+  @property XmlNode lastChild() {
     IXMLDOMNode node;
     if (SUCCEEDED(nodeImpl_.get_lastChild(node)))
       return getNodeShim(node);
@@ -997,7 +997,7 @@ class XmlNode {
    * Gets the node immediately preceding this node.
    * Returns: The preceding XmlNode. If there is no such node, null is returned.
    */
-  XmlNode previousSibling() {
+  @property XmlNode previousSibling() {
     return null;
   }
 
@@ -1005,7 +1005,7 @@ class XmlNode {
    * Gets the node immediately following this node.
    * Returns: The following XmlNode. If there is no such node, null is returned.
    */
-  XmlNode nextSibling() {
+  @property XmlNode nextSibling() {
     return null;
   }
 
@@ -1013,7 +1013,7 @@ class XmlNode {
    * Gets the parent node of this node.
    * Returns: The XmlNode that is the parent of this node.
    */
-  XmlNode parentNode() {
+  @property XmlNode parentNode() {
     IXMLDOMNode node;
     if (SUCCEEDED(nodeImpl_.get_parentNode(node)))
       return getNodeShim(node);
@@ -1024,7 +1024,7 @@ class XmlNode {
    * Gets the XmlDocument to which this node belongs.
    * Returns: The XmlDocument to which this node belongs.
    */
-  XmlDocument ownerDocument() {
+  @property XmlDocument ownerDocument() {
     IXMLDOMDocument doc;
     if (SUCCEEDED(nodeImpl_.get_ownerDocument(doc)))
       return cast(XmlDocument)getNodeShim(doc);
@@ -1035,7 +1035,7 @@ class XmlNode {
    * Gets an XmlAttributeCollection containing the _attributes of this node.
    * Returns: An XmlAttributeCollection containing the _attributes of this node.
    */
-  XmlAttributeCollection attributes() {
+  @property XmlAttributeCollection attributes() {
     return null;
   }
 
@@ -1106,42 +1106,42 @@ class XmlAttribute : XmlNode {
 
   mixin(TypedNode("IXMLDOMAttribute", "attributeImpl_"));
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.Attribute;
   }
 
-  override string localName() {
+  @property override string localName() {
     return super.localName;
   }
 
-  override string name() {
+  @property override string name() {
     return super.name;
   }
 
-  override string namespaceURI() {
+  @property override string namespaceURI() {
     wchar* bstrNs;
     if (nodeImpl_.get_namespaceURI(bstrNs) == S_OK)
       return fromBstr(bstrNs);
     return string.init;
   }
 
-  override void value(string value) {
+  @property override void value(string value) {
     VARIANT v = value;
     attributeImpl_.put_value(v);
     v.clear();
   }
 
-  override string value() {
+  @property override string value() {
     VARIANT v;
     attributeImpl_.get_value(v);
     return v.toString();
   }
 
-  override XmlNode parentNode() {
+  @property override XmlNode parentNode() {
     return null;
   }
 
-  XmlElement ownerElement() {
+  @property XmlElement ownerElement() {
     return cast(XmlElement)super.parentNode;
   }
 
@@ -1149,7 +1149,7 @@ class XmlAttribute : XmlNode {
    * Gets a value indicating whether the attribute was explicitly set.
    * Returns: true if the attribute was explicitly set; otherwise, false.
    */
-  bool specified() {
+  @property bool specified() {
     VARIANT_BOOL result;
     nodeImpl_.get_specified(result);
     return result == VARIANT_TRUE;
@@ -1162,13 +1162,13 @@ class XmlAttribute : XmlNode {
  */
 abstract class XmlLinkedNode : XmlNode {
 
-  override XmlNode previousSibling() {
+  @property override XmlNode previousSibling() {
     IXMLDOMNode node;
     nodeImpl_.get_previousSibling(node);
     return getNodeShim(node);
   }
 
-  override XmlNode nextSibling() {
+  @property override XmlNode nextSibling() {
     IXMLDOMNode node;
     nodeImpl_.get_nextSibling(node);
     return getNodeShim(node);
@@ -1249,7 +1249,7 @@ abstract class XmlCharacterData : XmlLinkedNode {
    * Gets the _length of the data.
    * Returns: The _length of the string data.
    */
-  int length() {
+  @property int length() {
     int result;
     typedNodeImpl_.get_length(result);
     return result;
@@ -1259,7 +1259,7 @@ abstract class XmlCharacterData : XmlLinkedNode {
    * Gets or sets the _data of the node.
    * Returns: The _data of the node.
    */
-  void data(string value) {
+  @property void data(string value) {
     wchar* bstrValue = toBstr(value);
     typedNodeImpl_.put_data(bstrValue);
     freeBstr(bstrValue);
@@ -1268,19 +1268,22 @@ abstract class XmlCharacterData : XmlLinkedNode {
   /**
    * ditto
    */
-  string data() {
+  @property string data() {
     wchar* bstrValue;
     if (typedNodeImpl_.get_data(bstrValue) == S_OK)
       return fromBstr(bstrValue);
     return "";
   }
 
-  override void value(string value) {
-    data = value;
-  }
+  @property
+  {
+    override void value(string value) {
+      data = value;
+    }
 
-  override string value() {
-    return data;
+    override string value() {
+      return data;
+    }
   }
 
 }
@@ -1294,12 +1297,15 @@ class XmlCDataSection : XmlCharacterData {
     return XmlNodeType.CDATA;
   }
 
-  override string localName() {
-    return "#cdata-section";
-  }
+  @property
+  {
+    override string localName() {
+      return "#cdata-section";
+    }
 
-  override string name() {
-    return localName;
+    override string name() {
+      return localName;
+    }
   }
 
   package this(IXMLDOMNode nodeImpl) {
@@ -1317,12 +1323,15 @@ class XmlComment : XmlCharacterData {
     return XmlNodeType.Comment;
   }
 
-  override string localName() {
-    return "#comment";
-  }
+  @property
+  {
+    override string localName() {
+      return "#comment";
+    }
 
-  override string name() {
-    return localName;
+    override string name() {
+      return localName;
+    }
   }
 
   package this(IXMLDOMNode nodeImpl) {
@@ -1338,15 +1347,15 @@ class XmlText : XmlCharacterData {
 
   mixin(TypedNode("IXMLDOMText"));
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.Text;
   }
 
-  override string localName() {
+  @property override string localName() {
     return super.localName;
   }
 
-  override string name() {
+  @property override string name() {
     return super.name;
   }
 
@@ -1375,27 +1384,27 @@ class XmlEntity : XmlNode {
     return XmlNodeType.Entity;
   }
 
-  override string name() {
+  @property override string name() {
     return super.name;
   }
 
-  override string localName() {
+  @property override string localName() {
     return super.localName;
   }
 
-  override void text(string value) {
+  @property override void text(string value) {
     throw new InvalidOperationException;
   }
 
-  override string text() {
+  @property override string text() {
     return super.text;
   }
 
-  override void xml(string value) {
+  @property override void xml(string value) {
     throw new InvalidOperationException;
   }
 
-  override string xml() {
+  @property override string xml() {
     return "";
   }
 
@@ -1403,7 +1412,7 @@ class XmlEntity : XmlNode {
    * Gets the value of the identifier on the entity declaration.
    * Returns: The identifier on the entity.
    */
-  final string publicId() {
+  @property final string publicId() {
     VARIANT var;
     if (typedNodeImpl_.get_publicId(var) == S_OK) {
       scope(exit) var.clear();
@@ -1416,7 +1425,7 @@ class XmlEntity : XmlNode {
    * Gets the value of the system identifier on the entity declaration.
    * Returns: The system identifier on the entity.
    */
-  final string systemId() {
+  @property final string systemId() {
     VARIANT var;
     if (typedNodeImpl_.get_systemId(var) == S_OK) {
       scope(exit) var.clear();
@@ -1429,7 +1438,7 @@ class XmlEntity : XmlNode {
    * Gets the name of the NDATA attribute on the entity declaration.
    * Returns: The name of the NDATA attribute.
    */
-  final string notationName() {
+  @property final string notationName() {
     wchar* bstrName;
     if (typedNodeImpl_.get_notationName(bstrName) == S_OK)
       return fromBstr(bstrName);
@@ -1445,23 +1454,23 @@ class XmlEntityReference : XmlLinkedNode {
 
   mixin(TypedNode("IXMLDOMEntityReference"));
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.EntityReference;
   }
 
-  override string name() {
+  @property override string name() {
     return super.name;
   }
 
-  override string localName() {
+  @property override string localName() {
     return super.localName;
   }
 
-  override void value(string value) {
+  @property override void value(string value) {
     throw new InvalidOperationException;
   }
 
-  override string value() {
+  @property override string value() {
     return "";
   }
 
@@ -1474,15 +1483,15 @@ class XmlNotation : XmlNode {
 
   mixin(TypedNode("IXMLDOMNotation"));
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.Notation;
   }
 
-  override string name() {
+  @property override string name() {
     return super.name;
   }
 
-  override string localName() {
+  @property override string localName() {
     return super.localName;
   }
 
@@ -1495,17 +1504,17 @@ class XmlDocumentType : XmlLinkedNode {
 
   mixin(TypedNode("IXMLDOMDocumentType"));
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.DocumentType;
   }
 
-  override string name() {
+  @property override string name() {
     wchar* bstrName;
     typedNodeImpl_.get_name(bstrName);
     return fromBstr(bstrName);
   }
 
-  override string localName() {
+  @property override string localName() {
     return name;
   }
 
@@ -1513,7 +1522,7 @@ class XmlDocumentType : XmlLinkedNode {
    * Gets the collection of XmlEntity nodes declared in the document type declaration.
    * Returns: An XmlNamedNodeMap containing the XmlEntity nodes.
    */
-  final XmlNamedNodeMap entities() {
+  @property final XmlNamedNodeMap entities() {
     IXMLDOMNamedNodeMap map;
     if (typedNodeImpl_.get_entities(map) == S_OK)
       return new XmlNamedNodeMap(map);
@@ -1524,7 +1533,7 @@ class XmlDocumentType : XmlLinkedNode {
    * Gets the collection of XmlNotation nodes present in the document type declaration.
    * Returns: An XmlNamedNodeMap containing the XmlNotation nodes.
    */
-  final XmlNamedNodeMap notations() {
+  @property final XmlNamedNodeMap notations() {
     IXMLDOMNamedNodeMap map;
     if (typedNodeImpl_.get_notations(map) == S_OK)
       return new XmlNamedNodeMap(map);
@@ -1540,11 +1549,11 @@ class XmlDocumentFragment : XmlNode {
 
   mixin(TypedNode("IXMLDOMDocumentFragment"));
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.DocumentFragment;
   }
 
-  override string name() {
+  @property override string name() {
     version(D_Version2) {
       return "#document-fragment".idup;
     }
@@ -1553,15 +1562,15 @@ class XmlDocumentFragment : XmlNode {
     }
   }
 
-  override string localName() {
+  @property override string localName() {
     return name;
   }
 
-  override XmlNode parentNode() {
+  @property override XmlNode parentNode() {
     return null;
   }
 
-  override XmlDocument ownerDocument() {
+  @property override XmlDocument ownerDocument() {
     return cast(XmlDocument)super.parentNode;
   }
 
@@ -1744,7 +1753,7 @@ class XmlElement : XmlLinkedNode {
     return null;
   }
 
-  override XmlAttributeCollection attributes() {
+  @property override XmlAttributeCollection attributes() {
     return new XmlAttributeCollection(this);
   }
 
@@ -1752,7 +1761,7 @@ class XmlElement : XmlLinkedNode {
    * Gets a value indicating whether the node has any attributes.
    * Returns: true if the node has attributes; otherwise, false.
    */
-  bool hasAttributes() {
+  @property bool hasAttributes() {
     IXMLDOMNamedNodeMap attrs;
     if (SUCCEEDED(nodeImpl_.get_attributes(attrs))) {
       scope (exit) tryRelease(attrs);
@@ -1765,19 +1774,19 @@ class XmlElement : XmlLinkedNode {
     return false;
   }
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.Element;
   }
 
-  override string localName() {
+  @property override string localName() {
     return super.localName;
   }
 
-  override string name() {
+  @property override string name() {
     return super.name;
   }
 
-  override string namespaceURI() {
+  @property override string namespaceURI() {
     wchar* bstrNs;
     if (SUCCEEDED(nodeImpl_.get_namespaceURI(bstrNs)))
       return fromBstr(bstrNs);
@@ -1793,15 +1802,15 @@ class XmlProcessingInstruction : XmlLinkedNode {
 
   mixin(TypedNode("IXMLDOMProcessingInstruction"));
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.ProcessingInstruction;
   }
 
-  override string name() {
+  @property override string name() {
     return super.name;
   }
 
-  override string localName() {
+  @property override string localName() {
     return super.localName;
   }
 
@@ -1818,23 +1827,23 @@ class XmlDeclaration : XmlLinkedNode {
   private string encoding_;
   private string standalone_;
 
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.XmlDeclaration;
   }
 
-  override string name() {
+  @property override string name() {
     return localName;
   }
 
-  override string localName() {
+  @property override string localName() {
     return "xml";
   }
 
-  final override void value(string value) {
+  @property final override void value(string value) {
     text = value;
   }
 
-  override string value() {
+  @property override string value() {
     return text;
   }
 
@@ -1842,14 +1851,14 @@ class XmlDeclaration : XmlLinkedNode {
    * Gets or sets the _encoding level of the XML document.
    * Returns: The character _encoding name.
    */
-  final void encoding(string value) {
+  @property final void encoding(string value) {
     encoding_ = value;
   }
 
   /**
    * ditto
    */
-  final string encoding() {
+  @property final string encoding() {
     return encoding_;
   }
 
@@ -1857,7 +1866,7 @@ class XmlDeclaration : XmlLinkedNode {
    * Gets or sets the _value of the _standalone attribute.
    * Returns: Valid values are "yes" if all entity declarations are contained within the document or "no" if an external DTD is required.
    */
-  final void standalone(string value) {
+  @property final void standalone(string value) {
     if (value == null || value == "yes" || value == "no")
       standalone_ = value;
   }
@@ -1865,14 +1874,14 @@ class XmlDeclaration : XmlLinkedNode {
   /**
    * ditto
    */
-  final string standalone() {
+  @property final string standalone() {
     return standalone_;
   }
 
   /**
    * Gets the XML version of the document.
    */
-  final string xmlversion() {
+  @property final string xmlversion() {
     return VERSION;
   }
 
@@ -1945,7 +1954,7 @@ class XmlDocument : XmlNode {
       msxmlVersion_ = 6;
     else if ((doc = DOMDocument40.coCreate!(IXMLDOMDocument2)) !is null)
       msxmlVersion_ = 4;
-    else if ((doc = DOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.Throw)) !is null)
+    else if ((doc = DOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.Throw)()) !is null)
       msxmlVersion_ = 3;
 
     if (msxmlVersion_ >= 4)
@@ -2331,7 +2340,7 @@ class XmlDocument : XmlNode {
    * Gets the root element for the document.
    * Returns: The XmlElement representing the root of the XML document tree. If no root exists, null is returned.
    */
-  XmlElement documentElement() {
+  @property XmlElement documentElement() {
     IXMLDOMElement docEl;
     docImpl_.get_documentElement(docEl);
     return cast(XmlElement)getNodeShim(docEl);
@@ -2341,7 +2350,7 @@ class XmlDocument : XmlNode {
    * Gets the type of the current node.
    * Returns: For XmlDocument nodes, the value is XmlNodeType.Document.
    */
-  override XmlNodeType nodeType() {
+  @property override XmlNodeType nodeType() {
     return XmlNodeType.Document;
   }
 
@@ -2349,7 +2358,7 @@ class XmlDocument : XmlNode {
    * Gets the locale name of the node.
    * Returns: For XmlDocument nodes, the local name is #document.
    */
-  override string localName() {
+  @property override string localName() {
     version(D_Version2) {
       return "#document".idup;
     }
@@ -2362,7 +2371,7 @@ class XmlDocument : XmlNode {
    * Gets the qualified _name of the node.
    * Returns: For XmlDocument nodes, the _name is #document.
    */
-  override string name() {
+  @property override string name() {
     return localName;
   }
 
@@ -2370,7 +2379,7 @@ class XmlDocument : XmlNode {
    * Gets the parent node.
    * Returns: For XmlDocument nodes, null is returned.
    */
-  override XmlNode parentNode() {
+  @property override XmlNode parentNode() {
     return null;
   }
 
@@ -2378,7 +2387,7 @@ class XmlDocument : XmlNode {
    * Gets the XmlDocument to which the current node belongs.
    * Returns: For XmlDocument nodes, null is returned.
    */
-  override XmlDocument ownerDocument() {
+  @property override XmlDocument ownerDocument() {
     return null;
   }
 
@@ -2386,14 +2395,14 @@ class XmlDocument : XmlNode {
    * Gets or sets the markup representing the children of this node.
    * Returns: The markup of the children of this node.
    */
-  override void xml(string value) {
+  @property override void xml(string value) {
     loadXml(value);
   }
 
   /**
    * ditto
    */
-  override string xml() {
+  @property override string xml() {
     return super.xml;
   }
 
@@ -2401,14 +2410,14 @@ class XmlDocument : XmlNode {
    * Gets or sets a _value indicating whether to preserve white space in element content.
    * Params: value = true to preserve white space; otherwise, false.
    */
-  final void preserveWhitespace(bool value) {
+  @property final void preserveWhitespace(bool value) {
     docImpl_.put_preserveWhiteSpace(value ? VARIANT_TRUE : VARIANT_FALSE);
   }
 
   /**
    * ditto
    */
-  final bool preserveWhitespace() {
+  @property final bool preserveWhitespace() {
     VARIANT_BOOL value;
     docImpl_.get_preserveWhiteSpace(value);
     return value == VARIANT_TRUE;
