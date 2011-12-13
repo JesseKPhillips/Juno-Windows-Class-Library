@@ -27,6 +27,7 @@ juno\xml\core.d
 juno\xml\xsl.d
 juno\xml\msxml.d
 juno\xml\streaming.d
+juno\xml\all.d
 juno\net\all.d
 juno\net\core.d
 juno\net\client.d
