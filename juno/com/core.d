@@ -1374,7 +1374,7 @@ struct VARIANT {
   /**
    * Returns the _value contained in this instance.
    */
-  V value(V)() {
+  @property V value(V)() {
     static if (is(V == long)) return llVal;
     else static if (is(V == int)) return lVal;
     else static if (is(V == ubyte)) return bVal;
@@ -1403,21 +1403,21 @@ struct VARIANT {
   /**
    * Determines whether this instance is empty.
    */
-  bool isEmpty() {
+  @property bool isEmpty() {
     return (vt == VT_EMPTY);
   }
 
   /**
    * Determines whether this instance is _null.
    */
-  bool isNull() {
+  @property bool isNull() {
     return (vt == VT_NULL);
   }
 
   /**
    * Determines whether this instance is Nothing.
    */
-  bool isNothing() {
+  @property bool isNothing() {
     return (vt == VT_DISPATCH && pdispVal is null)
       || (vt == VT_UNKNOWN && punkVal is null);
   }

@@ -706,28 +706,30 @@ class NetworkCredential : ICredentials, ICredentialsByHost {
     return this;
   }
 
-  ///
-  final void userName(string value) {
-    //userName_ = encrypt(value);
-    userName_ = value;
-  }
-  /// ditto
-  final string userName() {
-    //return decrypt(userName_);
-    return userName_;
-  }
+  @property
+  {
+    ///
+    final void userName(string value) {
+      //userName_ = encrypt(value);
+      userName_ = value;
+    }
+    /// ditto
+    final string userName() {
+      //return decrypt(userName_);
+      return userName_;
+    }
 
-  ///
-  final void password(string value) {
-    //password_ = encrypt(value);
-    password_ = value;
-  }
-  /// ditto
-  final string password() {
-    //return decrypt(password_);
-    return password_;
-  }
-
+    ///
+    final void password(string value) {
+      //password_ = encrypt(value);
+      password_ = value;
+    }
+    /// ditto
+    final string password() {
+      //return decrypt(password_);
+      return password_;
+    }
+  } //@property
 }
 
 // Internet Protocol

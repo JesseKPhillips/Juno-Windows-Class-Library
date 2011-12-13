@@ -409,7 +409,7 @@ interface ICollection(T) : IEnumerable!(T) {
   /**
    * $(I Property.) Gets the number of elements in the collection.
    */
-  int count();
+  @property int count();
 
 }
 
@@ -960,7 +960,7 @@ class Collection(T) : IList!(T) {
     return items_.contains(item);
   }
 
-  final int count() {
+  @property final int count() {
     return items_.count;
   }
 

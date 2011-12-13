@@ -575,7 +575,7 @@ abstract class Encoding {
    * Gets a name that can be used with mail agent body tags.
    * Returns: A name that can be used with mail agent body tags.
    */
-  string bodyName() {
+  @property string bodyName() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
     return cpInfo_.bodyName;

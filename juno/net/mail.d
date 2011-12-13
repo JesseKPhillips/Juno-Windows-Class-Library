@@ -383,25 +383,28 @@ class MailAddress {
     return address;
   }
 
-  /// Gets the e-mail _address specified.
-  final string address() {
-    return address_;
-  }
-
-  /// Gets the display name specified.
-  final string displayName() {
-    return displayName_;
-  }
-
-  /// Gets the user information from the address specified.
-  final string user() {
-    return user_;
-  }
-
-  /// Gets the host portion of the address specified.
-  final string host() {
-    return host_;
-  }
+  @property
+  {
+    /// Gets the e-mail _address specified.
+    final string address() {
+      return address_;
+    }
+    
+    /// Gets the display name specified.
+    final string displayName() {
+      return displayName_;
+    }
+    
+    /// Gets the user information from the address specified.
+    final string user() {
+      return user_;
+    }
+    
+    /// Gets the host portion of the address specified.
+    final string host() {
+      return host_;
+    }
+  } //@property
 
   private void parse(string address) {
     string display;
@@ -479,7 +482,7 @@ class NameValueCollection {
     nameAndValue_[name] = value;
   }
 
-  int count() {
+  @property int count() {
     return nameAndValue_.keys.length;
   }
 
@@ -534,23 +537,26 @@ class Attachment {
     fileName_ = fileName;
   }
 
-  /// Gets or sets the name of the attachment file.
-  final void fileName(string value) {
-    fileName_ = value;
-  }
-  /// ditto
-  final string fileName() {
-    return fileName_;
-  }
-
-  /// Gets or sets the type of encoding of this attachment.
-  final void transferEncoding(TransferEncoding value) {
-    transferEncoding_ = value;
-  }
-  /// ditto
-  final TransferEncoding transferEncoding() {
-    return transferEncoding_;
-  }
+  @property
+  {
+    /// Gets or sets the name of the attachment file.
+    final void fileName(string value) {
+      fileName_ = value;
+    }
+    /// ditto
+    final string fileName() {
+      return fileName_;
+    }
+    
+    /// Gets or sets the type of encoding of this attachment.
+    final void transferEncoding(TransferEncoding value) {
+      transferEncoding_ = value;
+    }
+    /// ditto
+    final TransferEncoding transferEncoding() {
+      return transferEncoding_;
+    }
+  } //@property
 
 }
 
@@ -620,128 +626,131 @@ class MailMessage {
     this.to.add(to);
   }
 
-  /// Gets or sets the _from address.
-  final void from(MailAddress value) {
-    if (value is null)
-      throw new ArgumentNullException("value");
-    from_ = value;
-  }
-  /// ditto
-  final MailAddress from() {
-    return from_;
-  }
+  @property
+  {
+    /// Gets or sets the _from address.
+    final void from(MailAddress value) {
+      if (value is null)
+        throw new ArgumentNullException("value");
+      from_ = value;
+    }
+    /// ditto
+    final MailAddress from() {
+      return from_;
+    }
+    
+    /// Gets or sets the sender's address.
+    final void sender(MailAddress value) {
+      sender_ = value;
+    }
+    /// ditto
+    final MailAddress sender() {
+      return sender_;
+    }
+    
+    /// Gets or sets the ReplyTo address.
+    final void replyTo(MailAddress value) {
+      replyTo_ = value;
+    }
+    /// ditto
+    final MailAddress replyTo() {
+      return replyTo_;
+    }
 
-  /// Gets or sets the sender's address.
-  final void sender(MailAddress value) {
-    sender_ = value;
-  }
-  /// ditto
-  final MailAddress sender() {
-    return sender_;
-  }
+    /// Gets the address collection containing the recipients.
+    final MailAddressCollection to() {
+      if (to_ is null)
+        to_ = new MailAddressCollection;
+      return to_;
+    }
+    
+    /// Gets the address collection containing the carbon copy (CC) recipients.
+    final MailAddressCollection cc() {
+      if (cc_ is null)
+        cc_ = new MailAddressCollection;
+      return cc_;
+    }
+    
+    /// Gets the address collection containing the blind carbon copy (BCC) recipients.
+    final MailAddressCollection bcc() {
+      if (bcc_ is null)
+        bcc_ = new MailAddressCollection;
+      return bcc_;
+    }
+    
+    /// Gets or sets the _priority.
+    final void priority(MailPriority value) {
+      priority_ = value;
+    }
+    /// ditto
+    final MailPriority priority() {
+      return priority_;
+    }
 
-  /// Gets or sets the ReplyTo address.
-  final void replyTo(MailAddress value) {
-    replyTo_ = value;
-  }
-  /// ditto
-  final MailAddress replyTo() {
-    return replyTo_;
-  }
+    /// Gets or sets the _subject line.
+    final void subject(string value) {
+      subject_ = value;
+    }
+    /// ditto
+    final string subject() {
+      return subject_;
+    }
+    
+    /// Gets the e-mail _headers.
+    final NameValueCollection headers() {
+      if (headers_ is null)
+        headers_ = new NameValueCollection;
+      return headers_;
+    }
 
-  /// Gets the address collection containing the recipients.
-  final MailAddressCollection to() {
-    if (to_ is null)
-      to_ = new MailAddressCollection;
-    return to_;
-  }
-
-  /// Gets the address collection containing the carbon copy (CC) recipients.
-  final MailAddressCollection cc() {
-    if (cc_ is null)
-      cc_ = new MailAddressCollection;
-    return cc_;
-  }
-
-  /// Gets the address collection containing the blind carbon copy (BCC) recipients.
-  final MailAddressCollection bcc() {
-    if (bcc_ is null)
-      bcc_ = new MailAddressCollection;
-    return bcc_;
-  }
-
-  /// Gets or sets the _priority.
-  final void priority(MailPriority value) {
-    priority_ = value;
-  }
-  /// ditto
-  final MailPriority priority() {
-    return priority_;
-  }
-
-  /// Gets or sets the _subject line.
-  final void subject(string value) {
-    subject_ = value;
-  }
-  /// ditto
-  final string subject() {
-    return subject_;
-  }
-
-  /// Gets the e-mail _headers.
-  final NameValueCollection headers() {
-    if (headers_ is null)
-      headers_ = new NameValueCollection;
-    return headers_;
-  }
-
-  /// Gets or sets the message body.
-  final void bodyText(string value) {
-
-    bool isAscii(string value) {
-      foreach (ch; value) {
-        if (ch > 0x7f)
-          return false;
+    /// Gets or sets the message body.
+    final void bodyText(string value) {
+    
+      bool isAscii(string value) {
+        foreach (ch; value) {
+          if (ch > 0x7f)
+            return false;
+        }
+        return true;
       }
-      return true;
+    
+      bodyText_ = value;
+      if (bodyEncoding_ is null && bodyText_ != null) {
+        if (isAscii(bodyText_))
+          bodyEncoding_ = Encoding.ASCII();
+        else
+          bodyEncoding_ = Encoding.UTF8();
+      }
+    }
+    /// ditto
+    final string bodyText() {
+      return bodyText_;
     }
 
-    bodyText_ = value;
-    if (bodyEncoding_ is null && bodyText_ != null) {
-      if (isAscii(bodyText_))
-        bodyEncoding_ = Encoding.ASCII;
-      else
-        bodyEncoding_ = Encoding.UTF8;
+    /// Gets or sets whether the mail message body is in HTML.
+    final void isBodyHtml(bool value) {
+      isBodyHtml_ = value;
     }
-  }
-  /// ditto
-  final string bodyText() {
-    return bodyText_;
-  }
+    /// ditto
+    final bool isBodyHtml() {
+      return isBodyHtml_;
+    }
+    
+    /// Gets or sets the encoding used to encode the message body.
+    final void bodyEncoding(Encoding value) {
+      bodyEncoding_ = value;
+    }
+    /// ditto
+    final Encoding bodyEncoding() {
+      return bodyEncoding_;
+    }
+    
+    /// Gets the attachment collection used to store data attached to this e-mail message.
+    final AttachmentCollection attachments() {
+      if (attachments_ is null)
+        attachments_ = new AttachmentCollection;
+      return attachments_;
+    }
 
-  /// Gets or sets whether the mail message body is in HTML.
-  final void isBodyHtml(bool value) {
-    isBodyHtml_ = value;
-  }
-  /// ditto
-  final bool isBodyHtml() {
-    return isBodyHtml_;
-  }
-
-  /// Gets or sets the encoding used to encode the message body.
-  final void bodyEncoding(Encoding value) {
-    bodyEncoding_ = value;
-  }
-  /// ditto
-  final Encoding bodyEncoding() {
-    return bodyEncoding_;
-  }
-
-  /// Gets the attachment collection used to store data attached to this e-mail message.
-  final AttachmentCollection attachments() {
-    if (attachments_ is null)
-      attachments_ = new AttachmentCollection;
-    return attachments_;
-  }
-
+  } //@property
 }
