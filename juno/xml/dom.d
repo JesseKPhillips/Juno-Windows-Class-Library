@@ -839,7 +839,9 @@ class XmlNode {
         if (auto doc2 = com_cast!(IXMLDOMDocument2)(doc)) {
           scope(exit) tryRelease(doc2);
 
-          doc2.setProperty(toUTF16z("SelectionNamespaces"), selectionNs);
+          wchar* bstrSelectionNamespaces = toBstr("SelectionNamespaces");
+          doc2.setProperty(bstrSelectionNamespaces, selectionNs);
+          freeBstr(bstrSelectionNamespaces);
         }
       }
     }
@@ -1947,13 +1949,23 @@ class XmlDocument : XmlNode {
       msxmlVersion_ = 3;
 
     if (msxmlVersion_ >= 4)
-      doc.setProperty(cast(wchar*)"NewParser", VARIANT(true)); // Faster and more reliable; lacks async support and DTD validation (we don't support either, so that's OK).
+    {
+      wchar* bstrNewParser = toBstr("NewParser");
+      doc.setProperty(bstrNewParser, VARIANT(true)); // Faster and more reliable; lacks async support and DTD validation (we don't support either, so that's OK).
+      freeBstr(bstrNewParser);
+    }
     if (msxmlVersion_ >= 6)
-      doc.setProperty(cast(wchar*)"MultipleErrorMessages", VARIANT(true));
+    {
+      wchar* bstrMultipleError = toBstr("MultipleErrorMessages");
+      doc.setProperty(bstrMultipleError, VARIANT(true));
+      freeBstr(bstrMultipleError);
+    }
     if (msxmlVersion_ < 4) {
       VARIANT var = "XPath";
       scope(exit) var.clear();
-      doc.setProperty(cast(wchar*)"SelectionLanguage", var); // In MSXML 3.0, "SelectionLanguage" was "XPattern".
+      wchar* bstrSelectionLanguage = toBstr("SelectionLanguage");
+      doc.setProperty(bstrSelectionLanguage, var); // In MSXML 3.0, "SelectionLanguage" was "XPattern".
+      freeBstr(bstrSelectionLanguage);
     }
 
     doc.put_async(VARIANT_FALSE);
