@@ -234,7 +234,7 @@ final class XslTransform {
 
       if ((template_ = XSLTemplate60.coCreate!(IXSLTemplate)) is null) {
         if ((template_ = XSLTemplate40.coCreate!(IXSLTemplate)) is null)
-          template_ = XSLTemplate30.coCreate!(IXSLTemplate, ExceptionPolicy.Throw);
+          template_ = XSLTemplate30.coCreate!(IXSLTemplate, ExceptionPolicy.Throw)();
       }
 
       template_.putref_stylesheet(this.outer.stylesheet_);
@@ -303,7 +303,7 @@ final class XslTransform {
   this() {
     if ((stylesheet_ = FreeThreadedDOMDocument60.coCreate!(IXMLDOMDocument3)) is null) {
       if ((stylesheet_ = FreeThreadedDOMDocument40.coCreate!(IXMLDOMDocument2)) is null)
-        stylesheet_ = FreeThreadedDOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.Throw);
+        stylesheet_ = FreeThreadedDOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.Throw)();
     }
 
     stylesheet_.put_async(VARIANT_FALSE);
