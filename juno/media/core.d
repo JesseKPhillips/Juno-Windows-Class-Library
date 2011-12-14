@@ -75,875 +75,878 @@ private int stringToInt(string value, int fromBase) {
  */
 struct Color {
 
-  /// Gets a system-defined color.
-  static Color activeBorder() {
-    return Color(KnownColor.ActiveBorder);
-  }
-
-  /// ditto 
-  static Color activeCaption() {
-    return Color(KnownColor.ActiveCaption);
-  }
-
-  /// ditto 
-  static Color activeCaptionText() {
-    return Color(KnownColor.ActiveCaptionText);
-  }
-
-  /// ditto 
-  static Color appWorkspace() {
-    return Color(KnownColor.AppWorkspace);
-  }
-
-  /// ditto 
-  static Color control() {
-    return Color(KnownColor.Control);
-  }
-
-  /// ditto 
-  static Color controlDark() {
-    return Color(KnownColor.ControlDark);
-  }
-
-  /// ditto 
-  static Color controlDarkDark() {
-    return Color(KnownColor.ControlDarkDark);
-  }
-
-  /// ditto 
-  static Color controlLight() {
-    return Color(KnownColor.ControlLight);
-  }
-
-  /// ditto 
-  static Color controlLightLight() {
-    return Color(KnownColor.ControlLightLight);
-  }
-
-  /// ditto 
-  static Color controlText() {
-    return Color(KnownColor.ControlText);
-  }
-
-  /// ditto 
-  static Color desktop() {
-    return Color(KnownColor.Desktop);
-  }
-
-  /// ditto 
-  static Color grayText() {
-    return Color(KnownColor.GrayText);
-  }
-
-  /// ditto 
-  static Color highlight() {
-    return Color(KnownColor.Highlight);
-  }
-
-  /// ditto 
-  static Color highlightText() {
-    return Color(KnownColor.HighlightText);
-  }
-
-  /// ditto 
-  static Color hotTrack() {
-    return Color(KnownColor.HotTrack);
-  }
-
-  /// ditto 
-  static Color inactiveBorder() {
-    return Color(KnownColor.InactiveBorder);
-  }
-
-  /// ditto 
-  static Color inactiveCaption() {
-    return Color(KnownColor.InactiveCaption);
-  }
-
-  /// ditto 
-  static Color inactiveCaptionText() {
-    return Color(KnownColor.InactiveCaptionText);
-  }
-
-  /// ditto 
-  static Color info() {
-    return Color(KnownColor.Info);
-  }
-
-  /// ditto 
-  static Color infoText() {
-    return Color(KnownColor.InfoText);
-  }
-
-  /// ditto 
-  static Color menu() {
-    return Color(KnownColor.Menu);
-  }
-
-  /// ditto 
-  static Color menuText() {
-    return Color(KnownColor.MenuText);
-  }
-
-  /// ditto 
-  static Color scrollBar() {
-    return Color(KnownColor.ScrollBar);
-  }
-
-  /// ditto 
-  static Color window() {
-    return Color(KnownColor.Window);
-  }
-
-  /// ditto 
-  static Color windowFrame() {
-    return Color(KnownColor.WindowFrame);
-  }
-
-  /// ditto 
-  static Color windowText() {
-    return Color(KnownColor.WindowText);
-  }
-
-  /// ditto 
-  static Color transparent() {
-    return Color(KnownColor.Transparent);
-  }
-
-  /// ditto 
-  static Color aliceBlue() {
-    return Color(KnownColor.AliceBlue);
-  }
-
-  /// ditto 
-  static Color antiqueWhite() {
-    return Color(KnownColor.AntiqueWhite);
-  }
-
-  /// ditto 
-  static Color aqua() {
-    return Color(KnownColor.Aqua);
-  }
-
-  /// ditto 
-  static Color aquamarine() {
-    return Color(KnownColor.Aquamarine);
-  }
-
-  /// ditto 
-  static Color azure() {
-    return Color(KnownColor.Azure);
-  }
-
-  /// ditto 
-  static Color beige() {
-    return Color(KnownColor.Beige);
-  }
-
-  /// ditto 
-  static Color bisque() {
-    return Color(KnownColor.Bisque);
-  }
-
-  /// ditto 
-  static Color black() {
-    return Color(KnownColor.Black);
-  }
-
-  /// ditto 
-  static Color blanchedAlmond() {
-    return Color(KnownColor.BlanchedAlmond);
-  }
-
-  /// ditto 
-  static Color blue() {
-    return Color(KnownColor.Blue);
-  }
-
-  /// ditto 
-  static Color blueViolet() {
-    return Color(KnownColor.BlueViolet);
-  }
-
-  /// ditto 
-  static Color brown() {
-    return Color(KnownColor.Brown);
-  }
-
-  /// ditto 
-  static Color burlyWood() {
-    return Color(KnownColor.BurlyWood);
-  }
-
-  /// ditto 
-  static Color cadetBlue() {
-    return Color(KnownColor.CadetBlue);
-  }
-
-  /// ditto 
-  static Color chartreuse() {
-    return Color(KnownColor.Chartreuse);
-  }
-
-  /// ditto 
-  static Color chocolate() {
-    return Color(KnownColor.Chocolate);
-  }
-
-  /// ditto 
-  static Color coral() {
-    return Color(KnownColor.Coral);
-  }
-
-  /// ditto 
-  static Color cornflowerBlue() {
-    return Color(KnownColor.CornflowerBlue);
-  }
-
-  /// ditto 
-  static Color cornsilk() {
-    return Color(KnownColor.Cornsilk);
-  }
-
-  /// ditto 
-  static Color crimson() {
-    return Color(KnownColor.Crimson);
-  }
-
-  /// ditto 
-  static Color cyan() {
-    return Color(KnownColor.Cyan);
-  }
-
-  /// ditto 
-  static Color darkBlue() {
-    return Color(KnownColor.DarkBlue);
-  }
-
-  /// ditto 
-  static Color darkCyan() {
-    return Color(KnownColor.DarkCyan);
-  }
-
-  /// ditto 
-  static Color darkGoldenrod() {
-    return Color(KnownColor.DarkGoldenrod);
-  }
-
-  /// ditto 
-  static Color darkGray() {
-    return Color(KnownColor.DarkGray);
-  }
-
-  /// ditto 
-  static Color darkGreen() {
-    return Color(KnownColor.DarkGreen);
-  }
-
-  /// ditto 
-  static Color darkKhaki() {
-    return Color(KnownColor.DarkKhaki);
-  }
-
-  /// ditto 
-  static Color darkMagenta() {
-    return Color(KnownColor.DarkMagenta);
-  }
-
-  /// ditto 
-  static Color darkOliveGreen() {
-    return Color(KnownColor.DarkOliveGreen);
-  }
-
-  /// ditto 
-  static Color darkOrange() {
-    return Color(KnownColor.DarkOrange);
-  }
-
-  /// ditto 
-  static Color darkOrchid() {
-    return Color(KnownColor.DarkOrchid);
-  }
-
-  /// ditto 
-  static Color darkRed() {
-    return Color(KnownColor.DarkRed);
-  }
-
-  /// ditto 
-  static Color darkSalmon() {
-    return Color(KnownColor.DarkSalmon);
-  }
-
-  /// ditto 
-  static Color darkSeaGreen() {
-    return Color(KnownColor.DarkSeaGreen);
-  }
-
-  /// ditto 
-  static Color darkSlateBlue() {
-    return Color(KnownColor.DarkSlateBlue);
-  }
-
-  /// ditto 
-  static Color darkSlateGray() {
-    return Color(KnownColor.DarkSlateGray);
-  }
-
-  /// ditto 
-  static Color darkTurquoise() {
-    return Color(KnownColor.DarkTurquoise);
-  }
-
-  /// ditto 
-  static Color darkViolet() {
-    return Color(KnownColor.DarkViolet);
-  }
-
-  /// ditto 
-  static Color deepPink() {
-    return Color(KnownColor.DeepPink);
-  }
-
-  /// ditto 
-  static Color deepSkyBlue() {
-    return Color(KnownColor.DeepSkyBlue);
-  }
-
-  /// ditto 
-  static Color dimGray() {
-    return Color(KnownColor.DimGray);
-  }
-
-  /// ditto 
-  static Color dodgerBlue() {
-    return Color(KnownColor.DodgerBlue);
-  }
-
-  /// ditto 
-  static Color firebrick() {
-    return Color(KnownColor.Firebrick);
-  }
-
-  /// ditto 
-  static Color floralWhite() {
-    return Color(KnownColor.FloralWhite);
-  }
-
-  /// ditto 
-  static Color forestGreen() {
-    return Color(KnownColor.ForestGreen);
-  }
-
-  /// ditto 
-  static Color fuchsia() {
-    return Color(KnownColor.Fuchsia);
-  }
-
-  /// ditto 
-  static Color gainsboro() {
-    return Color(KnownColor.Gainsboro);
-  }
-
-  /// ditto 
-  static Color ghostWhite() {
-    return Color(KnownColor.GhostWhite);
-  }
-
-  /// ditto 
-  static Color gold() {
-    return Color(KnownColor.Gold);
-  }
-
-  /// ditto 
-  static Color goldenrod() {
-    return Color(KnownColor.Goldenrod);
-  }
-
-  /// ditto 
-  static Color gray() {
-    return Color(KnownColor.Gray);
-  }
-
-  /// ditto 
-  static Color green() {
-    return Color(KnownColor.Green);
-  }
-
-  /// ditto 
-  static Color greenYellow() {
-    return Color(KnownColor.GreenYellow);
-  }
-
-  /// ditto 
-  static Color honeydew() {
-    return Color(KnownColor.Honeydew);
-  }
-
-  /// ditto 
-  static Color hotPink() {
-    return Color(KnownColor.HotPink);
-  }
-
-  /// ditto 
-  static Color indianRed() {
-    return Color(KnownColor.IndianRed);
-  }
-
-  /// ditto 
-  static Color indigo() {
-    return Color(KnownColor.Indigo);
-  }
-
-  /// ditto 
-  static Color ivory() {
-    return Color(KnownColor.Ivory);
-  }
-
-  /// ditto 
-  static Color khaki() {
-    return Color(KnownColor.Khaki);
-  }
-
-  /// ditto 
-  static Color lavender() {
-    return Color(KnownColor.Lavender);
-  }
-
-  /// ditto 
-  static Color lavenderBlush() {
-    return Color(KnownColor.LavenderBlush);
-  }
-
-  /// ditto 
-  static Color lawnGreen() {
-    return Color(KnownColor.LawnGreen);
-  }
-
-  /// ditto 
-  static Color lemonChiffon() {
-    return Color(KnownColor.LemonChiffon);
-  }
-
-  /// ditto 
-  static Color lightBlue() {
-    return Color(KnownColor.LightBlue);
-  }
-
-  /// ditto 
-  static Color lightCoral() {
-    return Color(KnownColor.LightCoral);
-  }
-
-  /// ditto 
-  static Color lightCyan() {
-    return Color(KnownColor.LightCyan);
-  }
-
-  /// ditto 
-  static Color lightGoldenrodYellow() {
-    return Color(KnownColor.LightGoldenrodYellow);
-  }
-
-  /// ditto 
-  static Color lightGray() {
-    return Color(KnownColor.LightGray);
-  }
-
-  /// ditto 
-  static Color lightGreen() {
-    return Color(KnownColor.LightGreen);
-  }
-
-  /// ditto 
-  static Color lightPink() {
-    return Color(KnownColor.LightPink);
-  }
-
-  /// ditto 
-  static Color lightSalmon() {
-    return Color(KnownColor.LightSalmon);
-  }
-
-  /// ditto 
-  static Color lightSeaGreen() {
-    return Color(KnownColor.LightSeaGreen);
-  }
-
-  /// ditto 
-  static Color lightSkyBlue() {
-    return Color(KnownColor.LightSkyBlue);
-  }
-
-  /// ditto 
-  static Color lightSlateGray() {
-    return Color(KnownColor.LightSlateGray);
-  }
-
-  /// ditto 
-  static Color lightSteelBlue() {
-    return Color(KnownColor.LightSteelBlue);
-  }
-
-  /// ditto 
-  static Color lightYellow() {
-    return Color(KnownColor.LightYellow);
-  }
-
-  /// ditto 
-  static Color lime() {
-    return Color(KnownColor.Lime);
-  }
-
-  /// ditto 
-  static Color limeGreen() {
-    return Color(KnownColor.LimeGreen);
-  }
-
-  /// ditto 
-  static Color linen() {
-    return Color(KnownColor.Linen);
-  }
-
-  /// ditto 
-  static Color magenta() {
-    return Color(KnownColor.Magenta);
-  }
-
-  /// ditto 
-  static Color maroon() {
-    return Color(KnownColor.Maroon);
-  }
-
-  /// ditto 
-  static Color mediumAquamarine() {
-    return Color(KnownColor.MediumAquamarine);
-  }
-
-  /// ditto 
-  static Color mediumBlue() {
-    return Color(KnownColor.MediumBlue);
-  }
-
-  /// ditto 
-  static Color mediumOrchid() {
-    return Color(KnownColor.MediumOrchid);
-  }
-
-  /// ditto 
-  static Color mediumPurple() {
-    return Color(KnownColor.MediumPurple);
-  }
-
-  /// ditto 
-  static Color mediumSeaGreen() {
-    return Color(KnownColor.MediumSeaGreen);
-  }
-
-  /// ditto 
-  static Color mediumSlateBlue() {
-    return Color(KnownColor.MediumSlateBlue);
-  }
-
-  /// ditto 
-  static Color mediumSpringGreen() {
-    return Color(KnownColor.MediumSpringGreen);
-  }
-
-  /// ditto 
-  static Color mediumTurquoise() {
-    return Color(KnownColor.MediumTurquoise);
-  }
-
-  /// ditto 
-  static Color mediumVioletRed() {
-    return Color(KnownColor.MediumVioletRed);
-  }
-
-  /// ditto 
-  static Color midnightBlue() {
-    return Color(KnownColor.MidnightBlue);
-  }
-
-  /// ditto 
-  static Color mintCream() {
-    return Color(KnownColor.MintCream);
-  }
-
-  /// ditto 
-  static Color mistyRose() {
-    return Color(KnownColor.MistyRose);
-  }
-
-  /// ditto 
-  static Color moccasin() {
-    return Color(KnownColor.Moccasin);
-  }
-
-  /// ditto 
-  static Color navajoWhite() {
-    return Color(KnownColor.NavajoWhite);
-  }
-
-  /// ditto 
-  static Color navy() {
-    return Color(KnownColor.Navy);
-  }
-
-  /// ditto 
-  static Color oldLace() {
-    return Color(KnownColor.OldLace);
-  }
-
-  /// ditto 
-  static Color olive() {
-    return Color(KnownColor.Olive);
-  }
-
-  /// ditto 
-  static Color oliveDrab() {
-    return Color(KnownColor.OliveDrab);
-  }
-
-  /// ditto 
-  static Color orange() {
-    return Color(KnownColor.Orange);
-  }
-
-  /// ditto 
-  static Color orangeRed() {
-    return Color(KnownColor.OrangeRed);
-  }
-
-  /// ditto 
-  static Color orchid() {
-    return Color(KnownColor.Orchid);
-  }
-
-  /// ditto 
-  static Color paleGoldenrod() {
-    return Color(KnownColor.PaleGoldenrod);
-  }
-
-  /// ditto 
-  static Color paleGreen() {
-    return Color(KnownColor.PaleGreen);
-  }
-
-  /// ditto 
-  static Color paleTurquoise() {
-    return Color(KnownColor.PaleTurquoise);
-  }
-
-  /// ditto 
-  static Color paleVioletRed() {
-    return Color(KnownColor.PaleVioletRed);
-  }
-
-  /// ditto 
-  static Color papayaWhip() {
-    return Color(KnownColor.PapayaWhip);
-  }
-
-  /// ditto 
-  static Color peachPuff() {
-    return Color(KnownColor.PeachPuff);
-  }
-
-  /// ditto 
-  static Color peru() {
-    return Color(KnownColor.Peru);
-  }
-
-  /// ditto 
-  static Color pink() {
-    return Color(KnownColor.Pink);
-  }
-
-  /// ditto 
-  static Color plum() {
-    return Color(KnownColor.Plum);
-  }
-
-  /// ditto 
-  static Color powderBlue() {
-    return Color(KnownColor.PowderBlue);
-  }
-
-  /// ditto 
-  static Color purple() {
-    return Color(KnownColor.Purple);
-  }
-
-  /// ditto 
-  static Color red() {
-    return Color(KnownColor.Red);
-  }
-
-  /// ditto 
-  static Color rosyBrown() {
-    return Color(KnownColor.RosyBrown);
-  }
-
-  /// ditto 
-  static Color royalBlue() {
-    return Color(KnownColor.RoyalBlue);
-  }
-
-  /// ditto 
-  static Color saddleBrown() {
-    return Color(KnownColor.SaddleBrown);
-  }
-
-  /// ditto 
-  static Color salmon() {
-    return Color(KnownColor.Salmon);
-  }
-
-  /// ditto 
-  static Color sandyBrown() {
-    return Color(KnownColor.SandyBrown);
-  }
-
-  /// ditto 
-  static Color seaGreen() {
-    return Color(KnownColor.SeaGreen);
-  }
-
-  /// ditto 
-  static Color seaShell() {
-    return Color(KnownColor.SeaShell);
-  }
-
-  /// ditto 
-  static Color sienna() {
-    return Color(KnownColor.Sienna);
-  }
-
-  /// ditto 
-  static Color silver() {
-    return Color(KnownColor.Silver);
-  }
-
-  /// ditto 
-  static Color skyBlue() {
-    return Color(KnownColor.SkyBlue);
-  }
-
-  /// ditto 
-  static Color slateBlue() {
-    return Color(KnownColor.SlateBlue);
-  }
-
-  /// ditto 
-  static Color slateGray() {
-    return Color(KnownColor.SlateGray);
-  }
-
-  /// ditto 
-  static Color snow() {
-    return Color(KnownColor.Snow);
-  }
-
-  /// ditto 
-  static Color springGreen() {
-    return Color(KnownColor.SpringGreen);
-  }
-
-  /// ditto 
-  static Color steelBlue() {
-    return Color(KnownColor.SteelBlue);
-  }
-
-  /// ditto 
-  static Color tan() {
-    return Color(KnownColor.Tan);
-  }
-
-  /// ditto 
-  static Color teal() {
-    return Color(KnownColor.Teal);
-  }
-
-  /// ditto 
-  static Color thistle() {
-    return Color(KnownColor.Thistle);
-  }
-
-  /// ditto 
-  static Color tomato() {
-    return Color(KnownColor.Tomato);
-  }
-
-  /// ditto 
-  static Color turquoise() {
-    return Color(KnownColor.Turquoise);
-  }
-
-  /// ditto 
-  static Color violet() {
-    return Color(KnownColor.Violet);
-  }
-
-  /// ditto 
-  static Color wheat() {
-    return Color(KnownColor.Wheat);
-  }
-
-  /// ditto 
-  static Color white() {
-    return Color(KnownColor.White);
-  }
-
-  /// ditto 
-  static Color whiteSmoke() {
-    return Color(KnownColor.WhiteSmoke);
-  }
-
-  /// ditto 
-  static Color yellow() {
-    return Color(KnownColor.Yellow);
-  }
-
-  /// ditto 
-  static Color yellowGreen() {
-    return Color(KnownColor.YellowGreen);
-  }
-
-  /// ditto 
-  static Color buttonFace() {
-    return Color(KnownColor.ButtonFace);
-  }
-
-  /// ditto 
-  static Color buttonHighlight() {
-    return Color(KnownColor.ButtonHighlight);
-  }
-
-  /// ditto 
-  static Color buttonShadow() {
-    return Color(KnownColor.ButtonShadow);
-  }
-
-  /// ditto 
-  static Color gradientActiveCaption() {
-    return Color(KnownColor.GradientActiveCaption);
-  }
-
-  /// ditto 
-  static Color gradientInactiveCaption() {
-    return Color(KnownColor.GradientInactiveCaption);
-  }
-
-  /// ditto 
-  static Color menuBar() {
-    return Color(KnownColor.MenuBar);
-  }
-
-  /// ditto 
-  static Color menuHighlight() {
-    return Color(KnownColor.MenuHighlight);
-  }
+  @property
+  {
+    /// Gets a system-defined color.
+    static Color activeBorder() {
+      return Color(KnownColor.ActiveBorder);
+    }
+    
+    /// ditto 
+    static Color activeCaption() {
+      return Color(KnownColor.ActiveCaption);
+    }
+    
+    /// ditto 
+    static Color activeCaptionText() {
+      return Color(KnownColor.ActiveCaptionText);
+    }
+    
+    /// ditto 
+    static Color appWorkspace() {
+      return Color(KnownColor.AppWorkspace);
+    }
+    
+    /// ditto 
+    static Color control() {
+      return Color(KnownColor.Control);
+    }
+    
+    /// ditto 
+    static Color controlDark() {
+      return Color(KnownColor.ControlDark);
+    }
+    
+    /// ditto 
+    static Color controlDarkDark() {
+      return Color(KnownColor.ControlDarkDark);
+    }
+    
+    /// ditto 
+    static Color controlLight() {
+      return Color(KnownColor.ControlLight);
+    }
+    
+    /// ditto 
+    static Color controlLightLight() {
+      return Color(KnownColor.ControlLightLight);
+    }
+    
+    /// ditto 
+    static Color controlText() {
+      return Color(KnownColor.ControlText);
+    }
+    
+    /// ditto 
+    static Color desktop() {
+      return Color(KnownColor.Desktop);
+    }
+    
+    /// ditto 
+    static Color grayText() {
+      return Color(KnownColor.GrayText);
+    }
+    
+    /// ditto 
+    static Color highlight() {
+      return Color(KnownColor.Highlight);
+    }
+    
+    /// ditto 
+    static Color highlightText() {
+      return Color(KnownColor.HighlightText);
+    }
+    
+    /// ditto 
+    static Color hotTrack() {
+      return Color(KnownColor.HotTrack);
+    }
+    
+    /// ditto 
+    static Color inactiveBorder() {
+      return Color(KnownColor.InactiveBorder);
+    }
+    
+    /// ditto 
+    static Color inactiveCaption() {
+      return Color(KnownColor.InactiveCaption);
+    }
+    
+    /// ditto 
+    static Color inactiveCaptionText() {
+      return Color(KnownColor.InactiveCaptionText);
+    }
+    
+    /// ditto 
+    static Color info() {
+      return Color(KnownColor.Info);
+    }
+    
+    /// ditto 
+    static Color infoText() {
+      return Color(KnownColor.InfoText);
+    }
+    
+    /// ditto 
+    static Color menu() {
+      return Color(KnownColor.Menu);
+    }
+    
+    /// ditto 
+    static Color menuText() {
+      return Color(KnownColor.MenuText);
+    }
+    
+    /// ditto 
+    static Color scrollBar() {
+      return Color(KnownColor.ScrollBar);
+    }
+    
+    /// ditto 
+    static Color window() {
+      return Color(KnownColor.Window);
+    }
+    
+    /// ditto 
+    static Color windowFrame() {
+      return Color(KnownColor.WindowFrame);
+    }
+    
+    /// ditto 
+    static Color windowText() {
+      return Color(KnownColor.WindowText);
+    }
+    
+    /// ditto 
+    static Color transparent() {
+      return Color(KnownColor.Transparent);
+    }
+    
+    /// ditto 
+    static Color aliceBlue() {
+      return Color(KnownColor.AliceBlue);
+    }
+    
+    /// ditto 
+    static Color antiqueWhite() {
+      return Color(KnownColor.AntiqueWhite);
+    }
+    
+    /// ditto 
+    static Color aqua() {
+      return Color(KnownColor.Aqua);
+    }
+    
+    /// ditto 
+    static Color aquamarine() {
+      return Color(KnownColor.Aquamarine);
+    }
+    
+    /// ditto 
+    static Color azure() {
+      return Color(KnownColor.Azure);
+    }
+    
+    /// ditto 
+    static Color beige() {
+      return Color(KnownColor.Beige);
+    }
+    
+    /// ditto 
+    static Color bisque() {
+      return Color(KnownColor.Bisque);
+    }
+    
+    /// ditto 
+    static Color black() {
+      return Color(KnownColor.Black);
+    }
+    
+    /// ditto 
+    static Color blanchedAlmond() {
+      return Color(KnownColor.BlanchedAlmond);
+    }
+    
+    /// ditto 
+    static Color blue() {
+      return Color(KnownColor.Blue);
+    }
+    
+    /// ditto 
+    static Color blueViolet() {
+      return Color(KnownColor.BlueViolet);
+    }
+    
+    /// ditto 
+    static Color brown() {
+      return Color(KnownColor.Brown);
+    }
+    
+    /// ditto 
+    static Color burlyWood() {
+      return Color(KnownColor.BurlyWood);
+    }
+    
+    /// ditto 
+    static Color cadetBlue() {
+      return Color(KnownColor.CadetBlue);
+    }
+    
+    /// ditto 
+    static Color chartreuse() {
+      return Color(KnownColor.Chartreuse);
+    }
+    
+    /// ditto 
+    static Color chocolate() {
+      return Color(KnownColor.Chocolate);
+    }
+    
+    /// ditto 
+    static Color coral() {
+      return Color(KnownColor.Coral);
+    }
+    
+    /// ditto 
+    static Color cornflowerBlue() {
+      return Color(KnownColor.CornflowerBlue);
+    }
+    
+    /// ditto 
+    static Color cornsilk() {
+      return Color(KnownColor.Cornsilk);
+    }
+    
+    /// ditto 
+    static Color crimson() {
+      return Color(KnownColor.Crimson);
+    }
+    
+    /// ditto 
+    static Color cyan() {
+      return Color(KnownColor.Cyan);
+    }
+    
+    /// ditto 
+    static Color darkBlue() {
+      return Color(KnownColor.DarkBlue);
+    }
+    
+    /// ditto 
+    static Color darkCyan() {
+      return Color(KnownColor.DarkCyan);
+    }
+    
+    /// ditto 
+    static Color darkGoldenrod() {
+      return Color(KnownColor.DarkGoldenrod);
+    }
+    
+    /// ditto 
+    static Color darkGray() {
+      return Color(KnownColor.DarkGray);
+    }
+    
+    /// ditto 
+    static Color darkGreen() {
+      return Color(KnownColor.DarkGreen);
+    }
+    
+    /// ditto 
+    static Color darkKhaki() {
+      return Color(KnownColor.DarkKhaki);
+    }
+    
+    /// ditto 
+    static Color darkMagenta() {
+      return Color(KnownColor.DarkMagenta);
+    }
+    
+    /// ditto 
+    static Color darkOliveGreen() {
+      return Color(KnownColor.DarkOliveGreen);
+    }
+    
+    /// ditto 
+    static Color darkOrange() {
+      return Color(KnownColor.DarkOrange);
+    }
+    
+    /// ditto 
+    static Color darkOrchid() {
+      return Color(KnownColor.DarkOrchid);
+    }
+    
+    /// ditto 
+    static Color darkRed() {
+      return Color(KnownColor.DarkRed);
+    }
+    
+    /// ditto 
+    static Color darkSalmon() {
+      return Color(KnownColor.DarkSalmon);
+    }
+    
+    /// ditto 
+    static Color darkSeaGreen() {
+      return Color(KnownColor.DarkSeaGreen);
+    }
+    
+    /// ditto 
+    static Color darkSlateBlue() {
+      return Color(KnownColor.DarkSlateBlue);
+    }
+    
+    /// ditto 
+    static Color darkSlateGray() {
+      return Color(KnownColor.DarkSlateGray);
+    }
+    
+    /// ditto 
+    static Color darkTurquoise() {
+      return Color(KnownColor.DarkTurquoise);
+    }
+    
+    /// ditto 
+    static Color darkViolet() {
+      return Color(KnownColor.DarkViolet);
+    }
+    
+    /// ditto 
+    static Color deepPink() {
+      return Color(KnownColor.DeepPink);
+    }
+    
+    /// ditto 
+    static Color deepSkyBlue() {
+      return Color(KnownColor.DeepSkyBlue);
+    }
+    
+    /// ditto 
+    static Color dimGray() {
+      return Color(KnownColor.DimGray);
+    }
+    
+    /// ditto 
+    static Color dodgerBlue() {
+      return Color(KnownColor.DodgerBlue);
+    }
+    
+    /// ditto 
+    static Color firebrick() {
+      return Color(KnownColor.Firebrick);
+    }
+    
+    /// ditto 
+    static Color floralWhite() {
+      return Color(KnownColor.FloralWhite);
+    }
+    
+    /// ditto 
+    static Color forestGreen() {
+      return Color(KnownColor.ForestGreen);
+    }
+    
+    /// ditto 
+    static Color fuchsia() {
+      return Color(KnownColor.Fuchsia);
+    }
+    
+    /// ditto 
+    static Color gainsboro() {
+      return Color(KnownColor.Gainsboro);
+    }
+    
+    /// ditto 
+    static Color ghostWhite() {
+      return Color(KnownColor.GhostWhite);
+    }
+    
+    /// ditto 
+    static Color gold() {
+      return Color(KnownColor.Gold);
+    }
+    
+    /// ditto 
+    static Color goldenrod() {
+      return Color(KnownColor.Goldenrod);
+    }
+    
+    /// ditto 
+    static Color gray() {
+      return Color(KnownColor.Gray);
+    }
+    
+    /// ditto 
+    static Color green() {
+      return Color(KnownColor.Green);
+    }
+    
+    /// ditto 
+    static Color greenYellow() {
+      return Color(KnownColor.GreenYellow);
+    }
+    
+    /// ditto 
+    static Color honeydew() {
+      return Color(KnownColor.Honeydew);
+    }
+    
+    /// ditto 
+    static Color hotPink() {
+      return Color(KnownColor.HotPink);
+    }
+    
+    /// ditto 
+    static Color indianRed() {
+      return Color(KnownColor.IndianRed);
+    }
+    
+    /// ditto 
+    static Color indigo() {
+      return Color(KnownColor.Indigo);
+    }
+    
+    /// ditto 
+    static Color ivory() {
+      return Color(KnownColor.Ivory);
+    }
+    
+    /// ditto 
+    static Color khaki() {
+      return Color(KnownColor.Khaki);
+    }
+    
+    /// ditto 
+    static Color lavender() {
+      return Color(KnownColor.Lavender);
+    }
+    
+    /// ditto 
+    static Color lavenderBlush() {
+      return Color(KnownColor.LavenderBlush);
+    }
+    
+    /// ditto 
+    static Color lawnGreen() {
+      return Color(KnownColor.LawnGreen);
+    }
+    
+    /// ditto 
+    static Color lemonChiffon() {
+      return Color(KnownColor.LemonChiffon);
+    }
+    
+    /// ditto 
+    static Color lightBlue() {
+      return Color(KnownColor.LightBlue);
+    }
+    
+    /// ditto 
+    static Color lightCoral() {
+      return Color(KnownColor.LightCoral);
+    }
+    
+    /// ditto 
+    static Color lightCyan() {
+      return Color(KnownColor.LightCyan);
+    }
+    
+    /// ditto 
+    static Color lightGoldenrodYellow() {
+      return Color(KnownColor.LightGoldenrodYellow);
+    }
+    
+    /// ditto 
+    static Color lightGray() {
+      return Color(KnownColor.LightGray);
+    }
+    
+    /// ditto 
+    static Color lightGreen() {
+      return Color(KnownColor.LightGreen);
+    }
+    
+    /// ditto 
+    static Color lightPink() {
+      return Color(KnownColor.LightPink);
+    }
+    
+    /// ditto 
+    static Color lightSalmon() {
+      return Color(KnownColor.LightSalmon);
+    }
+    
+    /// ditto 
+    static Color lightSeaGreen() {
+      return Color(KnownColor.LightSeaGreen);
+    }
+    
+    /// ditto 
+    static Color lightSkyBlue() {
+      return Color(KnownColor.LightSkyBlue);
+    }
+    
+    /// ditto 
+    static Color lightSlateGray() {
+      return Color(KnownColor.LightSlateGray);
+    }
+    
+    /// ditto 
+    static Color lightSteelBlue() {
+      return Color(KnownColor.LightSteelBlue);
+    }
+    
+    /// ditto 
+    static Color lightYellow() {
+      return Color(KnownColor.LightYellow);
+    }
+    
+    /// ditto 
+    static Color lime() {
+      return Color(KnownColor.Lime);
+    }
+    
+    /// ditto 
+    static Color limeGreen() {
+      return Color(KnownColor.LimeGreen);
+    }
+    
+    /// ditto 
+    static Color linen() {
+      return Color(KnownColor.Linen);
+    }
+    
+    /// ditto 
+    static Color magenta() {
+      return Color(KnownColor.Magenta);
+    }
+    
+    /// ditto 
+    static Color maroon() {
+      return Color(KnownColor.Maroon);
+    }
+    
+    /// ditto 
+    static Color mediumAquamarine() {
+      return Color(KnownColor.MediumAquamarine);
+    }
+    
+    /// ditto 
+    static Color mediumBlue() {
+      return Color(KnownColor.MediumBlue);
+    }
+    
+    /// ditto 
+    static Color mediumOrchid() {
+      return Color(KnownColor.MediumOrchid);
+    }
+    
+    /// ditto 
+    static Color mediumPurple() {
+      return Color(KnownColor.MediumPurple);
+    }
+    
+    /// ditto 
+    static Color mediumSeaGreen() {
+      return Color(KnownColor.MediumSeaGreen);
+    }
+    
+    /// ditto 
+    static Color mediumSlateBlue() {
+      return Color(KnownColor.MediumSlateBlue);
+    }
+    
+    /// ditto 
+    static Color mediumSpringGreen() {
+      return Color(KnownColor.MediumSpringGreen);
+    }
+    
+    /// ditto 
+    static Color mediumTurquoise() {
+      return Color(KnownColor.MediumTurquoise);
+    }
+    
+    /// ditto 
+    static Color mediumVioletRed() {
+      return Color(KnownColor.MediumVioletRed);
+    }
+    
+    /// ditto 
+    static Color midnightBlue() {
+      return Color(KnownColor.MidnightBlue);
+    }
+    
+    /// ditto 
+    static Color mintCream() {
+      return Color(KnownColor.MintCream);
+    }
+    
+    /// ditto 
+    static Color mistyRose() {
+      return Color(KnownColor.MistyRose);
+    }
+    
+    /// ditto 
+    static Color moccasin() {
+      return Color(KnownColor.Moccasin);
+    }
+    
+    /// ditto 
+    static Color navajoWhite() {
+      return Color(KnownColor.NavajoWhite);
+    }
+    
+    /// ditto 
+    static Color navy() {
+      return Color(KnownColor.Navy);
+    }
+    
+    /// ditto 
+    static Color oldLace() {
+      return Color(KnownColor.OldLace);
+    }
+    
+    /// ditto 
+    static Color olive() {
+      return Color(KnownColor.Olive);
+    }
+    
+    /// ditto 
+    static Color oliveDrab() {
+      return Color(KnownColor.OliveDrab);
+    }
+    
+    /// ditto 
+    static Color orange() {
+      return Color(KnownColor.Orange);
+    }
+    
+    /// ditto 
+    static Color orangeRed() {
+      return Color(KnownColor.OrangeRed);
+    }
+    
+    /// ditto 
+    static Color orchid() {
+      return Color(KnownColor.Orchid);
+    }
+    
+    /// ditto 
+    static Color paleGoldenrod() {
+      return Color(KnownColor.PaleGoldenrod);
+    }
+    
+    /// ditto 
+    static Color paleGreen() {
+      return Color(KnownColor.PaleGreen);
+    }
+    
+    /// ditto 
+    static Color paleTurquoise() {
+      return Color(KnownColor.PaleTurquoise);
+    }
+    
+    /// ditto 
+    static Color paleVioletRed() {
+      return Color(KnownColor.PaleVioletRed);
+    }
+    
+    /// ditto 
+    static Color papayaWhip() {
+      return Color(KnownColor.PapayaWhip);
+    }
+    
+    /// ditto 
+    static Color peachPuff() {
+      return Color(KnownColor.PeachPuff);
+    }
+    
+    /// ditto 
+    static Color peru() {
+      return Color(KnownColor.Peru);
+    }
+    
+    /// ditto 
+    static Color pink() {
+      return Color(KnownColor.Pink);
+    }
+    
+    /// ditto 
+    static Color plum() {
+      return Color(KnownColor.Plum);
+    }
+    
+    /// ditto 
+    static Color powderBlue() {
+      return Color(KnownColor.PowderBlue);
+    }
+    
+    /// ditto 
+    static Color purple() {
+      return Color(KnownColor.Purple);
+    }
+    
+    /// ditto 
+    static Color red() {
+      return Color(KnownColor.Red);
+    }
+    
+    /// ditto 
+    static Color rosyBrown() {
+      return Color(KnownColor.RosyBrown);
+    }
+    
+    /// ditto 
+    static Color royalBlue() {
+      return Color(KnownColor.RoyalBlue);
+    }
+    
+    /// ditto 
+    static Color saddleBrown() {
+      return Color(KnownColor.SaddleBrown);
+    }
+    
+    /// ditto 
+    static Color salmon() {
+      return Color(KnownColor.Salmon);
+    }
+    
+    /// ditto 
+    static Color sandyBrown() {
+      return Color(KnownColor.SandyBrown);
+    }
+    
+    /// ditto 
+    static Color seaGreen() {
+      return Color(KnownColor.SeaGreen);
+    }
+    
+    /// ditto 
+    static Color seaShell() {
+      return Color(KnownColor.SeaShell);
+    }
+    
+    /// ditto 
+    static Color sienna() {
+      return Color(KnownColor.Sienna);
+    }
+    
+    /// ditto 
+    static Color silver() {
+      return Color(KnownColor.Silver);
+    }
+    
+    /// ditto 
+    static Color skyBlue() {
+      return Color(KnownColor.SkyBlue);
+    }
+    
+    /// ditto 
+    static Color slateBlue() {
+      return Color(KnownColor.SlateBlue);
+    }
+    
+    /// ditto 
+    static Color slateGray() {
+      return Color(KnownColor.SlateGray);
+    }
+    
+    /// ditto 
+    static Color snow() {
+      return Color(KnownColor.Snow);
+    }
+    
+    /// ditto 
+    static Color springGreen() {
+      return Color(KnownColor.SpringGreen);
+    }
+    
+    /// ditto 
+    static Color steelBlue() {
+      return Color(KnownColor.SteelBlue);
+    }
+    
+    /// ditto 
+    static Color tan() {
+      return Color(KnownColor.Tan);
+    }
+    
+    /// ditto 
+    static Color teal() {
+      return Color(KnownColor.Teal);
+    }
+    
+    /// ditto 
+    static Color thistle() {
+      return Color(KnownColor.Thistle);
+    }
+    
+    /// ditto 
+    static Color tomato() {
+      return Color(KnownColor.Tomato);
+    }
+    
+    /// ditto 
+    static Color turquoise() {
+      return Color(KnownColor.Turquoise);
+    }
+    
+    /// ditto 
+    static Color violet() {
+      return Color(KnownColor.Violet);
+    }
+    
+    /// ditto 
+    static Color wheat() {
+      return Color(KnownColor.Wheat);
+    }
+    
+    /// ditto 
+    static Color white() {
+      return Color(KnownColor.White);
+    }
+    
+    /// ditto 
+    static Color whiteSmoke() {
+      return Color(KnownColor.WhiteSmoke);
+    }
+    
+    /// ditto 
+    static Color yellow() {
+      return Color(KnownColor.Yellow);
+    }
+    
+    /// ditto 
+    static Color yellowGreen() {
+      return Color(KnownColor.YellowGreen);
+    }
+    
+    /// ditto 
+    static Color buttonFace() {
+      return Color(KnownColor.ButtonFace);
+    }
+    
+    /// ditto 
+    static Color buttonHighlight() {
+      return Color(KnownColor.ButtonHighlight);
+    }
+    
+    /// ditto 
+    static Color buttonShadow() {
+      return Color(KnownColor.ButtonShadow);
+    }
+    
+    /// ditto 
+    static Color gradientActiveCaption() {
+      return Color(KnownColor.GradientActiveCaption);
+    }
+    
+    /// ditto 
+    static Color gradientInactiveCaption() {
+      return Color(KnownColor.GradientInactiveCaption);
+    }
+    
+    /// ditto 
+    static Color menuBar() {
+      return Color(KnownColor.MenuBar);
+    }
+    
+    /// ditto 
+    static Color menuHighlight() {
+      return Color(KnownColor.MenuHighlight);
+    }
+  } //@property
 
   private enum : ubyte {
     ARGB_ALPHA_SHIFT = 24,
@@ -1151,25 +1154,25 @@ struct Color {
   /**
    * Determines whether this Color structure is uninitialized.
    */
-  bool isEmpty() {
+  @property bool isEmpty() {
     return (state_ == 0);
   }
 
   /**
    * Determines whether this Color structure is predefined.
    */
-  bool isKnownColor() {
+  @property bool isKnownColor() {
     return (state_ & STATE_KNOWNCOLOR_VALID) != 0;
   }
 
   /**
    * Determines whether this Color structure is a system color.
    */
-  bool isSystemColor() {
+  @property bool isSystemColor() {
     return isKnownColor && (knownColor_ <= KnownColor.WindowText || knownColor_ >= KnownColor.ButtonFace);
   }
 
-  bool isNamedColor() {
+  @property bool isNamedColor() {
     return (isKnownColor || (state_ & STATE_NAME_VALID) != 0);
   }
 
@@ -1245,7 +1248,7 @@ struct Color {
   /**
    * Gets the _name.
    */
-  string name() {
+  @property string name() {
     if ((state_ & STATE_NAME_VALID) != 0)
       return name_;
 
