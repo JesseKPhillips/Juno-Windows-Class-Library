@@ -101,49 +101,49 @@ final class RegistryKey {
   private bool dirty_;
 
   /// Defines the types of documents and properties associated with those types. Reads HKEY_CLASSES_ROOT.
-  static RegistryKey classesRoot() {
+  static @property RegistryKey classesRoot() {
     if (classesRoot_ is null)
       classesRoot_ = getSystemKey(HKEY_CLASSES_ROOT);
     return classesRoot_;
   }
 
   /// Contains information about the current user preferences. Reads HKEY_CURRENT_USER.
-  static RegistryKey currentUser() {
+  static @property RegistryKey currentUser() {
     if (currentUser_ is null)
       currentUser_ = getSystemKey(HKEY_CURRENT_USER);
     return currentUser_;
   }
 
   /// Contains configuration data for the local machine. Reads HKEY_LOCAL_MACHINE.
-  static RegistryKey localMachine() {
+  static @property RegistryKey localMachine() {
     if (localMachine_ is null)
       localMachine_ = getSystemKey(HKEY_LOCAL_MACHINE);
     return localMachine_;
   }
   
   /// Contains information about the default user configuration. Reads HKEY_USERS.
-  static RegistryKey users() {
+  static @property RegistryKey users() {
     if (users_ is null)
       users_ = getSystemKey(HKEY_USERS);
     return users_;
   }
   
   /// Contains performance information for software components. Reads HKEY_PERFORMANCE_DATA.
-  static RegistryKey performanceData() {
+  static @property RegistryKey performanceData() {
     if (performanceData_ is null)
       performanceData_ = getSystemKey(HKEY_PERFORMANCE_DATA);
     return performanceData_;
   }
   
   /// Contains configuration information about hardware that is not specifiec to the user. Reads HKEY_CURRENT_CONFIG.
-  static RegistryKey currentConfig() {
+  static @property RegistryKey currentConfig() {
     if (currentConfig_ is null)
       currentConfig_ = getSystemKey(HKEY_CURRENT_CONFIG);
     return currentConfig_;
   }
   
   /// Contains dynamic registry data. Reads HKEY_DYN_DATA.
-  static RegistryKey dynData() {
+  static @property RegistryKey dynData() {
     if (dynData_ is null)
       dynData_ = getSystemKey(HKEY_DYN_DATA);
     return dynData_;
@@ -561,14 +561,14 @@ final class RegistryKey {
   /**
    * Retrieves the _name of this key.
    */
-  string name() {
+  @property string name() {
     return name_;
   }
 
   /**
    * Retrieves the count of values in the key.
    */
-  uint valueCount() {
+  @property uint valueCount() {
     uint values;
     int ret = RegQueryInfoKey(hkey_, null, null, null, null, null, null, &values, null, null, null, null);
     if (ret != ERROR_SUCCESS)
@@ -579,7 +579,7 @@ final class RegistryKey {
   /**
    * Retrieves an array of strings containing all the value names.
    */
-  string[] valueNames() {
+  @property string[] valueNames() {
     uint values = valueCount;
     string[] names = new string[values];
 
@@ -600,7 +600,7 @@ final class RegistryKey {
   /**
    * Retrieves the count of subkeys of the current key.
    */
-  uint subKeyCount() {
+  @property uint subKeyCount() {
     uint subKeys;
     int ret = RegQueryInfoKey(hkey_, null, null, null, &subKeys, null, null, null, null, null, null, null);
     if (ret != ERROR_SUCCESS)
@@ -611,7 +611,7 @@ final class RegistryKey {
   /**
    * Retrieves an array of strings containing all the subkey names.
    */
-  string[] subKeyNames() {
+  @property string[] subKeyNames() {
     uint values = subKeyCount;
     string[] names = new string[values];
 
@@ -631,7 +631,7 @@ final class RegistryKey {
 
   /**
    */
-  Handle handle() {
+  @property Handle handle() {
     if (!systemKey_)
       return hkey_;
 
