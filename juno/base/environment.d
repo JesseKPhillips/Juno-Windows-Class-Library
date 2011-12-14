@@ -132,28 +132,28 @@ final class Version {
   /**
    * Gets the value of the _major component.
    */
-  int major() {
+  @property int major() {
     return major_;
   }
 
   /**
    * Gets the value of the _minor component.
    */
-  int minor() {
+  @property int minor() {
     return minor_;
   }
 
   /**
    * Gets the value of the _build component.
    */
-  int build() {
+  @property int build() {
     return build_;
   }
 
   /**
    * Gets the value of the _revision component.
    */
-  int revision() {
+  @property int revision() {
     return revision_;
   }
 
@@ -242,7 +242,7 @@ PlatformId osPlatform() {
 /**
  * Gets a Version object describing the major, minor, build and revision numbers of the operating system.
  */
-Version osVersion() {
+@property Version osVersion() {
   static Version osVersion_;
 
   if (osVersion_ is null) {

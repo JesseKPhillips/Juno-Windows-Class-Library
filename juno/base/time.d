@@ -77,51 +77,51 @@ struct TimeSpan {
   }
 
   /// Gets the _hours component.
-  int hours() {
+  @property int hours() {
     return cast(int)((ticks_ / TicksPerHour) % 24);
   }
 
   /// Gets the _minutes component.
-  int minutes() {
+  @property int minutes() {
     return cast(int)((ticks_ / TicksPerMinute) % 60);
   }
 
   /// Gets the _seconds component.
-  int seconds() {
+  @property int seconds() {
     return cast(int)((ticks_ / TicksPerSecond) % 60);
   }
 
   /// Gets the _milliseconds component.
-  int milliseconds() {
+  @property int milliseconds() {
     return cast(int)((ticks_ / TicksPerMillisecond) % 1000);
   }
 
   /// Gets the value of the instance expressed in whole and fractional milliseconds.
-  double totalMilliseconds() {
+  @property double totalMilliseconds() {
     return cast(double)ticks_ * MillisecondsPerTick;
   }
 
   /// Gets the value of the instance expressed in whole and fractional seconds.
-  double totalSeconds() {
+  @property double totalSeconds() {
     return cast(double)ticks_ * SecondsPerTick;
   }
 
-  double totalMinutes() {
+  @property double totalMinutes() {
     return cast(double)ticks_ * MinutesPerTick;
   }
 
   /// Gets the _days component.
-  int days() {
+  @property int days() {
     return cast(int)(ticks_ / TicksPerDay);
   }
 
   /// Returns a new instance whose value is the absolute value of the current instance.
-  TimeSpan duration() {
+  @property TimeSpan duration() {
     return TimeSpan((ticks_ < 0) ? -ticks_ : ticks_);
   }
 
   /// Gets the number of _ticks.
-  long ticks() {
+  @property long ticks() {
     return ticks_;
   }
 

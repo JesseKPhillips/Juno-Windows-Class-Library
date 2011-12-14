@@ -143,13 +143,14 @@ abstract class WaitHandle {
     return signalAndWait(toSignal, toWaitOn, cast(uint)timeout.totalMilliseconds);
   }
 
-  void handle(Handle value) {
+  @property void handle(Handle value) {
     if (value == Handle.init)
       handle_ = INVALID_HANDLE_VALUE;
     else
       handle_ = handle;
   }
-  Handle handle() {
+
+  @property Handle handle() {
     if (handle_ == Handle.init)
       return INVALID_HANDLE_VALUE;
     return handle_;

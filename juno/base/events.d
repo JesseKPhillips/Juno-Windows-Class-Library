@@ -154,7 +154,7 @@ struct Event(R, T...) {
     size_ = 0;
   }
 
-  bool isEmpty() const {
+  @property bool isEmpty() const {
     return (size_ == 0);
   }
 
@@ -162,7 +162,7 @@ struct Event(R, T...) {
     return isEmpty;
   }
 
-  uint count() {
+  @property uint count() {
     return size_;
   }
 

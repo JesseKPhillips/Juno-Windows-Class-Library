@@ -67,13 +67,13 @@ struct Optional(T) {
     hasValue_ = true;
   }
 
-  T value() {
+  @property T value() {
     if (!hasValue)
       throw new InvalidOperationException;
     return value_;
   }
 
-  bool hasValue() {
+  @property bool hasValue() {
     return hasValue_;
   }
 

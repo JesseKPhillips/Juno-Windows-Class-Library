@@ -537,7 +537,7 @@ abstract class Encoding {
     return utf16Encoding_;
   }
 
-  uint codePage() {
+  @property uint codePage() {
     return codePage_;
   }
 
@@ -545,7 +545,7 @@ abstract class Encoding {
    * Gets a _description of the encoding.
    * Returns: A _description of the encoding.
    */
-  string description() {
+  @property string description() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
     return cpInfo_.description;
@@ -555,7 +555,7 @@ abstract class Encoding {
    * Gets the name registered with the IANA.
    * Returns: The IANA name.
    */
-  string webName() {
+  @property string webName() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
     return cpInfo_.webName;
@@ -565,7 +565,7 @@ abstract class Encoding {
    * Gets a name that can be used with mail agent header tags.
    * Returns: A name that can be used with mail agent header tags.
    */
-  string headerName() {
+  @property string headerName() {
     if (cpInfo_ == null)
       cpInfo_ = getCodePageInfo(codePage_);
     return cpInfo_.headerName;
