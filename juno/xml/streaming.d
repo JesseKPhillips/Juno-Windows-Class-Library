@@ -182,28 +182,28 @@ final class XmlReaderSettings {
   /**
    * Gets or sets the level of conformance with which the XmlReader will comply.
    */
-  void conformanceLevel(XmlConformanceLevel value) {
+  @property void conformanceLevel(XmlConformanceLevel value) {
     conformanceLevel_ = value;
   }
 
   /**
    * ditto
    */
-  XmlConformanceLevel conformanceLevel() {
+  @property XmlConformanceLevel conformanceLevel() {
     return conformanceLevel_;
   }
 
   /**
    * Gets or sets a _value indicating whether to prohibit document type definition (DTD) processing.
    */
-  void prohibitDtd(bool value) {
+  @property void prohibitDtd(bool value) {
     prohibitDtd_ = value;
   }
 
   /**
    * ditto
    */
-  bool prohibitDtd() {
+  @property bool prohibitDtd() {
     return prohibitDtd_;
   }
 
@@ -239,28 +239,28 @@ class XmlParserContext {
   /**
    * Gets or sets the base URI.
    */
-  final void baseURI(string value) {
+  final @property void baseURI(string value) {
     baseURI_ = value;
   }
 
   /**
    * ditto
    */
-  final string baseURI() {
+  final @property string baseURI() {
     return baseURI_;
   }
 
   /**
    * Gets or sets the _encoding setting.
    */
-  final void encoding(Encoding value) {
+  final @property void encoding(Encoding value) {
     encoding_ = value;
   }
   
   /**
    * ditto
    */
-  final Encoding encoding() {
+  final @property Encoding encoding() {
     return encoding_;
   }
 
@@ -806,89 +806,89 @@ abstract class XmlReader {
   /**
    * Gets the state of the reader.
    */
-  abstract XmlReadState readState();
+  abstract @property XmlReadState readState();
 
   /**
    * Gets the _depth of the current node in the XML document.
    */
-  abstract int depth();
+  abstract @property int depth();
 
   /**
    * Gets a value indicating whether the reader is positioned at the end of the stream.
    */
-  abstract bool isEOF();
+  abstract @property bool isEOF();
 
   /**
    * Gets a value indicating whether the current node is an empty element.
    */
-  abstract bool isEmptyElement();
+  abstract @property bool isEmptyElement();
 
   /**
    * Gets a value indicating whether the current node is an attribute generated from the default value defined in the DTD or schema.
    */
-  bool isDefault() {
+  @property bool isDefault() {
     return false;
   }
 
   /**
    * Gets the type of the current node.
    */
-  abstract XmlNodeType nodeType();
+  abstract @property XmlNodeType nodeType();
 
   /**
    * Gets the base URI of the current node.
    */
-  abstract string baseURI();
+  abstract @property string baseURI();
 
   /**
    * Gets the qualified _name of the current node.
    */
-  abstract string name();
+  abstract @property string name();
 
   /**
    * Gets the namespace _prefix of the current node.
    */
-  abstract string prefix();
+  abstract @property string prefix();
 
   /**
    * Gets the local name of the current node.
    */
-  abstract string localName();
+  abstract @property string localName();
 
   /**
    * Gets the namespace URI of the current node.
    */
-  abstract string namespaceURI();
+  abstract @property string namespaceURI();
 
   /**
    * Gets a value indicating whether the current node has a value.
    */
-  abstract bool hasValue();
+  abstract @property bool hasValue();
 
   /**
    * Gets the text _value of the current node.
    */
-  abstract string value();
+  abstract @property string value();
 
   /**
    * Gets a value indicating whether the current node has any attributes.
    */
-  bool hasAttributes() {
+  @property bool hasAttributes() {
     return attributeCount > 0;
   }
 
   /**
    * Gets the number of attributes on the current node.
    */
-  abstract int attributeCount();
+  abstract @property int attributeCount();
 
   /**
    */
-  abstract int lineNumber();
+  abstract @property int lineNumber();
 
   /**
    */
-  abstract int linePosition();
+  abstract @property int linePosition();
 
   /**
    * Gets the value of the attribute.
@@ -1006,95 +1006,95 @@ private final class XmlLiteReader : XmlReader {
     return null;
   }
 
-  override XmlReadState readState() {
+  override @property XmlReadState readState() {
     int value;
     readerImpl_.GetProperty(XmlReaderProperty.ReadState, value);
     return cast(XmlReadState)value;
   }
 
-  override int depth() {
+  override @property int depth() {
     uint value;
     readerImpl_.GetDepth(value);
     return cast(uint)value;
   }
 
-  override bool isEOF() {
+  override @property bool isEOF() {
     return readerImpl_.IsEOF() != 0;
   }
 
-  override bool isEmptyElement() {
+  override @property bool isEmptyElement() {
     return readerImpl_.IsEmptyElement() != 0;
   }
 
-  override bool isDefault() {
+  override @property bool isDefault() {
     return readerImpl_.IsDefault() != 0;
   }
 
-  override XmlNodeType nodeType() {
+  override @property XmlNodeType nodeType() {
     XmlNodeType nodeType;
     readerImpl_.GetNodeType(nodeType);
     return nodeType;
   }
 
-  override string baseURI() {
+  override @property string baseURI() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetBaseUri(pwsz, cwch);
     return toUtf8(pwsz, 0, cwch);
   }
 
-  override string name() {
+  override @property string name() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetQualifiedName(pwsz, cwch);
     return toUtf8(pwsz, 0, cwch);
   }
 
-  override string prefix() {
+  override @property string prefix() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetPrefix(pwsz, cwch);
     return toUtf8(pwsz, 0, cwch);
   }
 
-  override string localName() {
+  override @property string localName() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetLocalName(pwsz, cwch);
     return toUtf8(pwsz, 0, cwch);
   }
 
-  override string namespaceURI() {
+  override @property string namespaceURI() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetNamespaceUri(pwsz, cwch);
     return toUtf8(pwsz, 0, cwch);
   }
 
-  override bool hasValue() {
+  override @property bool hasValue() {
     return (0b100110010110011100 & (1 << nodeType)) != 0;
   }
 
-  override string value() {
+  override @property string value() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetValue(pwsz, cwch);
     return toUtf8(pwsz, 0, cwch);
   }
 
-  override int attributeCount() {
+  override @property int attributeCount() {
     uint value;
     readerImpl_.GetAttributeCount(value);
     return value;
   }
 
-  override int lineNumber() {
+  override @property int lineNumber() {
     uint value;
     readerImpl_.GetLineNumber(value);
     return cast(int)value;
   }
 
-  override int linePosition() {
+  override @property int linePosition() {
     uint value;
     readerImpl_.GetLinePosition(value);
     return cast(uint)value;
@@ -1132,56 +1132,56 @@ final class XmlWriterSettings {
   /**
    * Gets or sets the type of text encoding to use.
    */
-  void encoding(Encoding value) {
+  @property void encoding(Encoding value) {
     encoding_ = value;
   }
 
   /**
    * ditto
    */
-  Encoding encoding() {
+  @property Encoding encoding() {
     return encoding_;
   }
 
   /**
    * Gets or sets the level of conformance the XmlReader complies with.
    */
-  void conformanceLevel(XmlConformanceLevel value) {
+  @property void conformanceLevel(XmlConformanceLevel value) {
     conformanceLevel_ = value;
   }
 
   /**
    * ditto
    */
-  XmlConformanceLevel conformanceLevel() {
+  @property XmlConformanceLevel conformanceLevel() {
     return conformanceLevel_;
   }
 
   /**
    * Gets or sets a value indicating whether to _indent elements.
    */
-  void indent(bool value) {
+  @property void indent(bool value) {
     indent_ = value ? 1 : 0;
   }
 
   /**
    * ditto
    */
-  bool indent() {
+  @property bool indent() {
     return indent_ == 1;
   }
 
   /**
    * Gets or sets a value indicating whether to write an XML declaration.
    */
-  bool omitXmlDeclaration() {
+  @property bool omitXmlDeclaration() {
     return omitXmlDeclaration_;
   }
 
   /**
    * ditto
    */
-  void omitXmlDeclaration(bool value) {
+  @property void omitXmlDeclaration(bool value) {
     omitXmlDeclaration_ = value;
   }
 

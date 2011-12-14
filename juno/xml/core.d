@@ -151,11 +151,11 @@ class XmlQualifiedName {
     return name;
   }
 
-  final string name() {
+  final @property string name() {
     return name_;
   }
 
-  final string namespace() {
+  final @property string namespace() {
     return ns_;
   }
 

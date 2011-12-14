@@ -1075,7 +1075,7 @@ class XmlNode {
     }
   }
 
-  package IXMLDOMNode impl() {
+  package @property IXMLDOMNode impl() {
     return nodeImpl_;
   }
 
