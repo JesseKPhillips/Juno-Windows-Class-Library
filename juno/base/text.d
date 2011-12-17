@@ -491,7 +491,7 @@ abstract class Encoding {
    * Gets an encoding for the system's ANSI code page.
    * Returns: An encoding for the system's ANSI code page.
    */
-  static Encoding DEFAULT() {
+  static @property Encoding DEFAULT() {
     if (defaultEncoding_ is null)
       defaultEncoding_ = Encoding.get(GetACP());
     return defaultEncoding_;
@@ -501,7 +501,7 @@ abstract class Encoding {
    * Gets an encoding for the ASCII character set.
    * Returns: An encoding for the ASCII character set.
    */
-  static Encoding ASCII() {
+  static @property Encoding ASCII() {
     if (asciiEncoding_ is null)
       asciiEncoding_ = new AscIIEncoding;
     return asciiEncoding_;
@@ -511,7 +511,7 @@ abstract class Encoding {
    * Gets an encoding for the UTF-7 format.
    * Returns: An encoding for the UTF-7 format.
    */
-  static Encoding UTF7() {
+  static @property Encoding UTF7() {
     if (utf7Encoding_ is null)
       utf7Encoding_ = new Utf7Encoding;
     return utf7Encoding_;
@@ -521,7 +521,7 @@ abstract class Encoding {
    * Gets an encoding for the UTF-8 format.
    * Returns: An encoding for the UTF-8 format.
    */
-  static Encoding UTF8() {
+  static @property Encoding UTF8() {
     if (utf8Encoding_ is null)
       utf8Encoding_ = new Utf8Encoding;
     return utf8Encoding_;
@@ -531,7 +531,7 @@ abstract class Encoding {
    * Gets an encoding for the UTF-16 format using the little endian byte order.
    * Returns: An encoding for the UTF-16 format using the little endian byte order.
    */
-  static Encoding UTF16() {
+  static @property Encoding UTF16() {
     if (utf16Encoding_ is null)
       utf16Encoding_ = new Utf16Encoding;
     return utf16Encoding_;
