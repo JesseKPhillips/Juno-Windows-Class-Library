@@ -576,15 +576,15 @@ abstract class Member {
 
   /**
    */
-  abstract string name();
+  abstract @property string name();
 
   /**
    */
-  abstract string help();
+  abstract @property string help();
 
   /**
    */
-  abstract MemberTypes memberType();
+  abstract @property MemberTypes memberType();
 
 }
 
@@ -614,7 +614,7 @@ abstract class Type : Member {
 
   /**
    */
-  abstract TypeAttributes attributes();
+  abstract @property TypeAttributes attributes();
 
   /**
    */
@@ -744,7 +744,7 @@ package final class TypeImpl : Type {
     return help_;
   }
 
-  override TypeAttributes attributes() {
+  override @property TypeAttributes attributes() {
     return attr_;
   }
 
@@ -1224,11 +1224,11 @@ package final class MethodImpl : Method {
 
   private ITypeInfo typeInfo_;
 
-  override string name() {
+  override @property string name() {
     return name_;
   }
 
-  override string help() {
+  override @property string help() {
     return help_;
   }
 
@@ -1238,21 +1238,21 @@ package final class MethodImpl : Method {
     return parameters_;
   }
 
-  override MethodAttributes attributes() {
+  override @property MethodAttributes attributes() {
     return attrs_;
   }
 
-  override Type returnType() {
+  override @property Type returnType() {
     return returnType_;
   }
 
-  override Parameter returnParameter() {
+  override @property Parameter returnParameter() {
     if (returnParameter_ is null)
       Parameter.getParameters(this, returnParameter_, true);
     return returnParameter_;
   }
 
-  override int id() {
+  override @property int id() {
     return id_;
   }
 
@@ -1299,55 +1299,55 @@ class Parameter {
 
   /**
    */
-  string name() {
+  @property string name() {
     return name_;
   }
 
   /**
    */
-  int position() {
+  @property int position() {
     return position_;
   }
 
   /**
    */
-  ParameterAttributes attributes() {
+  @property ParameterAttributes attributes() {
     return attrs_;
   }
 
   /**
    */
-  Member member() {
+  @property Member member() {
     return member_;
   }
 
   /**
    */
-  Type parameterType() {
+  @property Type parameterType() {
     return parameterType_;
   }
 
   /**
    */
-  bool isIn() {
+  @property bool isIn() {
     return (attributes & ParameterAttributes.In) != 0;
   }
 
   /**
    */
-  bool isOut() {
+  @property bool isOut() {
     return (attributes & ParameterAttributes.Out) != 0;
   }
 
   /**
    */
-  bool isRetval() {
+  @property bool isRetval() {
     return (attributes & ParameterAttributes.Retval) != 0;
   }
 
   /**
    */
-  bool isOptional() {
+  @property bool isOptional() {
     return (attributes & ParameterAttributes.Optional) != 0;
   }
 

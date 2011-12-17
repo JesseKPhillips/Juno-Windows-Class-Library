@@ -535,7 +535,7 @@ class Culture : IFormatProvider {
    * Gets the Culture that is culture-independent.
    * Returns: The Culture that is culture-independent.
    */
-  static Culture constant() {
+  static @property Culture constant() {
     return constant_;
   }
 
@@ -543,7 +543,7 @@ class Culture : IFormatProvider {
    * Gets or sets the Culture that represents the culture used by the _current thread.
    * Returns: The Culture that represents the culture used by the _current thread.
    */
-  static void current(Culture value) {
+  static @property void current(Culture value) {
     if (value is null)
       throw new ArgumentNullException("value");
 
@@ -555,7 +555,7 @@ class Culture : IFormatProvider {
   /**
    * ditto
    */
-  static Culture current() {
+  static @property Culture current() {
     if (current_ !is null)
       return current_;
 
@@ -566,7 +566,7 @@ class Culture : IFormatProvider {
    * Gets or sets the Culture that represents the current culture used to look up resources.
    * Returns: The Culture that represents the current culture used to look up resources.
    */
-  static void currentUI(Culture value) {
+  static @property void currentUI(Culture value) {
     if (value is null)
       throw new ArgumentNullException("value");
 
@@ -576,7 +576,7 @@ class Culture : IFormatProvider {
   /**
    * ditto
    */
-  static Culture currentUI() {
+  static @property Culture currentUI() {
     if (currentUI_ !is null)
       return currentUI_;
 
@@ -607,7 +607,7 @@ class Culture : IFormatProvider {
    * Gets the culture identifier of the current instance.
    * Returns: The culture identifier.
    */
-  uint lcid() {
+  @property uint lcid() {
     return cultureId_;
   }
 
@@ -615,7 +615,7 @@ class Culture : IFormatProvider {
    * Gets the culture _name in the format "&lt;language&gt;-&lt;region&gt;".
    * Returns: The culture _name.
    */
-  string name() {
+  @property string name() {
     return cultureName_;
   }
 
@@ -624,7 +624,7 @@ class Culture : IFormatProvider {
    * the language of the culture.
    * Returns: The culture name in the language of the culture.
    */
-  string nativeName() {
+  @property string nativeName() {
     string s = getLocaleInfo(cultureId_, LOCALE_SNATIVELANGNAME);
     if (!isNeutral)
       s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SNATIVECTRYNAME) ~ ")";
@@ -652,7 +652,7 @@ class Culture : IFormatProvider {
    * Gets the culture name in the format "&lt;language&gt; (&lt;region&gt;)" in English.
    * Returns: The culture name in English.
    */
-  string englishName() {
+  @property string englishName() {
     string s = getLocaleInfo(cultureId_, LOCALE_SENGLANGUAGE);
     if (!isNeutral)
       s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SENGCOUNTRY) ~ ")";
@@ -680,7 +680,7 @@ class Culture : IFormatProvider {
    * Gets the culture name in the format "&lt;language&gt; (&lt;region&gt;)" in the localised version of Windows.
    * Returns: The culture name in the localised version of Windows.
    */
-  string displayName() {
+  @property string displayName() {
     string s = getLocaleInfo(cultureId_, LOCALE_SLANGUAGE);
     if (s != null && isNeutral && cultureId_ != LOCALE_INVARIANT) {
       // Remove country from neutral cultures.
@@ -740,14 +740,14 @@ class Culture : IFormatProvider {
    * Gets or sets the string that separates items in a list.
    * Params: value = The string that separates items in a list.
    */
-  void listSeparator(string value) {
+  @property void listSeparator(string value) {
     checkReadOnly();
 
     listSeparator_ = value;
   }
 
   /// ditto
-  string listSeparator() {
+  @property string listSeparator() {
     if (listSeparator_ == null)
       listSeparator_ = getLocaleInfo(cultureId_, LOCALE_SLIST);
     return listSeparator_;
@@ -757,7 +757,7 @@ class Culture : IFormatProvider {
    * Gets a value indictating whether the current instance represents a neutral culture.
    * Returns: true if the current instance represents a neutral culture; otherwise, false.
    */
-  bool isNeutral() {
+  @property bool isNeutral() {
     return isNeutralCulture(cultureId_);
   }
 
@@ -765,7 +765,7 @@ class Culture : IFormatProvider {
    * Gets a value indicating whether the current instance is read-only.
    * Returns: true if the current instance is read-only; otherwise, false.
    */
-  final bool isReadOnly() {
+  @property final bool isReadOnly() {
     return isReadOnly_;
   }
 
@@ -773,7 +773,7 @@ class Culture : IFormatProvider {
    * Gets the culture _types that pertain to the current instance.
    * Returns: A bitwise combination of CultureTypes values.
    */
-  CultureTypes types() {
+  @property CultureTypes types() {
     CultureTypes ret = cast(CultureTypes)0;
     if (isNeutral)
       ret |= CultureTypes.Neutral;
@@ -785,7 +785,7 @@ class Culture : IFormatProvider {
   /**
    * $(I Property.) Gets or sets a NumberFormat that defines the culturally appropriate format of displaying numbers and currency.
    */
-  void numberFormat(NumberFormat value) {
+  @property void numberFormat(NumberFormat value) {
     checkReadOnly();
 
     if (value is null)
@@ -794,7 +794,7 @@ class Culture : IFormatProvider {
     numberFormat_ = value;
   }
   /// ditto
-  NumberFormat numberFormat() {
+  @property NumberFormat numberFormat() {
     if (numberFormat_ is null) {
       checkNeutral(this);
 
@@ -807,7 +807,7 @@ class Culture : IFormatProvider {
   /**
    *$(I Property.) Gets or sets a DateTimeFormat that defines the culturally appropriate format of displaying dates and times.
    */
-  void dateTimeFormat(DateTimeFormat value) {
+  @property void dateTimeFormat(DateTimeFormat value) {
     checkReadOnly();
 
     if (value is null)
@@ -816,7 +816,7 @@ class Culture : IFormatProvider {
     dateTimeFormat_ = value;
   }
   /// ditto
-  DateTimeFormat dateTimeFormat() {
+  @property DateTimeFormat dateTimeFormat() {
     if (dateTimeFormat_ is null) {
       checkNeutral(this);
 
@@ -830,7 +830,7 @@ class Culture : IFormatProvider {
    * Gets the default _calendar used by the culture.
    * Returns: A Calendar that represents the default _calendar used by a culture.
    */
-  Calendar calendar() {
+  @property Calendar calendar() {
     if (calendar_ is null) {
       calendar_ = getCalendar(getLocaleInfoI(cultureId_, LOCALE_ICALENDARTYPE));
       calendar_.isReadOnly_ = isReadOnly_;
@@ -838,7 +838,7 @@ class Culture : IFormatProvider {
     return calendar_;
   }
 
-  Calendar[] optionalCalendars() {
+  @property Calendar[] optionalCalendars() {
     static int[] temp;
 
     extern(Windows)
@@ -861,7 +861,7 @@ class Culture : IFormatProvider {
    * Gets the Collator that defines how to compare strings for the culture.
    * Returns: The Collator that defines how to compare strings for the culture.
    */
-  Collator collator() {
+  @property Collator collator() {
     if (collator_ is null)
       collator_ = Collator.get(cultureId_);
     return collator_;
@@ -961,13 +961,13 @@ class Culture : IFormatProvider {
     return culture;
   }
 
-  private static Culture userDefault() {
+  private static @property Culture userDefault() {
     if (userDefault_ is null)
       userDefault_ = initUserDefault();
     return userDefault_;
   }
 
-  private static Culture userDefaultUI() {
+  private static @property Culture userDefaultUI() {
     if (userDefaultUI_ is null)
       userDefaultUI_ = initUserDefaultUI();
     return userDefaultUI_;
@@ -1042,7 +1042,7 @@ class NumberFormat : IFormatProvider {
 
   /**
    */
-  static NumberFormat constant() {
+  static @property NumberFormat constant() {
     if (constant_ is null) {
       constant_ = new NumberFormat;
       constant_.isReadOnly_ = true;
@@ -1052,7 +1052,7 @@ class NumberFormat : IFormatProvider {
 
   /**
    */
-  static NumberFormat current() {
+  static @property NumberFormat current() {
     Culture culture = Culture.current;
     if (!culture.isInherited_) {
       if (auto result = culture.numberFormat_)
@@ -1063,7 +1063,7 @@ class NumberFormat : IFormatProvider {
 
   /**
    */
-  void numberGroupSizes(int[] value) {
+  @property void numberGroupSizes(int[] value) {
     checkReadOnly();
     numberGroupSizes_ = value;
   }
@@ -1071,13 +1071,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  int[] numberGroupSizes() {
+  @property int[] numberGroupSizes() {
     return numberGroupSizes_;
   }
 
   /**
    */
-  void currencyGroupSizes(int[] value) {
+  @property void currencyGroupSizes(int[] value) {
     checkReadOnly();
     currencyGroupSizes_ = value;
   }
@@ -1085,13 +1085,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  int[] currencyGroupSizes() {
+  @property int[] currencyGroupSizes() {
     return currencyGroupSizes_;
   }
 
   /**
    */
-  void positiveSign(string value) {
+  @property void positiveSign(string value) {
     checkReadOnly();
     positiveSign_ = value;
   }
@@ -1099,13 +1099,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string positiveSign() {
+  @property string positiveSign() {
     return positiveSign_;
   }
 
   /**
    */
-  void negativeSign(string value) {
+  @property void negativeSign(string value) {
     checkReadOnly();
     negativeSign_ = value;
   }
@@ -1113,13 +1113,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string negativeSign() {
+  @property string negativeSign() {
     return negativeSign_;
   }
 
   /**
    */
-  void numberDecimalSeparator(string value) {
+  @property void numberDecimalSeparator(string value) {
     checkReadOnly();
     numberDecimalSeparator_ = value;
   }
@@ -1127,13 +1127,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string numberDecimalSeparator() {
+  @property string numberDecimalSeparator() {
     return numberDecimalSeparator_;
   }
 
   /**
    */
-  void currencyDecimalSeparator(string value) {
+  @property void currencyDecimalSeparator(string value) {
     checkReadOnly();
     currencyDecimalSeparator_ = value;
   }
@@ -1141,13 +1141,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string currencyDecimalSeparator() {
+  @property string currencyDecimalSeparator() {
     return currencyDecimalSeparator_;
   }
 
   /**
    */
-  void numberGroupSeparator(string value) {
+  @property void numberGroupSeparator(string value) {
     checkReadOnly();
     numberGroupSeparator_ = value;
   }
@@ -1155,13 +1155,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string numberGroupSeparator() {
+  @property string numberGroupSeparator() {
     return numberGroupSeparator_;
   }
 
   /**
    */
-  void currencyGroupSeparator(string value) {
+  @property void currencyGroupSeparator(string value) {
     checkReadOnly();
     currencyGroupSeparator_ = value;
   }
@@ -1169,13 +1169,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string currencyGroupSeparator() {
+  @property string currencyGroupSeparator() {
     return currencyGroupSeparator_;
   }
 
   /**
    */
-  void currencySymbol(string value) {
+  @property void currencySymbol(string value) {
     checkReadOnly();
     currencySymbol_ = value;
   }
@@ -1183,13 +1183,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string currencySymbol() {
+  @property string currencySymbol() {
     return currencySymbol_;
   }
 
   /**
    */
-  void nanSymbol(string value) {
+  @property void nanSymbol(string value) {
     checkReadOnly();
     nanSymbol_ = value;
   }
@@ -1197,13 +1197,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string nanSymbol() {
+  @property string nanSymbol() {
     return nanSymbol_;
   }
 
   /**
    */
-  void positiveInfinitySymbol(string value) {
+  @property void positiveInfinitySymbol(string value) {
     checkReadOnly();
     positiveInfinitySymbol_ = value;
   }
@@ -1211,13 +1211,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string positiveInfinitySymbol() {
+  @property string positiveInfinitySymbol() {
     return positiveInfinitySymbol_;
   }
 
   /**
    */
-  void negativeInfinitySymbol(string value) {
+  @property void negativeInfinitySymbol(string value) {
     checkReadOnly();
     negativeInfinitySymbol_ = value;
   }
@@ -1225,13 +1225,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  string negativeInfinitySymbol() {
+  @property string negativeInfinitySymbol() {
     return negativeInfinitySymbol_;
   }
 
   /**
    */
-  void numberDecimalDigits(int value) {
+  @property void numberDecimalDigits(int value) {
     checkReadOnly();
     numberDecimalDigits_ = value;
   }
@@ -1239,13 +1239,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  int numberDecimalDigits() {
+  @property int numberDecimalDigits() {
     return numberDecimalDigits_;
   }
 
   /**
    */
-  void currencyDecimalDigits(int value) {
+  @property void currencyDecimalDigits(int value) {
     checkReadOnly();
     currencyDecimalDigits_ = value;
   }
@@ -1253,13 +1253,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  int currencyDecimalDigits() {
+  @property int currencyDecimalDigits() {
     return currencyDecimalDigits_;
   }
 
   /**
    */
-  void currencyPositivePattern(int value) {
+  @property void currencyPositivePattern(int value) {
     checkReadOnly();
     currencyPositivePattern_ = value;
   }
@@ -1267,13 +1267,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  int currencyPositivePattern() {
+  @property int currencyPositivePattern() {
     return currencyPositivePattern_;
   }
 
   /**
    */
-  void currencyNegativePattern(int value) {
+  @property void currencyNegativePattern(int value) {
     checkReadOnly();
     currencyNegativePattern_ = value;
   }
@@ -1281,13 +1281,13 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  int currencyNegativePattern() {
+  @property int currencyNegativePattern() {
     return currencyNegativePattern_;
   }
 
   /**
    */
-  void numberNegativePattern(int value) {
+  @property void numberNegativePattern(int value) {
     checkReadOnly();
     numberNegativePattern_ = value;
   }
@@ -1295,7 +1295,7 @@ class NumberFormat : IFormatProvider {
   /**
    * ditto
    */
-  int numberNegativePattern() {
+  @property int numberNegativePattern() {
     return numberNegativePattern_;
   }
 
@@ -1574,7 +1574,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  static DateTimeFormat constant() {
+  static @property DateTimeFormat constant() {
     if (constant_ is null) {
       constant_ = new DateTimeFormat;
       constant_.calendar.isReadOnly_ = true;
@@ -1585,7 +1585,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  static DateTimeFormat current() {
+  static @property DateTimeFormat current() {
     Culture culture = Culture.current;
     if (auto value = culture.dateTimeFormat_)
       return value;
@@ -1594,7 +1594,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void calendar(Calendar value) {
+  final @property void calendar(Calendar value) {
     if (value !is calendar_) {
       for (auto i = 0; i < optionalCalendars.length; i++) {
         if (optionalCalendars[i] == value.internalId) {
@@ -1632,13 +1632,13 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final Calendar calendar() {
+  final @property Calendar calendar() {
     return calendar_;
   }
 
   /**
    */
-  final void amDesignator(string value) {
+  final @property void amDesignator(string value) {
     checkReadOnly();
     amDesignator_ = value;
   }
@@ -1646,7 +1646,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string amDesignator() {
+  final @property string amDesignator() {
     if (amDesignator_ == null)
       amDesignator_ = getLocaleInfo(cultureId_, LOCALE_S1159);
     return amDesignator_;
@@ -1654,7 +1654,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void pmDesignator(string value) {
+  final @property void pmDesignator(string value) {
     checkReadOnly();
     pmDesignator_ = value;
   }
@@ -1662,7 +1662,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string pmDesignator() {
+  final @property string pmDesignator() {
     if (pmDesignator_ == null)
       pmDesignator_ = getLocaleInfo(cultureId_, LOCALE_S2359);
     return pmDesignator_;
@@ -1670,7 +1670,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void dateSeparator(string value) {
+  final @property void dateSeparator(string value) {
     checkReadOnly();
     dateSeparator_ = value;
   }
@@ -1678,7 +1678,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string dateSeparator() {
+  final @property string dateSeparator() {
     if (dateSeparator_ == null)
       dateSeparator_ = getLocaleInfo(cultureId_, LOCALE_SDATE);
     return dateSeparator_;
@@ -1686,7 +1686,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void timeSeparator(string value) {
+  final @property void timeSeparator(string value) {
     checkReadOnly();
     timeSeparator_ = value;
   }
@@ -1694,7 +1694,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string timeSeparator() {
+  final @property string timeSeparator() {
     if (timeSeparator_ == null)
       timeSeparator_ = getLocaleInfo(cultureId_, LOCALE_STIME);
     return timeSeparator_;
@@ -1702,14 +1702,14 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void firstDayOfWeek(DayOfWeek value) {
+  final @property void firstDayOfWeek(DayOfWeek value) {
     checkReadOnly();
     firstDayOfWeek_ = cast(int)value;
   }
   /**
    * ditto
    */
-  final DayOfWeek firstDayOfWeek() {
+  final @property DayOfWeek firstDayOfWeek() {
     if (firstDayOfWeek_ == -1) {
       firstDayOfWeek_ = getLocaleInfoI(cultureId_, LOCALE_IFIRSTDAYOFWEEK);
       // 0 = Monday, 1 = Tuesday ... 6 = Sunday
@@ -1723,14 +1723,14 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void calendarWeekRule(CalendarWeekRule value) {
+  final @property void calendarWeekRule(CalendarWeekRule value) {
     checkReadOnly();
     calendarWeekRule_ = cast(int)value;
   }
   /**
    * ditto
    */
-  final CalendarWeekRule calendarWeekRule() {
+  final @property CalendarWeekRule calendarWeekRule() {
     if (calendarWeekRule_ == -1)
       calendarWeekRule_ = getLocaleInfoI(cultureId_, LOCALE_IFIRSTWEEKOFYEAR);
     return cast(CalendarWeekRule)calendarWeekRule_;
@@ -1738,25 +1738,25 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final string rfc1123Pattern() {
+  final @property string rfc1123Pattern() {
     return RFC1123_PATTERN;
   }
 
   /**
    */
-  final string sortableDateTimePattern() {
+  final @property string sortableDateTimePattern() {
     return SORTABLE_DATETIME_PATTERN;
   }
 
   /**
    */
-  final string universalSortableDateTimePattern() {
+  final @property string universalSortableDateTimePattern() {
     return UNIVERSAL_SORTABLE_DATETIME_PATTERN;
   }
 
   /**
    */
-  final void shortDatePattern(string value) {
+  final @property void shortDatePattern(string value) {
     checkReadOnly();
     shortDatePattern_ = value;
     generalShortTimePattern_ = null;
@@ -1766,7 +1766,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string shortDatePattern() {
+  final @property string shortDatePattern() {
     if (shortDatePattern_ == null)
       shortDatePattern_ = getShortDatePattern(calendar_.internalId);
     return shortDatePattern_;
@@ -1774,7 +1774,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void longDatePattern(string value) {
+  final @property void longDatePattern(string value) {
     checkReadOnly();
     longDatePattern_ = value;
     fullDateTimePattern_ = null;
@@ -1783,7 +1783,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string longDatePattern() {
+  final @property string longDatePattern() {
     if (longDatePattern_ == null)
       longDatePattern_ = getLongDatePattern(calendar_.internalId);
     return longDatePattern_;
@@ -1791,7 +1791,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void shortTimePattern(string value) {
+  final @property void shortTimePattern(string value) {
     checkReadOnly();
     shortTimePattern_ = value;
     generalShortTimePattern_ = null;
@@ -1800,7 +1800,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string shortTimePattern() {
+  final @property string shortTimePattern() {
     if (shortTimePattern_ == null)
       shortTimePattern_ = getShortTime(cultureId_);
     return shortTimePattern_;
@@ -1808,7 +1808,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void longTimePattern(string value) {
+  final @property void longTimePattern(string value) {
     checkReadOnly();
     longTimePattern_ = value;
     fullDateTimePattern_ = null;
@@ -1818,7 +1818,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string longTimePattern() {
+  final @property string longTimePattern() {
     if (longTimePattern_ == null)
       longTimePattern_ = getLocaleInfo(cultureId_, LOCALE_STIMEFORMAT);
     return longTimePattern_;
@@ -1826,7 +1826,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void yearMonthPattern(string value) {
+  final @property void yearMonthPattern(string value) {
     checkReadOnly();
     yearMonthPattern_ = value;
   }
@@ -1834,7 +1834,7 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string yearMonthPattern() {
+  final @property string yearMonthPattern() {
     if (yearMonthPattern_ == null)
       yearMonthPattern_ = getLocaleInfo(cultureId_, LOCALE_SYEARMONTH);
     return yearMonthPattern_;
@@ -1842,19 +1842,19 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final string fullDateTimePattern() {
+  final @property string fullDateTimePattern() {
     if (fullDateTimePattern_ == null)
       fullDateTimePattern_ = longDatePattern ~ " " ~ longTimePattern;
     return fullDateTimePattern_;
   }
 
-  package string generalShortTimePattern() {
+  package @property string generalShortTimePattern() {
     if (generalShortTimePattern_ == null)
       generalShortTimePattern_ = shortDatePattern ~ " " ~ shortTimePattern;
     return generalShortTimePattern_;
   }
 
-  package string generalLongTimePattern() {
+  package @property string generalLongTimePattern() {
     if (generalLongTimePattern_ == null)
       generalLongTimePattern_ = shortDatePattern ~ " " ~ longTimePattern;
     return generalLongTimePattern_;
@@ -1862,7 +1862,7 @@ class DateTimeFormat : IFormatProvider {
 
   /**
    */
-  final void dayNames(string[] value) {
+  final @property void dayNames(string[] value) {
     checkReadOnly();
     dayNames_ = value;
   }
@@ -1870,13 +1870,13 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string[] dayNames() {
+  final @property string[] dayNames() {
     return getDayNames().dup;
   }
 
   /**
    */
-  final void abbreviatedDayNames(string[] value) {
+  final @property void abbreviatedDayNames(string[] value) {
     checkReadOnly();
     abbrevDayNames_ = value;
   }
@@ -1884,13 +1884,13 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string[] abbreviatedDayNames() {
+  final @property string[] abbreviatedDayNames() {
     return getAbbreviatedDayNames().dup;
   }
 
   /**
    */
-  final void monthNames(string[] value) {
+  final @property void monthNames(string[] value) {
     checkReadOnly();
     monthNames_ = value;
   }
@@ -1898,18 +1898,18 @@ class DateTimeFormat : IFormatProvider {
   /**
    * ditto
    */
-  final string[] monthNames() {
+  final @property string[] monthNames() {
     return getMonthNames().dup;
   }
 
   /**
    */
-  final void abbreviatedMonthNames(string[] value) {
+  final @property void abbreviatedMonthNames(string[] value) {
     checkReadOnly();
     abbrevMonthNames_ = value;
   }
 
-  final string[] abbreviatedMonthNames() {
+  final @property string[] abbreviatedMonthNames() {
     return getAbbreviatedMonthNames().dup;
   }
 
@@ -1942,7 +1942,7 @@ class DateTimeFormat : IFormatProvider {
     yearMonthPattern_ = getLocaleInfo(cultureId_, LOCALE_SYEARMONTH);
   }*/
 
-  private string[] allShortDatePatterns() {
+  private @property string[] allShortDatePatterns() {
     if (allShortDatePatterns_ == null) {
       if (!isDefaultCalendar_)
         allShortDatePatterns_ = [ getShortDatePattern(calendar_.internalId) ];
@@ -1952,7 +1952,7 @@ class DateTimeFormat : IFormatProvider {
     return allShortDatePatterns_.dup;
   }
 
-  private string[] allLongDatePatterns() {
+  private @property string[] allLongDatePatterns() {
     if (allLongDatePatterns_ == null) {
       if (!isDefaultCalendar_)
         allLongDatePatterns_ = [ getLongDatePattern(calendar_.internalId) ];
@@ -1962,19 +1962,19 @@ class DateTimeFormat : IFormatProvider {
     return allLongDatePatterns_.dup;
   }
 
-  private string[] allShortTimePatterns() {
+  private @property string[] allShortTimePatterns() {
     if (allShortTimePatterns_ == null)
       allShortTimePatterns_ = getShortTimes(cultureId_);
     return allShortTimePatterns_.dup;
   }
 
-  private string[] allLongTimePatterns() {
+  private @property string[] allLongTimePatterns() {
     if (allLongTimePatterns_ == null)
       allLongTimePatterns_ = getLongTimes(cultureId_);
     return allLongTimePatterns_.dup;
   }
 
-  private string[] allYearMonthPatterns() {
+  private @property string[] allYearMonthPatterns() {
     if (allYearMonthPatterns_ == null) {
       if (!isDefaultCalendar_)
         allYearMonthPatterns_ = [ getCalendarInfo(cultureId_, calendar_.internalId, CAL_SYEARMONTH) ];
@@ -2164,7 +2164,7 @@ class DateTimeFormat : IFormatProvider {
     return eraNames_;
   }
 
-  private int[] optionalCalendars() {
+  private @property int[] optionalCalendars() {
     if (optionalCalendars_ == null)
       optionalCalendars_ = getOptionalCalendars(cultureId_);
     return optionalCalendars_;
@@ -2548,7 +2548,7 @@ class Region {
 
   /**
    */
-  static Region current() {
+  static @property Region current() {
     if (current_ is null)
       current_ = new Region(Culture.current.lcid);
     return current_;
@@ -2556,13 +2556,13 @@ class Region {
 
   /**
    */
-  int geoId() {
+  @property int geoId() {
     return getLocaleInfoI(cultureId_, LOCALE_IGEOID);
   }
 
   /**
    */
-  string name() {
+  @property string name() {
     if (name_ == null)
       name_ = getLocaleInfo(cultureId_, LOCALE_SISO3166CTRYNAME);
     return name_;
@@ -2570,61 +2570,61 @@ class Region {
 
   /**
    */
-  string nativeName() {
+  @property string nativeName() {
     return getLocaleInfo(cultureId_, LOCALE_SNATIVECTRYNAME);
   }
 
   /**
    */
-  string displayName() {
+  @property string displayName() {
     return getLocaleInfo(cultureId_, LOCALE_SCOUNTRY);
   }
 
   /**
    */
-  string englishName() {
+  @property string englishName() {
     return getLocaleInfo(cultureId_, LOCALE_SENGCOUNTRY);
   }
 
   /**
    */
-  string isoRegionName() {
+  @property string isoRegionName() {
     return getGeoInfo(geoId, GEO_ISO2);
   }
 
   /**
    */
-  bool isMetric() {
+  @property bool isMetric() {
     return getLocaleInfoI(cultureId_, LOCALE_IMEASURE) == 0;
   }
 
   /**
    */
-  string currencySymbol() {
+  @property string currencySymbol() {
     return getLocaleInfo(cultureId_, LOCALE_SCURRENCY);
   }
 
   /**
    */
-  string isoCurrencySymbol() {
+  @property string isoCurrencySymbol() {
     return getLocaleInfo(cultureId_, LOCALE_SINTLSYMBOL);
   }
 
   /**
    */
-  string currencyNativeName() {
+  @property string currencyNativeName() {
     return getLocaleInfo(cultureId_, LOCALE_SNATIVECURRNAME);
   }
 
   /**
    */
-  string currencyEnglishName() {
+  @property string currencyEnglishName() {
     return getLocaleInfo(cultureId_, LOCALE_SENGCURRNAME);
   }
 
   /**
    */
-  double latitude() {
+  @property double latitude() {
     version(D_Version2) {
       return std.conv.to!(double)(getGeoInfo(geoId, GEO_LATITUDE));
     }
@@ -2635,7 +2635,7 @@ class Region {
 
   /**
    */
-  double longitude() {
+  @property double longitude() {
     version(D_Version2) {
       return std.conv.to!(double)(getGeoInfo(geoId, GEO_LONGITUDE));
     }

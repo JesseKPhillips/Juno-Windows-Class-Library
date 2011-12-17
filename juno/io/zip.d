@@ -148,7 +148,7 @@ private class InflateStream : CopyFilterStream {
 
   override size_t readBlock(void* buffer, size_t size) {
     if (zs_.avail_in == 0) {
-      if ((zs_.avail_in = source.read(buffer_)) <= 0)
+      if ((zs_.avail_in = source().read(buffer_)) <= 0)
         return 0;
       zs_.next_in = buffer_.ptr;
     }
@@ -172,7 +172,7 @@ private class InflateStream : CopyFilterStream {
     inflateEnd(&zs_);
   }
 
-  override ulong size() {
+  override @property ulong size() {
     return size_;
   }
 
@@ -216,7 +216,7 @@ private class DeflateStream : CopyFilterStream {
       uint n = buffer_.length - zs_.avail_out;
       ubyte[] b = buffer_[0 .. n];
       do {
-        size_t written = source.write(b);
+        size_t written = source().write(b);
         if (written <= 0)
           return 0;
         b = b[written .. $];
@@ -254,7 +254,7 @@ private class DeflateStream : CopyFilterStream {
       uint n = buffer_.length - zs_.avail_out;
       ubyte[] b = buffer_[0 .. n];
       do {
-        size_t written = source.write(b);
+        size_t written = source().write(b);
         if (written <= 0)
           return;
         b = b[written .. $];
@@ -280,7 +280,7 @@ private class CrcStream : CopyFilterStream {
   }
 
   override size_t readBlock(void* buffer, size_t size) {
-    size_t n = source.readBlock(buffer, size);
+    size_t n = source().readBlock(buffer, size);
     if (n != 0)
       value = etc.c.zlib.crc32(value, cast(ubyte*)buffer, n);
     return n;
@@ -338,43 +338,43 @@ class ZipEntry {
     return output_;
   }*/
 
-  void method(CompressionMethod value) {
+  @property void method(CompressionMethod value) {
     method_ = cast(ushort)value;
   }
-  CompressionMethod method() {
+  @property CompressionMethod method() {
     return cast(CompressionMethod)method_;
   }
 
-  void lastWriteTime(DateTime value) {
+  @property void lastWriteTime(DateTime value) {
     lastWriteTime_ = dateTimeToDosDateTime(value);
   }
-  DateTime lastWriteTime() {
+  @property DateTime lastWriteTime() {
     if (lastWriteTime_ == -1)
       return DateTime.now;
     return dosDateTimeToDateTime(lastWriteTime_);
   }
 
-  void fileName(string value) {
+  @property void fileName(string value) {
     if (value.length > 0xFFFF)
       throw new ArgumentOutOfRangeException("value");
 
     fileName_ = value;
   }
-  string fileName() {
+  @property string fileName() {
     return fileName_;
   }
 
-  void comment(string value) {
+  @property void comment(string value) {
     if (value.length > 0xFFFF)
       throw new ArgumentOutOfRangeException("value");
 
     comment_ = value;
   }
-  string comment() {
+  @property string comment() {
     return comment_;
   }
 
-  bool isDirectory() {
+  @property bool isDirectory() {
     return fileName_.endsWith("/");
   }
 
@@ -641,7 +641,7 @@ class ZipWriter {
     //}
   }
 
-  Stream writeStream() {
+  @property Stream writeStream() {
     if (writeStream_ is null)
       writeStream_ = new CopyFilterStream(new MemoryStream);
     return writeStream_;

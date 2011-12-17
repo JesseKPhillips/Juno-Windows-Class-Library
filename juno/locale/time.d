@@ -350,17 +350,17 @@ abstract class Calendar {
   /**
    * Gets a value indicating whether the Calendar object is read-only.
    */
-  final bool isReadOnly() {
+  final @property bool isReadOnly() {
     return isReadOnly_;
   }
 
-  abstract int[] eras();
+  abstract @property int[] eras();
 
-  protected int id() {
+  protected @property int id() {
     return -1;
   }
 
-  package int internalId() {
+  package @property int internalId() {
     return id;
   }
 
@@ -594,7 +594,7 @@ class GregorianCalendar : Calendar {
     return (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0));
   }
 
-  override int[] eras() {
+  override @property int[] eras() {
     if (eras_ == null) {
       if (eraInfo_ == null) eras_ = [ ADEra ];
       else for (int i = 0; i < eraInfo_.length; i++)
@@ -607,7 +607,7 @@ class GregorianCalendar : Calendar {
     return cast(int)type_;
   }
 
-  package static GregorianCalendar defaultInstance() {
+  package static @property GregorianCalendar defaultInstance() {
     if (defaultInstance_ is null)
       defaultInstance_ = new GregorianCalendar;
     return defaultInstance_;
@@ -701,11 +701,11 @@ class JapaneseCalendar : Calendar {
     return base_.isLeapYear(year, era);
   }
 
-  override int[] eras() {
+  override @property int[] eras() {
     return base_.eras;
   }
 
-  protected override int id() {
+  protected override @property int id() {
     return CAL_JAPAN;
   }
 
@@ -1404,70 +1404,70 @@ struct DateTime {
   /**
    * Gets the _hour component.
    */
-  int hour() {
+  @property int hour() {
     return cast(int)((ticks / TicksPerHour) % 24);
   }
 
   /**
    * Gets the _minute component.
    */
-  int minute() {
+  @property int minute() {
     return cast(int)((ticks / TicksPerMinute) % 60);
   }
 
   /**
    * Gets the _seconds component.
    */
-  int second() {
+  @property int second() {
     return cast(int)((ticks / TicksPerSecond) % 60);
   }
 
   /**
    * Gets the _milliseconds component.
    */
-  int millisecond() {
+  @property int millisecond() {
     return cast(int)((ticks / TicksPerMillisecond) % 1000);
   }
 
   /**
    * Gets the _day of the month.
    */
-  int day() {
+  @property int day() {
     return getDatePart(ticks, DatePart.Day);
   }
 
   /**
    * Gets the day of the week.
    */
-  DayOfWeek dayOfWeek() {
+  @property DayOfWeek dayOfWeek() {
     return cast(DayOfWeek)(cast(int)((ticks / TicksPerDay) + 1) % 7);
   }
 
   /**
    * Gets the day of the year.
    */
-  int dayOfYear() {
+  @property int dayOfYear() {
     return getDatePart(ticks, DatePart.DayOfYear);
   }
 
   /**
    * Gets the _month component.
    */
-  int month() {
+  @property int month() {
     return getDatePart(ticks, DatePart.Month);
   }
 
   /**
    * Gets the _year component.
    */
-  int year() {
+  @property int year() {
     return getDatePart(ticks, DatePart.Year);
   }
 
   /**
    * Gets the _date component.
    */
-  DateTime date() {
+  @property DateTime date() {
     long ticks = this.ticks;
     return DateTime(ticks - ticks % TicksPerDay);
   }
@@ -1475,11 +1475,11 @@ struct DateTime {
   /**
    * Gets the number of ticks that represent the date and time.
    */
-  long ticks() {
+  @property long ticks() {
     return cast(long)(data_ & TicksMask);
   }
 
-  DateTimeKind kind() {
+  @property DateTimeKind kind() {
     switch (data_ & KindMask) {
       case KindUtc:
         return DateTimeKind.Utc;
@@ -1508,7 +1508,7 @@ struct DateTime {
     return year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
   }
 
-  bool isDaylightSavingTime() {
+  @property bool isDaylightSavingTime() {
     version(D_Version2) {
       return SystemTimeZone.current.isDaylightSavingTime(this);
     }
@@ -1520,7 +1520,7 @@ struct DateTime {
   /**
    * Gets a DateTime that is set to the current date and time, expressed as the local time.
    */
-  static DateTime now() {
+  static @property DateTime now() {
     FILETIME utcFileTime, localFileTime;
     GetSystemTimeAsFileTime(utcFileTime);
     FileTimeToLocalFileTime(utcFileTime, localFileTime);
@@ -1532,7 +1532,7 @@ struct DateTime {
   /**
    * Gets a DateTime that is set to the current date and time, expressed as the Coordinated Universal Time (UTC).
    */
-  static DateTime utcNow() {
+  static @property DateTime utcNow() {
     FILETIME utcFileTime;
     GetSystemTimeAsFileTime(utcFileTime);
 
@@ -1658,15 +1658,15 @@ class DaylightTime {
     delta_ = delta;
   }
 
-  DateTime start() {
+  @property DateTime start() {
     return start_;
   }
 
-  DateTime end() {
+  @property DateTime end() {
     return end_;
   }
 
-  TimeSpan delta() {
+  @property TimeSpan delta() {
     return delta_;
   }
 
@@ -1681,7 +1681,7 @@ private class SystemTimeZone {
   private long ticksOffset_;
   private DaylightTime[int] daylightChanges_;
 
-  static SystemTimeZone current() {
+  static @property SystemTimeZone current() {
     synchronized (SystemTimeZone.classinfo) {
       if (current_ is null)
         current_ = new SystemTimeZone;

@@ -719,35 +719,35 @@ struct Rect {
   /**
    * Gets the x-coordinate of the _left edge of this Rect structure.
    */
-  int left() {
+  @property int left() {
     return x;
   }
 
   /**
    * Gets the y-coordinate of the _top edge of this Rect structure.
    */
-  int top() {
+  @property int top() {
     return y;
   }
 
   /**
    * Gets the x-coordinate that is the sum of the x and width values.
    */
-  int right() {
+  @property int right() {
     return x + width;
   }
 
   /**
    * Gets the y-coordinate that is the sum of the y and height values.
    */
-  int bottom() {
+  @property int bottom() {
     return y + height;
   }
 
   /**
    * Gets or sets the coordinates of the upper-left corner of this Rect structure.
    */
-  void location(Point value) {
+  @property void location(Point value) {
     x = value.x;
     y = value.y;
   }
@@ -755,14 +755,14 @@ struct Rect {
   /**
    * ditto
    */
-  Point location() {
+  @property Point location() {
     return Point(x, y);
   }
 
   /**
    * Gets or sets the _size of this Rect structure.
    */
-  void size(Size value) {
+  @property void size(Size value) {
     width = value.width;
     height = value.height;
   }
@@ -770,7 +770,7 @@ struct Rect {
   /**
    * ditto
    */
-  Size size() {
+  @property Size size() {
     return Size(width, height);
   }
 
@@ -778,7 +778,7 @@ struct Rect {
    * Tests whether all numeric values of this Rect structure have values of zero.
    * Returns: true if the x, y, width and height values of this Rect structure all have values of zero; otherwise, false.
    */
-  bool isEmpty() {
+  @property bool isEmpty() {
     return x == 0 && y == 0 && width == 0 && height == 0;
   }
 
@@ -1004,42 +1004,42 @@ struct RectF {
   /**
    * Gets the x-coordinate of the _left edge of this RectF structure.
    */
-  float left() {
+  @property float left() {
     return x;
   }
 
   /**
    * Gets the y-coordinate of the _top edge of this RectF structure.
    */
-  float top() {
+  @property float top() {
     return y;
   }
 
   /**
    * Gets the x-coordinate that is the sum of the x and width values.
    */
-  float right() {
+  @property float right() {
     return x + width;
   }
 
   /**
    * Gets the y-coordinate that is the sum of the y and height values.
    */
-  float bottom() {
+  @property float bottom() {
     return y + height;
   }
 
   /**
    * Gets or sets the coordinates of the upper-left corner of this RectF structure.
    */
-  PointF location() {
+  @property PointF location() {
     return PointF(x, y);
   }
 
   /**
    * ditto
    */
-  void location(PointF value) {
+  @property void location(PointF value) {
     x = value.x;
     y = value.y;
   }
@@ -1047,14 +1047,14 @@ struct RectF {
   /**
    * Gets or sets the _size of this RectF structure.
    */
-  SizeF size() {
+  @property SizeF size() {
     return SizeF(width, height);
   }
 
   /**
    * ditto
    */
-  void size(SizeF value) {
+  @property void size(SizeF value) {
     width = value.width;
     height = value.height;
   }

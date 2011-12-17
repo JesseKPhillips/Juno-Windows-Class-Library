@@ -1105,28 +1105,28 @@ struct Color {
   /**
    * Gets the alpha component.
    */
-  ubyte a() {
+  @property ubyte a() {
     return cast(ubyte)((value >> ARGB_ALPHA_SHIFT) & 255);
   }
 
   /**
    * Gets the red component.
    */
-  ubyte r() {
+  @property ubyte r() {
     return cast(ubyte)((value >> ARGB_RED_SHIFT) & 255);
   }
 
   /**
    * Gets the green component.
    */
-  ubyte g() {
+  @property ubyte g() {
     return cast(ubyte)((value >> ARGB_GREEN_SHIFT) & 255);
   }
 
   /**
    * Gets the blue component.
    */
-  ubyte b() {
+  @property ubyte b() {
     return cast(ubyte)((value >> ARGB_BLUE_SHIFT) & 255);
   }
 
@@ -1349,7 +1349,7 @@ struct Color {
     return cast(ulong)(red << ARGB_RED_SHIFT | green << ARGB_GREEN_SHIFT | blue << ARGB_BLUE_SHIFT | alpha << ARGB_ALPHA_SHIFT) & 0xffffffff;
   }
 
-  private ulong value() {
+  private @property ulong value() {
     if ((state_ & STATE_VALUE_VALID) != 0)
       return value_;
     if ((state_ & STATE_KNOWNCOLOR_VALID) != 0)
@@ -1773,7 +1773,7 @@ final class Matrix : IDisposable {
   /**
    * Gets an array of floating-point values that represents the _elements of this object.
    */
-  float[] elements() {
+  @property float[] elements() {
     float[] m = new float[6];
     Status status = GdipGetMatrixElements(nativeMatrix_, m.ptr);
     if (status != Status.OK)
@@ -1784,14 +1784,14 @@ final class Matrix : IDisposable {
   /**
    * Gets the x translation value.
    */
-  float offsetX() {
+  @property float offsetX() {
     return elements[4];
   }
 
   /**
    * Gets the y translation value.
    */
-  float offsetY() {
+  @property float offsetY() {
     return elements[5];
   }
 
@@ -1799,7 +1799,7 @@ final class Matrix : IDisposable {
    * Gets a value indicating whether this object is the identity matrix.
    * Returns: true if this object is identity; otherwise, false.
    */
-  bool isIdentity() {
+  @property bool isIdentity() {
     int result;
     Status status = GdipIsMatrixIdentity(nativeMatrix_, result);
     if (status != Status.OK)
@@ -1811,7 +1811,7 @@ final class Matrix : IDisposable {
    * Gets a value indicating whether this object is invertible.
    * Returns: true if this matrix is invertible; otherwise, false.
    */
-  bool isInvertible() {
+  @property bool isInvertible() {
     int result;
     Status status = GdipIsMatrixInvertible(nativeMatrix_, result);
     if (status != Status.OK)
@@ -3346,7 +3346,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  float dpiX() {
+  @property float dpiX() {
     float dpi = 0f;
     Status status = GdipGetDpiX(nativeGraphics_, dpi);
     if (status != Status.OK)
@@ -3356,7 +3356,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  float dpiY() {
+  @property float dpiY() {
     float dpi = 0f;
     Status status = GdipGetDpiY(nativeGraphics_, dpi);
     if (status != Status.OK)
@@ -3366,14 +3366,14 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void pageScale(float value) {
+  @property void pageScale(float value) {
     Status status = GdipSetPageScale(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
   }
 
   /// ditto
-  float pageScale() {
+  @property float pageScale() {
     float scale = 0f;
     Status status = GdipGetPageScale(nativeGraphics_, scale);
     if (status != Status.OK)
@@ -3383,14 +3383,14 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void pageUnit(GraphicsUnit value) {
+  @property void pageUnit(GraphicsUnit value) {
     Status status = GdipSetPageUnit(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
   }
 
   /// ditto
-  GraphicsUnit pageUnit() {
+  @property GraphicsUnit pageUnit() {
     GraphicsUnit value;
     Status status = GdipGetPageUnit(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3400,14 +3400,14 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void compositingMode(CompositingMode value) {
+  @property void compositingMode(CompositingMode value) {
     Status status = GdipSetCompositingMode(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
   }
 
   /// ditto
-  CompositingMode compositingMode() {
+  @property CompositingMode compositingMode() {
     CompositingMode mode;
     Status status = GdipGetCompositingMode(nativeGraphics_, mode);
     if (status != Status.OK)
@@ -3417,14 +3417,14 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void compositingQuality(CompositingQuality value) {
+  @property void compositingQuality(CompositingQuality value) {
     Status status = GdipSetCompositingQuality(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
   }
 
   /// ditto
-  CompositingQuality compositingQuality() {
+  @property CompositingQuality compositingQuality() {
     CompositingQuality value;
     Status status = GdipGetCompositingQuality(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3434,7 +3434,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  InterpolationMode interpolationMode() {
+  @property InterpolationMode interpolationMode() {
     InterpolationMode value;
     Status status = GdipGetInterpolationMode(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3442,7 +3442,7 @@ final class Graphics : IDisposable {
     return value;
   }
   /// ditto
-  void interpolationMode(InterpolationMode value) {
+  @property void interpolationMode(InterpolationMode value) {
     Status status = GdipSetInterpolationMode(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
@@ -3450,14 +3450,14 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void smoothingMode(SmoothingMode value) {
+  @property void smoothingMode(SmoothingMode value) {
     Status status = GdipSetSmoothingMode(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
   }
 
   /// ditto
-  SmoothingMode smoothingMode() {
+  @property SmoothingMode smoothingMode() {
     SmoothingMode mode;
     Status status = GdipGetSmoothingMode(nativeGraphics_, mode);
     if (status != Status.OK)
@@ -3467,14 +3467,14 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void pixelOffsetMode(PixelOffsetMode value) {
+  @property void pixelOffsetMode(PixelOffsetMode value) {
     Status status = GdipSetPixelOffsetMode(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
   }
 
   /// ditto
-  PixelOffsetMode pixelOffsetMode() {
+  @property PixelOffsetMode pixelOffsetMode() {
     PixelOffsetMode value;
     Status status = GdipGetPixelOffsetMode(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3484,14 +3484,14 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void textContrast(uint value) {
+  @property void textContrast(uint value) {
     Status status = GdipSetTextContrast(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
   }
 
   /// ditto
-  uint textContrast() {
+  @property uint textContrast() {
     uint contrast;
     Status status = GdipGetTextContrast(nativeGraphics_, contrast);
     if (status != Status.OK)
@@ -3501,14 +3501,14 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void textRenderingHint(TextRenderingHint value) {
+  @property void textRenderingHint(TextRenderingHint value) {
     Status status = GdipSetTextRenderingHint(nativeGraphics_, value);
     if (status != Status.OK)
       throw statusException(status);
   }
 
   /// ditto
-  TextRenderingHint textRenderingHint() {
+  @property TextRenderingHint textRenderingHint() {
     TextRenderingHint value;
     Status status = GdipGetTextRenderingHint(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3518,7 +3518,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  bool isClipEmpty() {
+  @property bool isClipEmpty() {
     int value;
     Status status = GdipIsClipEmpty(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3528,7 +3528,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  bool isVisibleClipEmpty() {
+  @property bool isVisibleClipEmpty() {
     int value;
     Status status = GdipIsVisibleClipEmpty(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3538,7 +3538,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  RectF clipBounds() {
+  @property RectF clipBounds() {
     RectF value;
     Status status = GdipGetClipBounds(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3548,7 +3548,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  RectF visibleClipBounds() {
+  @property RectF visibleClipBounds() {
     RectF value;
     Status status = GdipGetVisibleClipBounds(nativeGraphics_, value);
     if (status != Status.OK)
@@ -3558,7 +3558,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void renderingOrigin(Point value) {
+  @property void renderingOrigin(Point value) {
     Status status = GdipGetRenderingOrigin(nativeGraphics_, value.x, value.y);
     if (status != Status.OK)
       throw statusException(status);
@@ -3567,7 +3567,7 @@ final class Graphics : IDisposable {
   /**
    * ditto
    */
-  Point renderingOrigin() {
+  @property Point renderingOrigin() {
     int x, y;
     Status status = GdipGetRenderingOrigin(nativeGraphics_, x, y);
     if (status != Status.OK)
@@ -3577,7 +3577,7 @@ final class Graphics : IDisposable {
 
   /**
    */
-  void transform(Matrix value) {
+  @property void transform(Matrix value) {
     Status status = GdipSetWorldTransform(nativeGraphics_, value.nativeMatrix_);
     if (status != Status.OK)
       throw statusException(status);
@@ -3585,7 +3585,7 @@ final class Graphics : IDisposable {
   /**
    * ditto
    */
-  Matrix transform() {
+ @property  Matrix transform() {
     Matrix matrix = new Matrix;
     Status status = GdipGetWorldTransform(nativeGraphics_, matrix.nativeMatrix_);
     if (status != Status.OK)
@@ -6710,7 +6710,7 @@ final class ImageAttributes {
       throw statusException(status);
   }
 
-  package Handle nativeImageAttributes() {
+  package @property Handle nativeImageAttributes() {
     return nativeImageAttributes_;
   }
 
@@ -6967,7 +6967,7 @@ abstract class Image : IDisposable {
 
   /**
    */
-  final SizeF physicalDimension() {
+  final @property SizeF physicalDimension() {
     float width, height;
     Status status = GdipGetImageDimension(nativeImage_, width, height);
     if (status != Status.OK)
@@ -6977,7 +6977,7 @@ abstract class Image : IDisposable {
 
   /**
    */
-  final int width() {
+  final @property int width() {
     int value;
     Status status = GdipGetImageWidth(nativeImage_, value);
     if (status != Status.OK)
@@ -6987,7 +6987,7 @@ abstract class Image : IDisposable {
 
   /**
    */
-  final int height() {
+  final @property int height() {
     int value;
     Status status = GdipGetImageHeight(nativeImage_, value);
     if (status != Status.OK)
@@ -6997,13 +6997,13 @@ abstract class Image : IDisposable {
 
   /**
    */
-  final Size size() {
+  final @property Size size() {
     return Size(width, height);
   }
 
   /**
    */
-  final float horizontalResolution() {
+  final @property float horizontalResolution() {
     float resolution;
     Status status = GdipGetImageHorizontalResolution(nativeImage_, resolution);
     if (status != Status.OK)
@@ -7013,7 +7013,7 @@ abstract class Image : IDisposable {
 
   /**
    */
-  final float verticalResolution() {
+  final @property float verticalResolution() {
     float resolution;
     Status status = GdipGetImageVerticalResolution(nativeImage_, resolution);
     if (status != Status.OK)
@@ -7023,7 +7023,7 @@ abstract class Image : IDisposable {
 
   /**
    */
-  final ImageFormat rawFormat() {
+  final @property ImageFormat rawFormat() {
     Guid format;
     Status status = GdipGetImageRawFormat(nativeImage_, format);
     if (status != Status.OK)
@@ -7033,7 +7033,7 @@ abstract class Image : IDisposable {
 
   /**
    */
-  final PixelFormat pixelFormat() {
+  final @property PixelFormat pixelFormat() {
     PixelFormat value;
     Status status = GdipGetImagePixelFormat(nativeImage_, value);
     if (status != Status.OK)
@@ -7043,7 +7043,7 @@ abstract class Image : IDisposable {
 
   /**
    */
-  final Guid[] frameDimensionsList() {
+  final @property Guid[] frameDimensionsList() {
     uint count;
     Status status = GdipImageGetFrameDimensionsCount(nativeImage_, count);
     if (status != Status.OK)
@@ -8143,7 +8143,7 @@ final class Path {
 
   /**
    */
-  void fillMode(FillMode value) {
+  @property void fillMode(FillMode value) {
     Status status = GdipSetPathFillMode(nativePath_, value);
     if (status != Status.OK)
       throw statusException(status);
@@ -8152,7 +8152,7 @@ final class Path {
   /**
    * ditto
    */
-  FillMode fillMode() {
+  @property FillMode fillMode() {
     FillMode value;
     Status status = GdipGetPathFillMode(nativePath_, value);
     if (status != Status.OK)
@@ -8162,7 +8162,7 @@ final class Path {
 
   /**
    */
-  int pointCount() {
+  @property int pointCount() {
     int value;
     Status status = GdipGetPointCount(nativePath_, value);
     if (status != Status.OK)
@@ -9028,25 +9028,25 @@ final class FontFamily : IDisposable {
 
   /**
    */
-  string name() {
+  @property string name() {
     return getName(0);
   }
 
   /**
    */
-  static FontFamily genericSerif() {
+  static @property FontFamily genericSerif() {
     return new FontFamily(GenericFontFamilies.Serif);
   }
 
   /**
    */
-  static FontFamily genericSansSerif() {
+  static @property FontFamily genericSansSerif() {
     return new FontFamily(GenericFontFamilies.SansSerif);
   }
 
   /**
    */
-  static FontFamily genericMonospace() {
+  static @property FontFamily genericMonospace() {
     return new FontFamily(GenericFontFamilies.Monospace);
   }
 
@@ -9258,19 +9258,19 @@ final class Font : IDisposable {
 
   /**
    */
-  FontFamily fontFamily() {
+  @property FontFamily fontFamily() {
     return fontFamily_;
   }
 
   /**
    */
-  float size() {
+  @property float size() {
     return size_;
   }
 
   /**
    */
-  float sizeInPoints() {
+  @property float sizeInPoints() {
     if (unit == GraphicsUnit.Point)
       return size;
 
@@ -9287,49 +9287,49 @@ final class Font : IDisposable {
 
   /**
    */
-  FontStyle style() {
+  @property FontStyle style() {
     return style_;
   }
 
   /**
    */
-  GraphicsUnit unit() {
+  @property GraphicsUnit unit() {
     return unit_;
   }
 
   /**
    */
-  int height() {
+  @property int height() {
     return cast(int)std.math.ceil(getHeight());
   }
 
   /**
    */
-  string name() {
+  @property string name() {
     return fontFamily.name;
   }
 
   /**
    */
-  bool bold() {
+  @property bool bold() {
     return (style & FontStyle.Bold) != 0;
   }
 
   /**
    */
-  bool italic() {
+  @property bool italic() {
     return (style & FontStyle.Italic) != 0;
   }
 
   /**
    */
-  bool underline() {
+  @property bool underline() {
     return (style & FontStyle.Underline) != 0;
   }
 
   /**
    */
-  bool strikeout() {
+  @property bool strikeout() {
     return (style & FontStyle.Strikeout) != 0;
   }
 

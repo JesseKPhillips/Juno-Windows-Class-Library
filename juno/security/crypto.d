@@ -77,7 +77,7 @@ alias DllImport!("bcrypt.dll", "BCryptGenRandom",
 
 extern(D):
 
-private bool bcryptSupported() {
+private @property bool bcryptSupported() {
   static Optional!(bool) bcryptSupported_;
 
   if (!bcryptSupported_.hasValue) {
@@ -141,12 +141,12 @@ interface ICryptoTransform {
   /**
    * Gets the input block size.
    */
-  uint inputBlockSize();
+  @property uint inputBlockSize();
 
   /**
    * Gets the output block size.
    */
-  uint outputBlockSize();
+  @property uint outputBlockSize();
 
 }
 
@@ -493,21 +493,21 @@ abstract class HashAlgorithm : ICryptoTransform, IDisposable {
   /**
    * Gets the size in bits of the computed hash code.
    */
-  uint hashSize() {
+  @property uint hashSize() {
     return hashSizeValue;
   }
 
   /**
    * Gets the input block size.
    */
-  uint inputBlockSize() {
+  @property uint inputBlockSize() {
     return 1;
   }
 
   /**
    * Gets the output block size.
    */
-  uint outputBlockSize() {
+  @property uint outputBlockSize() {
     return 1;
   }
 
@@ -534,21 +534,21 @@ final class KeySizes {
   /**
    * Specifies the minimum key size in bits.
    */
-  uint min() {
+  @property uint min() {
     return min_;
   }
 
   /**
    * Specifies the maximum key size in bits.
    */
-  uint max() {
+  @property uint max() {
     return max_;
   }
 
   /**
    * Specifies the interval between valid key sizes in bits.
    */
-  uint skip() {
+  @property uint skip() {
     return skip_;
   }
 
@@ -631,12 +631,12 @@ abstract class SymmetricAlgorithm : IDisposable {
   /**
    * Gets or sets the secret _key for the symmetric algorithm.
    */
-  void key(ubyte[] value) {
+  @property void key(ubyte[] value) {
     keyValue = value.dup;
     keySizeValue = value.length * 8;
   }
   /// ditto
-  ubyte[] key() {
+  @property ubyte[] key() {
     if (keyValue == null)
       generateKey();
     return keyValue.dup;
@@ -645,7 +645,7 @@ abstract class SymmetricAlgorithm : IDisposable {
   /**
    * Gets or sets the size in bits of the secret key used by the symmetric algorithm.
    */
-  void keySize(uint value) {
+  @property void keySize(uint value) {
     if (!isValidKeySize(value))
       throw new CryptoException;
 
@@ -653,25 +653,25 @@ abstract class SymmetricAlgorithm : IDisposable {
     keyValue = null;
   }
   /// ditto
-  uint keySize() {
+  @property uint keySize() {
     return keySizeValue;
   }
 
   /**
    * Gets the key sizes in bits supported by the symmetric algorithm.
    */
-  KeySizes[] legalKeySizes() {
+  @property KeySizes[] legalKeySizes() {
     return legalKeySizesValue.dup;
   }
 
   /**
    * Gets or sets the initialization vector for the symmetric algorithm.
    */
-  void iv(ubyte[] value) {
+  @property void iv(ubyte[] value) {
     ivValue = value;
   }
   /// ditto
-  ubyte[] iv() {
+  @property ubyte[] iv() {
     if (ivValue == null)
       generateIV();
     return ivValue.dup;
@@ -680,34 +680,34 @@ abstract class SymmetricAlgorithm : IDisposable {
   /**
    * Gets or sets the block size in bits of the symmetric algorithm.
    */
-  void blockSize(uint value) {
+  @property void blockSize(uint value) {
     blockSizeValue = value;
     ivValue = null;
   }
   /// ditto
-  uint blockSize() {
+  @property uint blockSize() {
     return blockSizeValue;
   }
 
   /**
    * Gets or sets the _mode of operation of the symmetric algorithm.
    */
-  void mode(CipherMode value) {
+  @property void mode(CipherMode value) {
     modeValue = value;
   }
   /// ditto
-  CipherMode mode() {
+  @property CipherMode mode() {
     return modeValue;
   }
 
   /**
    * Gets or sets the _padding mode used in the symmetric algorithm.
    */
-  void padding(PaddingMode value) {
+  @property void padding(PaddingMode value) {
     paddingValue = value;
   }
   /// ditto
-  PaddingMode padding() {
+  @property PaddingMode padding() {
     return paddingValue;
   }
 
@@ -2645,11 +2645,11 @@ private final class CAPITransform : ICryptoTransform {
     return output;
   }*/
 
-  uint inputBlockSize() {
+  @property uint inputBlockSize() {
     return blockSize_ / 8;
   }
 
-  uint outputBlockSize() {
+  @property uint outputBlockSize() {
     return blockSize_ / 8;
   }
 

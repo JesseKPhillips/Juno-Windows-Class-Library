@@ -974,7 +974,7 @@ class Watcher {
     }
   }
 
-  private bool isHandleInvalid() {
+  private @property bool isHandleInvalid() {
     return (directoryHandle_ == Handle.init 
       || directoryHandle_ == INVALID_HANDLE_VALUE);
   }

@@ -315,21 +315,21 @@ class Uri {
   /**
    * Indicates whether the instance is absolute.
    */
-  final bool isAbsolute() {
+  final @property bool isAbsolute() {
     return scheme_ != null;
   }
 
   /**
    * Indicates whether the instance is a file URI.
    */
-  final bool isFile() {
+  final @property bool isFile() {
     return scheme_ == fileScheme.schemeName;
   }
 
   /**
    * Gets the absolute URI.
    */
-  final string absoluteUri() {
+  final @property string absoluteUri() {
     if (cache_ == null)
       cache_ = getComponents(UriComponents.AbsoluteUri);
     return cache_;
@@ -338,14 +338,14 @@ class Uri {
   /**
    * Gets the _scheme name for this URI.
    */
-  final string scheme() {
+  final @property string scheme() {
     return scheme_;
   }
 
   /**
    * Gets the Domain Name System (DNS) host name or IP address and the port number for a server.
    */
-  final string authority() {
+  final @property string authority() {
     //return isDefaultPort ? host_ : host_ ~ ":" ~ .toString(port_);
     return getComponents(UriComponents.Host | UriComponents.Port);
   }
@@ -353,7 +353,7 @@ class Uri {
   /**
    * Gets the absolute path and query information separated by a question mark (?).
    */
-  final string pathAndQuery() {
+  final @property string pathAndQuery() {
     //return path_ ~ query_;
     return getComponents(UriComponents.PathAndQuery);
   }
@@ -361,7 +361,7 @@ class Uri {
   /**
    * Gets any _query information included in this URI.
    */
-  final string query() {
+  final @property string query() {
     //return query_;
     return getComponents(UriComponents.Query | UriComponents.KeepDelimiter);
   }
@@ -369,7 +369,7 @@ class Uri {
   /**
    * Gets the URI _fragment.
    */
-  final string fragment() {
+  final @property string fragment() {
     //return fragment_;
     return getComponents(UriComponents.Fragment | UriComponents.KeepDelimiter);
   }
@@ -377,7 +377,7 @@ class Uri {
   /**
    * Gets the user name, password, or other user-specific information associated with this URI.
    */
-  final string userInfo() {
+  final @property string userInfo() {
     //return userInfo_;
     return getComponents(UriComponents.UserInfo);
   }
@@ -385,7 +385,7 @@ class Uri {
   /**
    * Gets the _host component.
    */
-  final string host() {
+  final @property string host() {
     //return host_;
     return getComponents(UriComponents.Host);
   }
@@ -393,40 +393,40 @@ class Uri {
   /**
    * Indicates whether the port value of the URI is the default for this scheme.
    */
-  bool isDefaultPort() {
+  @property bool isDefaultPort() {
     return (getDefaultPort(scheme_) == port_);
   }
 
   /**
    * Gets the _port number of this URI.
    */
-  final int port() {
+  final @property int port() {
     return port_;
   }
 
   /**
    * Gets the _original URI string that was passed to the constructor.
    */
-  final string original() {
+  final @property string original() {
     return string_;
   }
 
   /**
    * Gets the local operating-system path of a file name.
    */
-  final string localPath() {
+  final @property string localPath() {
     //return path_;
     return getComponents(UriComponents.Path | UriComponents.KeepDelimiter);
   }
 
-  final string absolutePath() {
+  final @property string absolutePath() {
     return getComponents(UriComponents.Path | UriComponents.KeepDelimiter);
   }
 
   /**
    * Gets an array containing the path _segments that make up this URI.
    */
-  final string[] segments() {
+  final @property string[] segments() {
     string[] segments;
 
     string path = getComponents(UriComponents.Path | UriComponents.KeepDelimiter);
@@ -849,14 +849,14 @@ alias DllImport!("iphlpapi.dll", "Icmp6SendEcho2",
 
 extern(D):
 
-private bool isWin2k() {
+private @property bool isWin2k() {
   static Optional!(bool) isWin2k_;
   if (!isWin2k_.hasValue)
     isWin2k_ = (osVersion.major == 5 && osVersion.minor == 0);
   return isWin2k_.value;
 }
 
-private bool supportsIPv6() {
+private @property bool supportsIPv6() {
   static Optional!(bool) supportsIPv6_;
   if (!supportsIPv6_.hasValue) {
     uint s = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
@@ -1313,17 +1313,17 @@ class IPAddress {
     return hostToNetworkOrder(network);
   }
 
-  final uint address() {
+  final @property uint address() {
     return address_;
   }
 
   /// Gets the address family.
-  final AddressFamily addressFamily() {
+  final @property AddressFamily addressFamily() {
     return family_;
   }
 
   /// Gets or sets the IPv6 scope identifier.
-  final void scopeId(uint value) {
+  final @property void scopeId(uint value) {
     if (family_ == AddressFamily.INET)
       throw socketException(WSAEOPNOTSUPP);
 
@@ -1331,7 +1331,7 @@ class IPAddress {
       scopeId_ = value;
   }
   /// ditto
-  final uint scopeId() {
+  final @property uint scopeId() {
     if (family_ == AddressFamily.INET)
       throw socketException(WSAEOPNOTSUPP);
 
@@ -1346,17 +1346,17 @@ class IPAddress {
   }
 
   /// Indicates whether the address is an IPv6 multicase global address.
-  final bool isIPv6Multicast() {
+  final @property bool isIPv6Multicast() {
     return (family_ == AddressFamily.INET6 && (numbers_[0] & 0xFF00) == 0xFF00);
   }
 
   /// Indicates whether the address is an IPv6 link local address.
-  final bool isIPv6LinkLocal() {
+  final @property bool isIPv6LinkLocal() {
     return (family_ == AddressFamily.INET6 && (numbers_[0] & 0xFFC0) == 0xFE80);
   }
 
   /// Indicates whether the address is an IPv6 site local address.
-  final bool isIPv6SiteLocal() {
+  final @property bool isIPv6SiteLocal() {
     return (family_ == AddressFamily.INET6 && (numbers_[0] & 0xFFC0) == 0xFEC0);
   }
 
@@ -1429,21 +1429,21 @@ class IPEndPoint {
     return address.toString() ~ ":" ~ .toString(port);
   }
 
-  final void address(IPAddress value) {
+  final @property void address(IPAddress value) {
     address_ = value;
   }
-  final IPAddress address() {
+  final @property IPAddress address() {
     return address_;
   }
 
-  final AddressFamily addressFamily() {
+  final @property AddressFamily addressFamily() {
     return address_.addressFamily;
   }
 
-  final void port(ushort value) {
+  final @property void port(ushort value) {
     port_ = value;
   }
-  final ushort port() {
+  final @property ushort port() {
     return port_;
   }
 
@@ -1510,19 +1510,19 @@ class PingReply {
     }
   }
 
-  final IPStatus status() {
+  final @property IPStatus status() {
     return status_;
   }
 
-  final IPAddress address() {
+  final @property IPAddress address() {
     return address_;
   }
 
-  final uint roundTripTime() {
+  final @property uint roundTripTime() {
     return roundTripTime_;
   }
 
-  final ubyte[] buffer() {
+  final @property ubyte[] buffer() {
     return buffer_;
   }
 
@@ -1669,7 +1669,7 @@ class Ping : IDisposable {
     return new PingReply(cast(ICMP_ECHO_REPLY*)replyBuffer_);
   }
 
-  private ubyte[] defaultBuffer() {
+  private @property ubyte[] defaultBuffer() {
     if (defaultBuffer_ == null) {
       defaultBuffer_.length = DEFAULT_BUFFER_SIZE;
       foreach (i, ref b; defaultBuffer_)

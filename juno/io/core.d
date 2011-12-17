@@ -195,7 +195,7 @@ abstract class Writer {
   /**
    * Gets or sets the line terminator used by the current writer.
    */
-  void newLine(string value) {
+  @property void newLine(string value) {
     if (value == null)
       value = "\r\n";
     version(D_Version2) {
@@ -207,7 +207,7 @@ abstract class Writer {
   }
 
   /// ditto
-  string newLine() {
+  @property string newLine() {
     version(D_Version2) {
       return newLine_.idup;
     }
@@ -434,7 +434,7 @@ struct Console {
   /**
    * Gets the standard _output stream.
    */
-  static Writer output() {
+  static @property Writer output() {
     synchronized {
       if (out_ is null) {
         Stream s = new ConsoleStream(GetStdHandle(STD_OUTPUT_HANDLE));
@@ -458,7 +458,7 @@ struct Console {
    * Gets or sets the encoding the console uses to write output.
    * Params: value = The encoding used to write console output.
    */
-  static void outputEncoding(Encoding value) {
+  static @property void outputEncoding(Encoding value) {
     if (value is null)
       throw new ArgumentNullException("value");
 
@@ -468,14 +468,14 @@ struct Console {
     }
   }
   /// ditto
-  static Encoding outputEncoding() {
+  static @property Encoding outputEncoding() {
     return Encoding.get(GetConsoleOutputCP());
   }
 
   /**
    * Gets the standard _error output stream.
    */
-  static Writer error() {
+  static @property Writer error() {
     synchronized {
       if (err_ is null) {
         Stream s = new ConsoleStream(GetStdHandle(STD_ERROR_HANDLE));
@@ -524,11 +524,11 @@ struct Console {
    * Gets or sets the _title to display in the console _title bar.
    * Params: value = The text to be displayed in the _title bar of the console.
    */
-  static void title(string value) {
+  static @property void title(string value) {
     SetConsoleTitle(value.toUtf16z());
   }
   /// ditto
-  static string title() {
+  static @property string title() {
     wchar[24500] buffer;
     uint len = GetConsoleTitle(buffer.ptr, buffer.length);
     return .toUtf8(buffer.ptr, 0, len);
@@ -538,7 +538,7 @@ struct Console {
    * Gets or sets the background color of the console.
    * Params: value = The color that appears behind each character.
    */
-  static void backgroundColor(ConsoleColor value) {
+  static @property void backgroundColor(ConsoleColor value) {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     if (getBufferInfo(csbi)) {
       ushort attribute = cast(ushort)(csbi.wAttributes & ~BACKGROUND_MASK);
@@ -547,7 +547,7 @@ struct Console {
     }
   }
   /// ditto
-  static ConsoleColor backgroundColor() {
+  static @property ConsoleColor backgroundColor() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     if (!getBufferInfo(csbi))
       return ConsoleColor.Black;
@@ -558,7 +558,7 @@ struct Console {
    * Gets or sets the foreground color of the console.
    * Params: value = The color of each character that is displayed.
    */
-  static void foregroundColor(ConsoleColor value) {
+  static @property void foregroundColor(ConsoleColor value) {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     if (getBufferInfo(csbi)) {
       ushort attribute = cast(ushort)(csbi.wAttributes & ~FOREGROUND_MASK);
@@ -567,7 +567,7 @@ struct Console {
     }
   }
   /// ditto
-  static ConsoleColor foregroundColor() {
+  static @property ConsoleColor foregroundColor() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     if (!getBufferInfo(csbi))
       return ConsoleColor.Gray;
@@ -596,11 +596,11 @@ struct Console {
   /**
    * Gets or sets the column position of the cursor.
    */
-  static void cursorLeft(int value) {
+  static @property void cursorLeft(int value) {
     setCursorPosition(value, cursorTop);
   }
   /// ditto
-  static int cursorLeft() {
+  static @property int cursorLeft() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     getBufferInfo(csbi);
     return csbi.dwCursorPosition.X;
@@ -609,11 +609,11 @@ struct Console {
   /**
    * Gets or sets the row position of the cursor.
    */
-  static void cursorTop(int value) {
+  static @property void cursorTop(int value) {
     setCursorPosition(cursorLeft, value);
   }
   /// ditto
-  static int cursorTop() {
+  static @property int cursorTop() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     getBufferInfo(csbi);
     return csbi.dwCursorPosition.Y;
@@ -623,11 +623,11 @@ struct Console {
    * Gets or sets the left position of the console window area relative to the screen buffer.
    * Params: value = The left console window position measured in columns.
    */
-  static void windowLeft(int value) {
+  static @property void windowLeft(int value) {
     setWindowPosition(value, windowTop);
   }
   /// ditto
-  static int windowLeft() {
+  static @property int windowLeft() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     getBufferInfo(csbi);
     return csbi.srWindow.Left;
@@ -637,11 +637,11 @@ struct Console {
    * Gets or sets the top position of the console window area relative to the screen buffer.
    * Params: value = The top console window position measured in rows.
    */
-  static void windowTop(int value) {
+  static @property void windowTop(int value) {
     setWindowPosition(windowLeft, value);
   }
   /// ditto
-  static int windowTop() {
+  static @property int windowTop() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     getBufferInfo(csbi);
     return csbi.srWindow.Top;
@@ -703,11 +703,11 @@ struct Console {
    * Gets or sets the width of the console window.
    * Params: value = The width of the console window measured in columns.
    */
-  static void windowWidth(int value) {
+  static @property void windowWidth(int value) {
     setWindowSize(value, windowHeight);
   }
   /// ditto
-  static int windowWidth() {
+  static @property int windowWidth() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     getBufferInfo(csbi);
     return csbi.srWindow.Right - csbi.srWindow.Left + 1;
@@ -717,11 +717,11 @@ struct Console {
    * Gets or sets the height of the console window.
    * Params: value = The height of the console window measured in rows.
    */
-  static void windowHeight(int value) {
+  static @property void windowHeight(int value) {
     setWindowSize(windowWidth, value);
   }
   /// ditto
-  static int windowHeight() {
+  static @property int windowHeight() {
     CONSOLE_SCREEN_BUFFER_INFO csbi;
     getBufferInfo(csbi);
     return csbi.srWindow.Bottom - csbi.srWindow.Top + 1;
@@ -743,7 +743,7 @@ struct Console {
     return false;
   }
 
-  private static Handle outputHandle() {
+  private @property static Handle outputHandle() {
     if (outputHandle_ == Handle.init)
       outputHandle_ = GetStdHandle(STD_OUTPUT_HANDLE);
     return outputHandle_;
