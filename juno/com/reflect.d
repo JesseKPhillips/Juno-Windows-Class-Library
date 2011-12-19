@@ -13,7 +13,7 @@ import juno.base.core,
   juno.com.core,
   juno.utils.registry;
 
-debug import std.stdio : writefln;
+//debug import std.stdio : writefln;
 
 // Check if the name if reserved word such as a keyword or other global symbol.
 bool isReservedWord(string name) {
@@ -1372,6 +1372,9 @@ class Parameter {
   }
 
   package static Parameter[] getParameters(MethodImpl method, out Parameter returnParameter, bool getReturnParameter) {
+      
+    import std.c.string : memset;
+    
     Parameter[] params;
 
     TYPEATTR* typeAttr;
@@ -1385,16 +1388,15 @@ class Parameter {
       scope(exit) method.typeInfo_.ReleaseFuncDesc(funcDesc);
 
       if (funcDesc.memid == method.id && (funcDesc.invkind & method.attributes)) {
-        wchar** bstrNames = cast(wchar**)CoTaskMemAlloc((funcDesc.cParams + 1) * (wchar*).sizeof);
+        auto bufferSize = (funcDesc.cParams + 1) * (wchar*).sizeof;
+        wchar** bstrNames = cast(wchar**)CoTaskMemAlloc(bufferSize);
+        memset(bstrNames, 0, bufferSize);
 
         uint count;
         checkHResult(method.typeInfo_.GetNames(funcDesc.memid, bstrNames, funcDesc.cParams + 1, count));
 
-        // The element at 0 is the name of the function. We've already got this, so free it.
-        freeBstr(bstrNames[0]);
-
-        if ((funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUT) || (funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUTREF))
-          bstrNames[0] = toBstr("value");
+        //if ((funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUT) || (funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUTREF))
+        //  bstrNames[1] = toBstr("value");
 
         for (ushort pos = 0; pos < funcDesc.cParams; pos++) {
           ushort flags = funcDesc.lprgelemdescParam[pos].paramdesc.wParamFlags;
@@ -1410,17 +1412,13 @@ class Parameter {
               attrs |= (ParameterAttributes.In | ParameterAttributes.Out);
             }
             
-            if (pos + 1 >= count)
-            {
-				//Handling for unamed parameters
-				params ~= new Parameter(method, "", paramType, pos, attrs);
-			}
-			else
-			{
-				params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
-			}
+            params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
           }
         }
+
+        //Free the BSTRs allocated by GetNames
+        for (uint index = 0; index < count; ++index)
+          freeBstr(bstrNames[index]);
 
         CoTaskMemFree(bstrNames);
       }
