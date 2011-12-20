@@ -13,6 +13,7 @@ import juno.base.core,
   juno.com.core,
   juno.utils.registry;
 
+import std.c.string : memset;
 //debug import std.stdio : writefln;
 
 // Check if the name if reserved word such as a keyword or other global symbol.
@@ -23,10 +24,10 @@ bool isReservedWord(string name) {
     "body", "bool", "break", "byte",
     "case", "cast", "catch", "cdouble", "cent", "cfloat", "char", "class", "const", "continue", "creal",
     "dchar", "debug", "default", "delegate", "delete", "deprecated", "do", "double",
-    "else", "enum", "export", "extern",
+    "else", "enum", "Exception", "export", "extern",
     "false", "final", "finally", "float", "for", "foreach", "foreach_reverse", "function",
     "goto",
-    "idouble", "if", "ifloat", "import", "in", "inout", "int", "interface", "invariant", "ireal", "is",
+    "idouble", "if", "ifloat", "import", "in", "inout", "int", "interface", "invariant", "immutable", "ireal", "is",
     "lazy", "long",
     "macro", "mixin", "module",
     "new", "nothrow", "null",
@@ -34,7 +35,7 @@ bool isReservedWord(string name) {
     "package", "pragma", "private", "protected", "public", "pure",
     "real", "ref", "return",
     "scope", "shared", "short", "static", "struct", "super", "switch", "synchronized",
-    "template", "this", "throw", "true", "try", "typedef", "typeid", "typeof",
+    "template", "this", "throw", "Throwable", "true", "try", "typedef", "typeid", "typeof",
     "ubyte", "ucent", "uint", "ulong", "union", "unittest", "ushort",
     "version", "void", "volatile",
     "wchar", "while", "with",
@@ -1372,8 +1373,6 @@ class Parameter {
   }
 
   package static Parameter[] getParameters(MethodImpl method, out Parameter returnParameter, bool getReturnParameter) {
-      
-    import std.c.string : memset;
     
     Parameter[] params;
 
