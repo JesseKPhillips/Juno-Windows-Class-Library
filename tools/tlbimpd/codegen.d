@@ -302,7 +302,7 @@ class CodeGenerator {
         output.write("union");
 
       if (!(type.isEnum && noEnumNames))
-        output.write(type.name);
+        outputType(type);
 
       if (type.baseType !is null && !type.isCoClass) {
         output.write(" : ");
@@ -490,7 +490,10 @@ class CodeGenerator {
   }
 
   private void outputType(Type type) {
-    output.write(type.name);
+    if (isReservedClassName(type.name))
+      output.write("Com" ~ type.name);
+    else
+      output.write(type.name);
   }
 
   private void outputGuid(GUID guid, Type declaringType) {
