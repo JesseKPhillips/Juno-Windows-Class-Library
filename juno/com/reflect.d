@@ -49,6 +49,19 @@ bool isReservedWord(string name) {
   return false;
 }
 
+// Check if the name is a reserved name (DMD doesn't allow user types with these names).
+bool isReservedClassName(string name) {
+
+  immutable string[] RESERVEDTYPES = [
+    "Exception", "Object", "Throwable"];
+
+  foreach (word; RESERVEDTYPES) {
+    if (word == name)
+      return true;
+  }
+  return false;
+}
+
 private void checkHResult(int hr) {
   if (hr != S_OK)
     throw new COMException(hr);
