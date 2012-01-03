@@ -16,6 +16,7 @@ import juno.base.core,
   juno.media.constants,
   juno.media.core,
   juno.media.native;
+import std.c.string;
 
 /**
  * Specifies the attributes of a bitmap image.

@@ -13,6 +13,8 @@ import juno.base.core,
   juno.locale.convert,
   std.c.windows.winsock,
   std.socket;
+import std.utf : toUTF8;
+import core.stdc.string : memcpy;
 debug import std.stdio : writefln;
 
 pragma(lib, "ws2_32.lib");

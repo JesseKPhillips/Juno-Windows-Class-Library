@@ -18,6 +18,7 @@ import juno.base.core,
   core.vararg;
 import std.algorithm;
 import std.array;
+import std.utf : toUTF8, toUTF16z;
 version(D_Version2) {
   import core.exception, core.memory;
   //static import core.exception, core.memory;
@@ -3125,6 +3126,7 @@ template coCreateEx(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
 template Interfaces(TList...) {
 
   static T coCreate(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow)(ExecutionContext context = ExecutionContext.InProcessServer) {
+    import std.typetuple;
     static if (std.typetuple.IndexOf!(T, TList) == -1)
       static assert(false, "'" ~ typeof(this).stringof ~ "' does not support '" ~ T.stringof ~ "'.");
     else

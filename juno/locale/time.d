@@ -11,7 +11,6 @@ import juno.base.core,
   juno.utils.registry,
   juno.locale.constants,
   juno.locale.core;
-import std.string : memcpy;
 
 debug import std.stdio : writefln;
 
@@ -454,6 +453,7 @@ package class CalendarData {
 
     extern(Windows)
     static int enumCalendarsProc(wchar* lpCalendarInfoString) {
+      import std.string, std.utf;
       temp ~= toUTF8(lpCalendarInfoString[0 .. wcslen(lpCalendarInfoString)]);
       return 1;
     }
@@ -2008,6 +2008,8 @@ package string formatDateTime(DateTime dateTime, string format, DateTimeFormat d
 
         len = parseRepeat(format, index, c);
         if (len <= 7) {
+          import std.math;
+            
           long frac = dateTime.ticks % TicksPerSecond;
           frac /= cast(long)std.math.pow(cast(real)10, 7 - len);
           result ~= juno.locale.numeric.formatInt(cast(int)frac, fixedFormats[len - 1], Culture.constant);

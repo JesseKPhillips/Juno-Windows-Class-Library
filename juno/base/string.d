@@ -15,8 +15,8 @@ import juno.base.core,
   juno.locale.time,
   juno.locale.convert;
 import std.utf : toUTF8, toUTF16, toUTF16z;
-import std.string : wcslen, strlen, toStringz;
-import std.c.string : memcpy;
+import std.string : wcslen, toStringz;
+import core.stdc.string : strlen, memcpy, memcmp;
 import core.vararg;
 import std.exception;
 

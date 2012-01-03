@@ -13,6 +13,7 @@ import juno.base.core,
   juno.utils.registry,
   juno.com.core;
 import std.traits : ParameterTypeTuple;
+import core.stdc.string : memcpy;
 
 /**
  * Represents a late-bound COM object.

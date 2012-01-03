@@ -10,7 +10,6 @@
 module juno.media.core;
 
 import juno.base.core,
-  juno.base.math,
   juno.base.string,
   juno.base.threading,
   juno.base.native,
@@ -23,6 +22,8 @@ import juno.base.core,
   juno.media.native,
   std.string,
   std.stream;
+
+import std.algorithm : min, max;
 import std.ascii;
 static import std.file,
   std.math,

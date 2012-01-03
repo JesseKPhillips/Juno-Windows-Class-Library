@@ -4,11 +4,11 @@ import juno.base.core,
   juno.locale.constants,
   juno.locale.core,
   juno.com.core;
-import std.string : strlen;
 import std.algorithm;
 import std.conv;
 import std.exception;
 import std.range;
+import core.stdc.string : strlen;
 debug import std.stdio : writefln;
 
 private enum {

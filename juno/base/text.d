@@ -471,6 +471,7 @@ abstract class Encoding {
             enc = new MLangEncoding(codePage);
             break;
           }
+          import std.string;
           throw new NotSupportedException(std.string.format("%s is not a supported code page.", codePage));
       }
 

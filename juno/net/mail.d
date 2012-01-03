@@ -13,7 +13,6 @@ import juno.base.core,
   juno.base.collections,
   juno.com.core,
   juno.net.core;
-debug import std.stdio : writefln;
 
 /**
  * The exception thrown when the SmtpClient is unable to complete a send operation.
@@ -376,6 +375,7 @@ class MailAddress {
   bool equals(Object value) {
     if (value is null)
       return false;
+    import std.string;
     return (std.string.icmp(this.toString(), value.toString()) == 0);
   }
 

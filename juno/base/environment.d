@@ -208,6 +208,7 @@ final class Version {
   }
 
   override string toString() {
+    import std.string;
     string s = std.string.format("%d.%d", major_, minor_);
     if (build_ != -1) {
       s ~= std.string.format(".%d", build_);

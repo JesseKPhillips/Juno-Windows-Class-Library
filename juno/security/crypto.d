@@ -10,7 +10,6 @@ module juno.security.crypto;
 
 import juno.base.core,
   juno.base.string,
-  juno.base.collections,
   juno.base.environment,
   juno.base.native,
   juno.locale.time,
