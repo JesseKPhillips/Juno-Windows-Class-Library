@@ -17,3 +17,7 @@ messagebeep: juno
 	dmd $(args) examples/dll/messagebeep.d juno.lib -Ijuno
 relativepath: juno
 	dmd $(args) examples/dll/relativepath.d juno.lib -Ijuno
+xmlwrite: juno examples/xml/write.d
+    dmd $(args) examples/xml/write.d juno.lib -Ijuno
+xmlnavigate: juno examples/xml/navigate.d
+    dmd $(args) examples/xml/navigate.d juno.lib -Ijuno

@@ -1,4 +1,4 @@
-module juno.examples.xml.write;
+ï»¿module juno.examples.xml.write;
 
 import juno.xml.all;
 
@@ -12,7 +12,7 @@ void main() {
   writer.writeStartElement("books");
   writer.writeStartElement("book");
   writer.writeElementString("title", "Villette");
-  writer.writeElementString("author", "Charlotte Brontë");
+  writer.writeElementString("author", "Charlotte BrontÃ«");
   writer.writeElementString("publisher", "Penguin");
-  writer.writeElementString("price", "£7.99");
+  writer.writeElementString("price", "Â£7.99");
 }
