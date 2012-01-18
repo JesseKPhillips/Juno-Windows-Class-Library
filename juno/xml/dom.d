@@ -410,10 +410,15 @@ private class DocumentXPathNavigator : XPathNavigator {
     int hr;
     if (SUCCEEDED(hr = document_.nodeImpl_.selectNodes(bstrExpression, nodeList))) {
       scope(exit) tryRelease(nodeList);
-      IXMLDOMNode n;
-      if (SUCCEEDED((cast(IXMLDOMSelection)nodeList).matches(node_.nodeImpl_, n))) {
-        scope(exit) tryRelease(n);
-        return n !is null;
+      
+      if (auto nodeSelection = com_cast!(IXMLDOMSelection)(nodeList)) {
+        scope(exit) tryRelease(nodeSelection);
+      
+        IXMLDOMNode n;  
+        if (SUCCEEDED(nodeSelection.matches(node_.nodeImpl_, n))) {
+          scope(exit) tryRelease(n);
+          return n !is null;
+        }
       }
     }
     else
@@ -427,11 +432,18 @@ private class DocumentXPathNavigator : XPathNavigator {
 
     IXMLDOMNodeList nodeList;
     int hr;
-    //if (SUCCEEDED(hr = document_.nodeImpl_.selectNodes(bstrExpression, nodeList)))
-    if (SUCCEEDED(hr = node_.nodeImpl_.selectNodes(bstrExpression, nodeList)))
-      return new XPathNodeList(cast(IXMLDOMSelection)nodeList);
-    else
+    if (SUCCEEDED(hr = node_.nodeImpl_.selectNodes(bstrExpression, nodeList))) {
+      scope(exit) tryRelease(nodeList);
+      if (auto nodeSelection = com_cast!(IXMLDOMSelection)(nodeList)) {
+          return new XPathNodeList(nodeSelection);
+      }
+      else {
+        throw xpathException(E_FAIL);
+      }
+    }
+    else {
       throw xpathException(hr);
+    }
   }
 
   private Exception xpathException(int hr) {
