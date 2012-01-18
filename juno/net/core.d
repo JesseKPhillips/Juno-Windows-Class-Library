@@ -872,8 +872,8 @@ private @property bool supportsIPv6() {
   return supportsIPv6_.value;
 }
 
-private SocketException socketException(uint errorCode = GetLastError()) {
-  return new SocketException(getErrorMessage(errorCode), errorCode);
+private SocketOSException socketException(uint errorCode = GetLastError()) {
+  return new SocketOSException(getErrorMessage(errorCode), errorCode);
 }
 
 // Replacements for Phobos's InternetHost and InternetAddress classes.
