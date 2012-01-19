@@ -1375,7 +1375,7 @@ struct DateTime {
     return equals(other);
   }
 
-  uint toHash() {
+  hash_t toHash() {
     return cast(int)ticks ^ cast(int)(ticks >> 32);
   }
 

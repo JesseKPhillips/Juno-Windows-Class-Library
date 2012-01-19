@@ -161,7 +161,7 @@ class Uri {
     return absoluteUri;
   }
 
-  override uint toHash() {
+  override hash_t toHash() {
     string hashString = getComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery);
     return typeid(string).getHash(&hashString);
   }
@@ -587,7 +587,7 @@ private class CredentialKey {
     return false;
   }
 
-  override uint toHash() {
+  override hash_t toHash() {
     return typeid(string).getHash(&authType) + uriPrefixLength + uriPrefix.toHash();
   }
 
@@ -621,7 +621,7 @@ private class CredentialHostKey {
     return false;
   }
 
-  override uint toHash() {
+  override hash_t toHash() {
     return (typeid(string).getHash(&host) + typeid(string).getHash(&authType) + port);
   }
 

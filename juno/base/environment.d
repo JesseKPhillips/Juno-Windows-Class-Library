@@ -199,8 +199,8 @@ final class Version {
       && revision_ == v.revision_);
   }
 
-  override uint toHash() {
-    uint hash = (major_ & 0x0000000F) << 28;
+  override hash_t toHash() {
+    hash_t hash = (major_ & 0x0000000F) << 28;
     hash |= (minor_ & 0x000000FF) << 20;
     hash |= (build_ & 0x000000FF) << 12;
     hash |= revision_ & 0x00000FFF;

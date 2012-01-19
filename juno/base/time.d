@@ -200,7 +200,7 @@ struct TimeSpan {
     return ticks_ == other.ticks_;
   }
 
-  uint toHash() {
+  hash_t toHash() {
     return cast(int)ticks_ ^ cast(int)(ticks_ >> 32);
   }
 

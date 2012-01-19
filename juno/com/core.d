@@ -392,7 +392,7 @@ struct GUID {
    * Retrieves the hash code for this instance.
    * Returns: The hash code for this instance.
    */
-  uint toHash() {
+  hash_t toHash() {
     return a ^ ((b >> 16) | c) ^ ((f << 24) | k);
   }
 
@@ -844,7 +844,7 @@ struct DECIMAL {
     return result;
   }
 
-  uint toHash() {
+  hash_t toHash() {
     double d;
     VarR8FromDec(this, d);
     if (d == 0)
