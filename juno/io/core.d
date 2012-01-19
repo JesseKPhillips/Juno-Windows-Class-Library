@@ -365,13 +365,13 @@ private class ConsoleStream : Stream {
     return 0;
   }
 
-  protected override uint readBlock(void* buffer, uint size) {
+  protected override size_t readBlock(void* buffer, size_t size) {
     uint bytesRead = 0;
     ReadFile(handle_, buffer, size, bytesRead, null);
     return bytesRead;
   }
 
-  protected override uint writeBlock(in void* buffer, uint size) {
+  protected override size_t writeBlock(in void* buffer, size_t size) {
     uint bytesWritten = 0;
     WriteFile(handle_, buffer, size, bytesWritten, null);
     return bytesWritten;
