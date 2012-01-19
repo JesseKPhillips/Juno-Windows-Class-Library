@@ -466,9 +466,9 @@ string uuid(string g) {
  */
 template uuidof(alias T) {
   static if (is(typeof(T)))
-    const GUID uuidof = uuidofT!(typeof(T));
+    enum GUID uuidof = uuidofT!(typeof(T));
   else
-    const GUID uuidof = uuidofT!(T);
+    enum GUID uuidof = uuidofT!(T);
 }
 
 /* Conflicts with the definition above.
