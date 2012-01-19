@@ -103,7 +103,7 @@ template MAKE_SCODE(uint sev, uint fac, uint code) {
 }
 
 version(D_Version2) {
-  const Handle INVALID_HANDLE_VALUE = cast(Handle)-1;
+  enum Handle INVALID_HANDLE_VALUE = cast(Handle)-1;
 }
 else {
   extern(D) // Previous definition different
