@@ -102,7 +102,7 @@ package string getCalendarInfo(uint locale, uint calendar, uint field, bool user
 package string getGeoInfo(uint geoId, uint geoType) {
   int cch = GetGeoInfo(geoId, geoType, null, 0, 0);
   wchar[] buffer = new wchar[cch];
-  cch = GetGeoInfo(geoId, geoType, buffer.ptr, buffer.length, 0);
+  cch = GetGeoInfo(geoId, geoType, buffer.ptr, cast(int)buffer.length, 0);
   if (cch == 0)
     return null;
 

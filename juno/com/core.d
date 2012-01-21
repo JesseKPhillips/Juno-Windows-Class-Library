@@ -3503,16 +3503,16 @@ class COMStream : Implements!(IStream) {
   }
 
   int Read(void* pv, uint cb, ref uint pcbRead) {
-    uint ret = stream_.readBlock(pv, cb);
+    size_t ret = stream_.readBlock(pv, cb);
     if (&pcbRead)
-      pcbRead = ret;
+      pcbRead = cast(uint)ret;
     return S_OK;
   }
 
   int Write(in void* pv, uint cb, ref uint pcbWritten) {
-    uint ret = stream_.writeBlock(pv, cb);
+    size_t ret = stream_.writeBlock(pv, cb);
     if (&pcbWritten)
-      pcbWritten = ret;
+      pcbWritten = cast(uint)ret;
     return S_OK;
   }
 
@@ -3615,7 +3615,7 @@ VARIANT invokeMemberById(int dispId, DispatchFlags flags, IDispatch target, VARI
   DISPPARAMS params;
   if (args.length > 0) {
     params.rgvarg = args.ptr;
-    params.cArgs = args.length;
+    params.cArgs = cast(uint)args.length;
 
     if (flags & DispatchFlags.PutProperty) {
       int dispIdNamed = DISPID_PROPERTYPUT;

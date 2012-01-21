@@ -167,7 +167,7 @@ struct Event(R, T...) {
   }
 
   private void addToList(TEventInfo e) {
-    uint n = list_.length;
+    size_t n = list_.length;
 
     if (n == 0)
       list_.length = 4;

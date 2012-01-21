@@ -363,10 +363,10 @@ final class RegistryKey {
 
     string expandEnvironmentVariables(string name) {
       auto src = name.toUtf16z();
-      int size = ExpandEnvironmentStrings(src, null, 0);
+      uint size = ExpandEnvironmentStringsW(src, null, 0);
 
       wchar[] dst = new wchar[size];
-      size = ExpandEnvironmentStrings(src, dst.ptr, dst.length);
+      size = ExpandEnvironmentStrings(src, dst.ptr, cast(uint)dst.length);
       if (size == 0)
         throw new Win32Exception(GetLastError());
       return .toUtf8(dst[0 .. size - 1].ptr);

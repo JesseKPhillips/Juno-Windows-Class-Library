@@ -121,7 +121,7 @@ abstract class WaitHandle {
       handles[i] = waitHandle.handle_;
     }
 
-    uint r = WaitForMultipleObjectsEx(handles.length, handles.ptr, 1, millisecondsTimeout, 1);
+    uint r = WaitForMultipleObjectsEx(cast(uint)handles.length, handles.ptr, 1, millisecondsTimeout, 1);
     return (r != WAIT_ABANDONED && r != WAIT_TIMEOUT);
   }
 
@@ -131,7 +131,7 @@ abstract class WaitHandle {
       handles[i] = waitHandle.handle_;
     }
 
-    return WaitForMultipleObjectsEx(handles.length, handles.ptr, 0, millisecondsTimeout, 1);
+    return WaitForMultipleObjectsEx(cast(uint)handles.length, handles.ptr, 0, millisecondsTimeout, 1);
   }
 
   static bool signalAndWait(WaitHandle toSignal, WaitHandle toWaitOn, uint millisecondsTimeout = INFINITE) {
