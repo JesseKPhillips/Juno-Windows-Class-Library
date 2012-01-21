@@ -204,13 +204,13 @@ struct GpColorMatrix {
 
 struct GpEncoderParameter {
   GUID Guid;
-  int NumberOfValues;
-  int Type;
+  uint NumberOfValues;
+  uint Type;
   void* Value;
 }
 
 struct GpEncoderParameters {
-  int Count;
+  uint Count;
   GpEncoderParameter[1] Parameter;
 }
 

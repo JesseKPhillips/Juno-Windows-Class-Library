@@ -444,15 +444,15 @@ final class EncoderParameters {
 
   package this(GpEncoderParameters* p) {
     param.length = p.Count;
-    for (int i = 0; i < p.Count; i++) {
+    for (size_t i = 0; i < p.Count; i++) {
       param[i] = new EncoderParameter(new Encoder(p.Parameter[i].Guid), p.Parameter[i].NumberOfValues, p.Parameter[i].Type, p.Parameter[i].Value);
     }
   }
 
   package GpEncoderParameters* forGDIplus() {
     GpEncoderParameters* p = cast(GpEncoderParameters*)LocalAlloc(LMEM_FIXED, GpEncoderParameters.sizeof);
-    p.Count = param.length;
-    for (int i = 0; i < param.length; i++) {
+    p.Count = cast(uint)param.length;
+    for (size_t i = 0; i < param.length; i++) {
       p.Parameter[i].Guid = param[i].guid_;
       p.Parameter[i].NumberOfValues = param[i].numberOfValues_;
       p.Parameter[i].Type = param[i].type_;
