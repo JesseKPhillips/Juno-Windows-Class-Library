@@ -35,8 +35,8 @@ version(D_Version2) {
 
 private int stringToInt(string value, int fromBase) {
   int sign = 1;
-  int i;
-  int len = value.length;
+  size_t i;
+  size_t len = value.length;
 
   if (value[0] == '-') {
     sign = -1;
@@ -2257,7 +2257,7 @@ final class Graphics : IDisposable {
   /**
    */
   void addMetafileComment(ubyte[] data) {
-    Status status = GdipComment(nativeGraphics_, data.length, data.ptr);
+    Status status = GdipComment(nativeGraphics_, std.conv.to!uint(data.length), data.ptr);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2316,7 +2316,7 @@ final class Graphics : IDisposable {
   /**
    */
   void transformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, PointF[] points) {
-    Status status = GdipTransformPoints(nativeGraphics_, destSpace, srcSpace, points.ptr, points.length);
+    Status status = GdipTransformPoints(nativeGraphics_, destSpace, srcSpace, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2324,7 +2324,7 @@ final class Graphics : IDisposable {
   /**
    */
   void transformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, Point[] points) {
-    Status status = GdipTransformPointsI(nativeGraphics_, destSpace, srcSpace, points.ptr, points.length);
+    Status status = GdipTransformPointsI(nativeGraphics_, destSpace, srcSpace, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2370,7 +2370,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawLines(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawLines(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2398,7 +2398,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawLinesI(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawLinesI(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2460,7 +2460,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawBeziers(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawBeziers(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2488,7 +2488,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawBeziersI(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawBeziersI(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2516,7 +2516,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawRectangles(nativeGraphics_, pen.nativePen_, rects.ptr, rects.length);
+    Status status = GdipDrawRectangles(nativeGraphics_, pen.nativePen_, rects.ptr, std.conv.to!int(rects.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2544,7 +2544,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawRectanglesI(nativeGraphics_, pen.nativePen_, rects.ptr, rects.length);
+    Status status = GdipDrawRectanglesI(nativeGraphics_, pen.nativePen_, rects.ptr, std.conv.to!int(rects.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2623,7 +2623,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawPolygon(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawPolygon(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2634,7 +2634,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawPolygonI(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawPolygonI(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2659,7 +2659,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawCurve(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawCurve(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2670,7 +2670,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawCurve2(nativeGraphics_, pen.nativePen_, points.ptr, points.length, tension);
+    Status status = GdipDrawCurve2(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length), tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2681,7 +2681,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawCurve3(nativeGraphics_, pen.nativePen_, points.ptr, points.length, offset, numberOfSegments, tension);
+    Status status = GdipDrawCurve3(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length), offset, numberOfSegments, tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2692,7 +2692,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawCurveI(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawCurveI(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2703,7 +2703,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawCurve2I(nativeGraphics_, pen.nativePen_, points.ptr, points.length, tension);
+    Status status = GdipDrawCurve2I(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length), tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2714,7 +2714,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawCurve3I(nativeGraphics_, pen.nativePen_, points.ptr, points.length, offset, numberOfSegments, tension);
+    Status status = GdipDrawCurve3I(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length), offset, numberOfSegments, tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2725,7 +2725,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawClosedCurve(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawClosedCurve(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2736,7 +2736,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawClosedCurve2(nativeGraphics_, pen.nativePen_, points.ptr, points.length, tension);
+    Status status = GdipDrawClosedCurve2(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length), tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2747,7 +2747,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawClosedCurveI(nativeGraphics_, pen.nativePen_, points.ptr, points.length);
+    Status status = GdipDrawClosedCurveI(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2758,7 +2758,7 @@ final class Graphics : IDisposable {
     if (pen is null)
       throw new ArgumentNullException("pen");
 
-    Status status = GdipDrawClosedCurve2I(nativeGraphics_, pen.nativePen_, points.ptr, points.length, tension);
+    Status status = GdipDrawClosedCurve2I(nativeGraphics_, pen.nativePen_, points.ptr, std.conv.to!int(points.length), tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2786,7 +2786,7 @@ final class Graphics : IDisposable {
     if (brush is null)
       throw new ArgumentNullException("brush");
 
-    Status status = GdipFillRectangles(nativeGraphics_, brush.nativeBrush_, rects.ptr, rects.length);
+    Status status = GdipFillRectangles(nativeGraphics_, brush.nativeBrush_, rects.ptr, std.conv.to!int(rects.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2810,7 +2810,7 @@ final class Graphics : IDisposable {
     if (brush is null)
       throw new ArgumentNullException("brush");
 
-    Status status = GdipFillRectanglesI(nativeGraphics_, brush.nativeBrush_, rects.ptr, rects.length);
+    Status status = GdipFillRectanglesI(nativeGraphics_, brush.nativeBrush_, rects.ptr, std.conv.to!int(rects.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2835,7 +2835,7 @@ final class Graphics : IDisposable {
     if (brush is null)
       throw new ArgumentNullException("brush");
 
-    Status status = GdipFillPolygon(nativeGraphics_, brush.nativeBrush_, points.ptr, points.length, fillMode);
+    Status status = GdipFillPolygon(nativeGraphics_, brush.nativeBrush_, points.ptr, std.conv.to!int(points.length), fillMode);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2846,7 +2846,7 @@ final class Graphics : IDisposable {
     if (brush is null)
       throw new ArgumentNullException("brush");
 
-    Status status = GdipFillPolygonI(nativeGraphics_, brush.nativeBrush_, points.ptr, points.length, fillMode);
+    Status status = GdipFillPolygonI(nativeGraphics_, brush.nativeBrush_, points.ptr, std.conv.to!int(points.length), fillMode);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2933,7 +2933,7 @@ final class Graphics : IDisposable {
     if (brush is null)
       throw new ArgumentNullException("brush");
 
-    Status status = GdipFillClosedCurve(nativeGraphics_, brush.nativeBrush_, points.ptr, points.length);
+    Status status = GdipFillClosedCurve(nativeGraphics_, brush.nativeBrush_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2944,7 +2944,7 @@ final class Graphics : IDisposable {
     if (brush is null)
       throw new ArgumentNullException("brush");
 
-    Status status = GdipFillClosedCurve2(nativeGraphics_, brush.nativeBrush_, points.ptr, points.length, fillMode, tension);
+    Status status = GdipFillClosedCurve2(nativeGraphics_, brush.nativeBrush_, points.ptr, std.conv.to!int(points.length), fillMode, tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2955,7 +2955,7 @@ final class Graphics : IDisposable {
     if (brush is null)
       throw new ArgumentNullException("brush");
 
-    Status status = GdipFillClosedCurveI(nativeGraphics_, brush.nativeBrush_, points.ptr, points.length);
+    Status status = GdipFillClosedCurveI(nativeGraphics_, brush.nativeBrush_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -2966,7 +2966,7 @@ final class Graphics : IDisposable {
     if (brush is null)
       throw new ArgumentNullException("brush");
 
-    Status status = GdipFillClosedCurve2I(nativeGraphics_, brush.nativeBrush_, points.ptr, points.length, fillMode, tension);
+    Status status = GdipFillClosedCurve2I(nativeGraphics_, brush.nativeBrush_, points.ptr, std.conv.to!int(points.length), fillMode, tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -3085,7 +3085,7 @@ final class Graphics : IDisposable {
     if (destPoints.length != 3 && destPoints.length != 4)
       throw new ArgumentException("Destination points must be an array with a length of 3 or 4.");
 
-    Status status = GdipDrawImagePoints(nativeGraphics_, image.nativeImage_, destPoints.ptr, destPoints.length);
+    Status status = GdipDrawImagePoints(nativeGraphics_, image.nativeImage_, destPoints.ptr, cast(int)destPoints.length);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -3106,7 +3106,7 @@ final class Graphics : IDisposable {
       throw new ArgumentException("Destination points must be an array with a length of 3 or 4.");
 
    callbackDelegate = callback;
-   Status status = GdipDrawImagePointsRect(nativeGraphics_, image.nativeImage_, destPoints.ptr, destPoints.length, srcRect.x, srcRect.y, srcRect.width, srcRect.height, srcUnit, (imageAttrs is null ? Handle.init : imageAttrs.nativeImageAttributes), (callback == null ? null : &drawImageAbortCallback), callbackData);
+   Status status = GdipDrawImagePointsRect(nativeGraphics_, image.nativeImage_, destPoints.ptr, cast(int)destPoints.length, srcRect.x, srcRect.y, srcRect.width, srcRect.height, srcUnit, (imageAttrs is null ? Handle.init : imageAttrs.nativeImageAttributes), (callback == null ? null : &drawImageAbortCallback), callbackData);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -3197,7 +3197,7 @@ final class Graphics : IDisposable {
     if (destPoints.length != 3 && destPoints.length != 4)
       throw new ArgumentException("Destination points must be an array with a length of 3 or 4.");
 
-    Status status = GdipDrawImagePointsI(nativeGraphics_, image.nativeImage_, destPoints.ptr, destPoints.length);
+    Status status = GdipDrawImagePointsI(nativeGraphics_, image.nativeImage_, destPoints.ptr, cast(int)destPoints.length);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -3218,7 +3218,7 @@ final class Graphics : IDisposable {
       throw new ArgumentException("Destination points must be an array with a length of 3 or 4.");
 
    callbackDelegate = callback;
-   Status status = GdipDrawImagePointsRectI(nativeGraphics_, image.nativeImage_, destPoints.ptr, destPoints.length, srcRect.x, srcRect.y, srcRect.width, srcRect.height, srcUnit, (imageAttrs is null ? Handle.init : imageAttrs.nativeImageAttributes), (callback == null ? null : &drawImageAbortCallback), callbackData);
+   Status status = GdipDrawImagePointsRectI(nativeGraphics_, image.nativeImage_, destPoints.ptr, cast(int)destPoints.length, srcRect.x, srcRect.y, srcRect.width, srcRect.height, srcUnit, (imageAttrs is null ? Handle.init : imageAttrs.nativeImageAttributes), (callback == null ? null : &drawImageAbortCallback), callbackData);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -3245,7 +3245,7 @@ final class Graphics : IDisposable {
       if (font is null)
         throw new ArgumentNullException("font");
 
-      Status status = GdipDrawString(nativeGraphics_, s.toUtf16z(), s.length, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, brush.nativeBrush_);
+      Status status = GdipDrawString(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, brush.nativeBrush_);
       if (status != Status.OK)
         throw statusException(status);
     }
@@ -3270,7 +3270,7 @@ final class Graphics : IDisposable {
     RectF boundingBox;
     int codepointsFitted, linesFilled;
 
-    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), s.length, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
+    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -3290,7 +3290,7 @@ final class Graphics : IDisposable {
     RectF boundingBox;
     int codepointsFitted, linesFilled;
 
-    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), s.length, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
+    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -3309,7 +3309,7 @@ final class Graphics : IDisposable {
     RectF layoutRect = RectF(0, 0, layoutArea.width, layoutArea.height);
     RectF boundingBox;
 
-    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), s.length, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
+    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -3338,7 +3338,7 @@ final class Graphics : IDisposable {
       nativeRegions[i] = regions[i].nativeRegion_;
     }
 
-    status = GdipMeasureCharacterRanges(nativeGraphics_, s.toUtf16z(), s.length, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, regionCount, nativeRegions.ptr);
+    status = GdipMeasureCharacterRanges(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, regionCount, nativeRegions.ptr);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -3664,7 +3664,7 @@ final class StringFormat : IDisposable {
   /**
    */
   void setMeasurableCharacterRanges(CharacterRange[] ranges) {
-    Status status = GdipSetStringFormatMeasurableCharacterRanges(nativeFormat_, ranges.length, ranges.ptr);
+    Status status = GdipSetStringFormatMeasurableCharacterRanges(nativeFormat_, std.conv.to!int(ranges.length), ranges.ptr);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -3688,7 +3688,7 @@ final class StringFormat : IDisposable {
   /**
    */
   void setTabStops(float firstTabOffset, float[] tabStops) {
-    Status status = GdipSetStringFormatTabStops(nativeFormat_, firstTabOffset, tabStops.length, tabStops.ptr);
+    Status status = GdipSetStringFormatTabStops(nativeFormat_, firstTabOffset, std.conv.to!int(tabStops.length), tabStops.ptr);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -5219,7 +5219,7 @@ final class LinearGradientBrush : Brush {
   /**
    */
   void blend(Blend value) {
-    Status status = GdipSetLineBlend(nativeBrush_, value.factors.ptr, value.positions.ptr, value.factors.length);
+    Status status = GdipSetLineBlend(nativeBrush_, value.factors.ptr, value.positions.ptr, std.conv.to!int(value.factors.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -5268,7 +5268,7 @@ final class LinearGradientBrush : Brush {
     foreach (i, ref argb; colors)
       argb = value.colors[i].toArgb();
 
-    Status status = GdipSetLinePresetBlend(nativeBrush_, colors.ptr, value.positions.ptr, value.colors.length);
+    Status status = GdipSetLinePresetBlend(nativeBrush_, colors.ptr, value.positions.ptr, std.conv.to!int(value.colors.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -5344,7 +5344,7 @@ final class PathGradientBrush : Brush {
   /**
    */
   this(PointF[] points, WrapMode wrapMode = WrapMode.Clamp) {
-    Status status = GdipCreatePathGradient(points.ptr, points.length, wrapMode, nativeBrush_);
+    Status status = GdipCreatePathGradient(points.ptr, std.conv.to!int(points.length), wrapMode, nativeBrush_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -5352,7 +5352,7 @@ final class PathGradientBrush : Brush {
   /**
    */
   this(Point[] points, WrapMode wrapMode = WrapMode.Clamp) {
-    Status status = GdipCreatePathGradientI(points.ptr, points.length, wrapMode, nativeBrush_);
+    Status status = GdipCreatePathGradientI(points.ptr, std.conv.to!int(points.length), wrapMode, nativeBrush_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -5657,7 +5657,7 @@ final class Pen : IDisposable {
     if (value == null)
       throw statusException(Status.InvalidParameter);
 
-    Status status = GdipSetPenDashArray(nativePen_, value.ptr, value.length);
+    Status status = GdipSetPenDashArray(nativePen_, value.ptr, std.conv.to!int(value.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -5686,7 +5686,7 @@ final class Pen : IDisposable {
     if (value == null)
       throw statusException(Status.InvalidParameter);
 
-    Status status = GdipSetPenCompoundArray(nativePen_, value.ptr, value.length);
+    Status status = GdipSetPenCompoundArray(nativePen_, value.ptr, std.conv.to!int(value.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7570,7 +7570,7 @@ final class Path {
     if (points.length != types.length)
       throw statusException(Status.InvalidParameter);
 
-    Status status = GdipCreatePath2(points.ptr, types.ptr, types.length, fillMode, nativePath_);
+    Status status = GdipCreatePath2(points.ptr, types.ptr, std.conv.to!int(types.length), fillMode, nativePath_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7581,7 +7581,7 @@ final class Path {
     if (points.length != types.length)
       throw statusException(Status.InvalidParameter);
 
-    Status status = GdipCreatePath2I(points.ptr, types.ptr, types.length, fillMode, nativePath_);
+    Status status = GdipCreatePath2I(points.ptr, types.ptr, std.conv.to!int(types.length), fillMode, nativePath_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7682,7 +7682,7 @@ final class Path {
   /**
    */
   void addLines(PointF[] points) {
-    Status status = GdipAddPathLine2(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathLine2(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7704,7 +7704,7 @@ final class Path {
   /**
    */
   void addLines(Point[] points) {
-    Status status = GdipAddPathLine2I(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathLine2I(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7754,7 +7754,7 @@ final class Path {
   /**
    */
   void addBeziers(PointF[] points) {
-    Status status = GdipAddPathBeziers(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathBeziers(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7776,7 +7776,7 @@ final class Path {
   /**
    */
   void addBeziers(Point[] points) {
-    Status status = GdipAddPathBeziersI(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathBeziersI(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7784,7 +7784,7 @@ final class Path {
   /**
    */
   void addCurve(PointF[] points) {
-    Status status = GdipAddPathCurve(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathCurve(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7792,7 +7792,7 @@ final class Path {
   /**
    */
   void addCurve(PointF[] points, float tension) {
-    Status status = GdipAddPathCurve2(nativePath_, points.ptr, points.length, tension);
+    Status status = GdipAddPathCurve2(nativePath_, points.ptr, std.conv.to!int(points.length), tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7800,7 +7800,7 @@ final class Path {
   /**
    */
   void addCurve(PointF[] points, int offset, int numberOfSegments, float tension) {
-    Status status = GdipAddPathCurve3(nativePath_, points.ptr, points.length, offset, numberOfSegments, tension);
+    Status status = GdipAddPathCurve3(nativePath_, points.ptr, std.conv.to!int(points.length), offset, numberOfSegments, tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7808,7 +7808,7 @@ final class Path {
   /**
    */
   void addCurve(Point[] points) {
-    Status status = GdipAddPathCurveI(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathCurveI(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7816,7 +7816,7 @@ final class Path {
   /**
    */
   void addCurve(Point[] points, float tension) {
-    Status status = GdipAddPathCurve2I(nativePath_, points.ptr, points.length, tension);
+    Status status = GdipAddPathCurve2I(nativePath_, points.ptr, std.conv.to!int(points.length), tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7824,7 +7824,7 @@ final class Path {
   /**
    */
   void addCurve(Point[] points, int offset, int numberOfSegments, float tension) {
-    Status status = GdipAddPathCurve3I(nativePath_, points.ptr, points.length, offset, numberOfSegments, tension);
+    Status status = GdipAddPathCurve3I(nativePath_, points.ptr, std.conv.to!int(points.length), offset, numberOfSegments, tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7832,7 +7832,7 @@ final class Path {
   /**
    */
   void addClosedCurve(PointF[] points) {
-    Status status = GdipAddPathClosedCurve(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathClosedCurve(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7840,7 +7840,7 @@ final class Path {
   /**
    */
   void addClosedCurve(PointF[] points, float tension) {
-    Status status = GdipAddPathClosedCurve2(nativePath_, points.ptr, points.length, tension);
+    Status status = GdipAddPathClosedCurve2(nativePath_, points.ptr, std.conv.to!int(points.length), tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7848,7 +7848,7 @@ final class Path {
   /**
    */
   void addClosedCurve(Point[] points) {
-    Status status = GdipAddPathClosedCurveI(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathClosedCurveI(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7856,7 +7856,7 @@ final class Path {
   /**
    */
   void addClosedCurve(Point[] points, float tension) {
-    Status status = GdipAddPathClosedCurve2I(nativePath_, points.ptr, points.length, tension);
+    Status status = GdipAddPathClosedCurve2I(nativePath_, points.ptr, std.conv.to!int(points.length), tension);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7872,7 +7872,7 @@ final class Path {
   /**
    */
   void addRectangles(RectF[] rects) {
-    Status status = GdipAddPathRectangles(nativePath_, rects.ptr, rects.length);
+    Status status = GdipAddPathRectangles(nativePath_, rects.ptr, std.conv.to!int(rects.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7888,7 +7888,7 @@ final class Path {
   /**
    */
   void addRectangles(Rect[] rects) {
-    Status status = GdipAddPathRectanglesI(nativePath_, rects.ptr, rects.length);
+    Status status = GdipAddPathRectanglesI(nativePath_, rects.ptr, std.conv.to!int(rects.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7952,7 +7952,7 @@ final class Path {
   /**
    */
   void addPolygon(PointF[] points) {
-    Status status = GdipAddPathPolygon(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathPolygon(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7960,7 +7960,7 @@ final class Path {
   /**
    */
   void addPolygon(Point[] points) {
-    Status status = GdipAddPathPolygonI(nativePath_, points.ptr, points.length);
+    Status status = GdipAddPathPolygonI(nativePath_, points.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7980,7 +7980,7 @@ final class Path {
    */
   void addString(string s, FontFamily family, FontStyle style, float emSize, PointF origin, StringFormat format) {
     RectF layoutRect = RectF(origin.x, origin.y, 0, 0);
-    Status status = GdipAddPathString(nativePath_, s.toUtf16z(), s.length, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
+    Status status = GdipAddPathString(nativePath_, s.toUtf16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7988,7 +7988,7 @@ final class Path {
   /**
    */
   void addString(string s, FontFamily family, FontStyle style, float emSize, RectF layoutRect, StringFormat format) {
-    Status status = GdipAddPathString(nativePath_, s.toUtf16z(), s.length, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
+    Status status = GdipAddPathString(nativePath_, s.toUtf16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7997,7 +7997,7 @@ final class Path {
    */
   void addString(string s, FontFamily family, FontStyle style, float emSize, Point origin, StringFormat format) {
     Rect layoutRect = Rect(origin.x, origin.y, 0, 0);
-    Status status = GdipAddPathStringI(nativePath_, s.toUtf16z(), s.length, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
+    Status status = GdipAddPathStringI(nativePath_, s.toUtf16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -8005,7 +8005,7 @@ final class Path {
   /**
    */
   void addString(string s, FontFamily family, FontStyle style, float emSize, Rect layoutRect, StringFormat format) {
-    Status status = GdipAddPathStringI(nativePath_, s.toUtf16z(), s.length, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
+    Status status = GdipAddPathStringI(nativePath_, s.toUtf16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -8067,7 +8067,7 @@ final class Path {
   /**
    */
   void warp(PointF[] destPoints, RectF srcRect, Matrix matrix = null, WarpMode warpMode = WarpMode.Perspective, float flatness = FlatnessDefault) {
-    Status status = GdipWarpPath(nativePath_, (matrix is null ? Handle.init : matrix.nativeMatrix_), destPoints.ptr, destPoints.length, srcRect.x, srcRect.y, srcRect.width, srcRect.height, warpMode, flatness);
+    Status status = GdipWarpPath(nativePath_, (matrix is null ? Handle.init : matrix.nativeMatrix_), destPoints.ptr, std.conv.to!int(destPoints.length), srcRect.x, srcRect.y, srcRect.width, srcRect.height, warpMode, flatness);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -8290,7 +8290,7 @@ final class PathIterator {
       throw statusException(Status.InvalidParameter);
 
     int resultCount;
-    Status status = GdipPathIterEnumerate(nativeIter_, resultCount, points.ptr, types.ptr, points.length);
+    Status status = GdipPathIterEnumerate(nativeIter_, resultCount, points.ptr, types.ptr, std.conv.to!int(points.length));
     if (status != Status.OK)
       throw statusException(status);
     return resultCount;
