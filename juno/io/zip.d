@@ -98,8 +98,6 @@ private void copyStream(Stream input, Stream output) {
       return;
     output.writeBlock(buffer.ptr, n);
   }
-
-  input.position = pos;
 }
 
 private class SliceStreamWithSize : SliceStream {

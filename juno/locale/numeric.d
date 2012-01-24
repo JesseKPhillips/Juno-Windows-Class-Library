@@ -961,6 +961,7 @@ package string formatUInt(uint value, string format, IFormatProvider provider) {
       if (length > 0)
         break;
       // fall through
+      goto case;
     case 'd', 'D':
       return ulongToString(cast(ulong)value, length);
     case 'x', 'X':
@@ -985,6 +986,7 @@ package string formatInt(int value, string format, IFormatProvider provider) {
       if (length > 0)
         break;
       // fall through
+      goto case;
     case 'd', 'D':
       return longToString(cast(long)value, length, nf.negativeSign);
     case 'x', 'X':
@@ -1009,6 +1011,7 @@ package string formatULong(ulong value, string format, IFormatProvider provider)
       if (length > 0)
         break;
       // fall through
+      goto case;
     case 'd', 'D':
       return ulongToString(value, length);
     case 'x', 'X':
@@ -1033,6 +1036,7 @@ package string formatLong(long value, string format, IFormatProvider provider) {
       if (length > 0)
         break;
       // fall through
+      goto case;
     case 'd', 'D':
       return longToString(value, length, nf.negativeSign);
     case 'x', 'X':
@@ -1058,6 +1062,7 @@ package string formatFloat(float value, string format, IFormatProvider provider)
     case 'g', 'G':
       if (length > 7)
         precision = 9;
+      goto default;
     default:
   }
 
@@ -1079,6 +1084,7 @@ package string formatDouble(double value, string format, IFormatProvider provide
     case 'g', 'G':
       if (length > 15)
         precision = 17;
+      goto default;
     default:
   }
 

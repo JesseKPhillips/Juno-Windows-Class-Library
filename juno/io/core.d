@@ -44,11 +44,8 @@ package void ioError(uint errorCode, string path) {
   switch (errorCode) {
     case ERROR_FILE_NOT_FOUND:
       throw new FileNotFoundException(getErrorMessage(errorCode), path);
-      break;
-
     default:
       throw new IOException(getErrorMessage(errorCode));
-      break;
   }
 }
 

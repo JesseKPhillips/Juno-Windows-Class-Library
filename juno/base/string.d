@@ -1050,6 +1050,7 @@ private struct Argument {
             return ti.xtoString(value);
         }
         // Fall through
+        goto case;
 
       case TypeCode.Function, TypeCode.Delegate, TypeCode.Typedef:
         return type.toString();

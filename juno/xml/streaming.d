@@ -696,6 +696,7 @@ abstract class XmlReader {
         case XmlNodeType.Attribute:
           moveToElement();
           // Fall through
+          goto case;
         case XmlNodeType.Element, 
           XmlNodeType.EndElement, 
           XmlNodeType.CDATA, 

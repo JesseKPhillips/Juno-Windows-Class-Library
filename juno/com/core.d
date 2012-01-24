@@ -3662,12 +3662,6 @@ VARIANT invokeMemberById(int dispId, DispatchFlags flags, IDispatch target, VARI
 
       throw new COMException(errorMessage, hr);
   }
-
-  /*if (FAILED(hr)) {
-    throw new COMException(fromBstr(excep.bstrDescription), hr);
-  }*/
-
-  return result;
 }
 
 /**
