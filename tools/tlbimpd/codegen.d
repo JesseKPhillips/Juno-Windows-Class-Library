@@ -47,7 +47,7 @@ class IndentingWriter : Writer {
     return writer_.newLine;
   }
 
-  override Encoding encoding() {
+  @property override Encoding encoding() {
     return writer_.encoding;
   }
 
@@ -535,11 +535,11 @@ class CodeGenerator {
     output.write(createIdentifier(name));
   }
 
-  private void indent(int value) {
+  @property private void indent(int value) {
     output.indent_ = value;
   }
 
-  private int indent() {
+  @property private int indent() {
     return output.indent_;
   }
 

@@ -69,42 +69,45 @@ private void checkHResult(int hr) {
 
 class Reference {
 
-  private string name_;
-  private string help_;
-  private Guid guid_;
-  private string location_;
-  private Version version_;
+    private string name_;
+    private string help_;
+    private Guid guid_;
+    private string location_;
+    private Version version_;
 
-  string name() {
-    return name_;
-  }
+    @property {
+        string name() {
+            return name_;
+        }
 
-  string help() {
-    return help_;
-  }
+        string help() {
+            return help_;
+        }
 
-  Guid guid() {
-    return guid_;
-  }
+        Guid guid() {
+            return guid_;
+        }
 
-  string location() {
-    return location_;
-  }
+        string location() {
+            return location_;
+        }
+    }
 
-  Version getVersion() {
-    return version_;
-  }
+    Version getVersion() {
+        return version_;
+    }
 
-  private this() {
-  }
 
-  private this(string name, string help, Guid guid, string location, Version ver) {
-    name_ = name;
-    help_ = help;
-    guid_ = guid;
-    location_ = location;
-    version_ = ver;
-  }
+    private this() {
+    }
+
+    private this(string name, string help, Guid guid, string location, Version ver) {
+        name_ = name;
+        help_ = help;
+        guid_ = guid;
+        location_ = location;
+        version_ = ver;
+    }
 
 }
 
@@ -153,34 +156,36 @@ class TypeLibrary {
     references_ = null;
   }
 
-  /**
-   */
-  string name() {
-    return name_;
-  }
+  @property {
+      /**
+       */
+      string name() {
+        return name_;
+      }
 
-  /**
-   */
-  string help() {
-    return help_;
-  }
+      /**
+       */
+      string help() {
+        return help_;
+      }
 
-  /**
-   */
-  Guid guid() {
-    return guid_;
-  }
+      /**
+       */
+      Guid guid() {
+        return guid_;
+      }
 
-  /**
-   */
-  string location() {
-    return location_;
-  }
+      /**
+       */
+      string location() {
+        return location_;
+      }
 
-  /**
-   */
-  Version getVersion() {
-    return version_;
+      /**
+       */
+      Version getVersion() {
+        return version_;
+      }
   }
 
   /**
@@ -620,117 +625,120 @@ enum TypeAttributes {
  */
 abstract class Type : Member {
 
-  /**
-   */
-  override MemberTypes memberType() {
-    return MemberTypes.Type;
-  }
-
-  /**
-   */
-  abstract @property TypeAttributes attributes();
-
-  /**
-   */
-  abstract Guid guid();
-
-  /**
-   */
-  abstract Type baseType();
-
-  /**
-   */
-  abstract Type underlyingType();
-
-  /**
-   */
-  abstract Type[] getInterfaces();
-
-  /**
-   */
-  abstract Member[] getMembers();
-
-  /**
-   */
-  abstract Field[] getFields();
-
-  /**
-   */
-  abstract Method[] getMethods();
-
-  /**
-   */
-  Member[] getMember(string name) {
-    Member[] result = null;
-    foreach (member; getMembers()) {
-      if (member !is null && member.name == name)
-        result ~= member;
+    /**
+     */
+    override MemberTypes memberType() {
+        return MemberTypes.Type;
     }
-    return result;
-  }
 
-  /**
-   */
-  Field getField(string name) {
-    foreach (field; getFields()) {
-      if (field !is null && field.name == name)
-        return field;
+    /**
+     */
+    abstract @property TypeAttributes attributes();
+
+    @property {
+        /**
+         */
+        abstract Guid guid();
+
+        /**
+         */
+        abstract Type baseType();
+
+        /**
+         */
+        abstract Type underlyingType();
     }
-    return null;
-  }
 
-  /**
-   */
-  Method getMethod(string name) {
-    foreach (method; getMethods()) {
-      if (method !is null && method.name == name)
-        return method;
+    /**
+     */
+    abstract Type[] getInterfaces();
+
+    /**
+     */
+    abstract Member[] getMembers();
+
+    /**
+     */
+    abstract Field[] getFields();
+
+    /**
+     */
+    abstract Method[] getMethods();
+
+    /**
+     */
+    Member[] getMember(string name) {
+        Member[] result = null;
+        foreach (member; getMembers()) {
+            if (member !is null && member.name == name)
+                result ~= member;
+        }
+        return result;
     }
-    return null;
-  }
 
-  /**
-   */
-  override string toString() {
-    return "Type: " ~ name;
-  }
+    /**
+     */
+    Field getField(string name) {
+        foreach (field; getFields()) {
+            if (field !is null && field.name == name)
+                return field;
+        }
+        return null;
+    }
 
-  /**
-   */
-  final bool isCoClass() {
-    return (attributes & TypeAttributes.CoClass) != 0;
-  }
+    /**
+     */
+    Method getMethod(string name) {
+        foreach (method; getMethods()) {
+            if (method !is null && method.name == name)
+                return method;
+        }
+        return null;
+    }
 
-  /**
-   */
-  final bool isInterface() {
-    return (attributes & TypeAttributes.Interface) != 0;
-  }
+    /**
+     */
+    override string toString() {
+        return "Type: " ~ name;
+    }
 
-  /**
-   */
-  final bool isStruct() {
-    return (attributes & TypeAttributes.Struct) != 0;
-  }
+    @property {
+        /**
+         */
+        final bool isCoClass() {
+            return (attributes & TypeAttributes.CoClass) != 0;
+        }
 
-  /**
-   */
-  final bool isEnum() {
-    return (attributes & TypeAttributes.Enum) != 0;
-  }
+        /**
+         */
+        final bool isInterface() {
+            return (attributes & TypeAttributes.Interface) != 0;
+        }
 
-  /**
-   */
-  final bool isAlias() {
-    return (attributes & TypeAttributes.Alias) != 0;
-  }
+        /**
+         */
+        final bool isStruct() {
+            return (attributes & TypeAttributes.Struct) != 0;
+        }
 
-  /**
-   */
-  final bool isUnion() {
-    return (attributes & TypeAttributes.Union) != 0;
-  }
+        /**
+         */
+        final bool isEnum() {
+            return (attributes & TypeAttributes.Enum) != 0;
+        }
 
+        /**
+         */
+        final bool isAlias() {
+            return (attributes & TypeAttributes.Alias) != 0;
+        }
+
+        /**
+         */
+        final bool isUnion() {
+            return (attributes & TypeAttributes.Union) != 0;
+        }
+    }
 }
 
 package final class TypeImpl : Type {
@@ -1125,7 +1133,7 @@ abstract class Field : Member {
 
   /**
    */
-  override MemberTypes memberType() {
+  @property override MemberTypes memberType() {
     return MemberTypes.Field;
   }
 
@@ -1135,11 +1143,11 @@ abstract class Field : Member {
 
   /**
    */
-  abstract FieldAttributes attributes();
+  @property abstract FieldAttributes attributes();
 
   /**
    */
-  abstract Type fieldType();
+  @property abstract Type fieldType();
 
 }
 
@@ -1199,7 +1207,7 @@ abstract class Method : Member {
 
   /**
    */
-  override MemberTypes memberType() {
+  @property override MemberTypes memberType() {
     return MemberTypes.Method;
   }
 
@@ -1209,19 +1217,19 @@ abstract class Method : Member {
 
   /**
    */
-  abstract MethodAttributes attributes();
+  @property abstract MethodAttributes attributes();
 
   /**
    */
-  abstract Type returnType();
+  @property abstract Type returnType();
 
   /**
    */
-  abstract Parameter returnParameter();
+  @property abstract Parameter returnParameter();
 
   /**
    */
-  abstract int id();
+  @property abstract int id();
 
 }
 

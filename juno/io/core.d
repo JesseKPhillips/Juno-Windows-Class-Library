@@ -219,7 +219,7 @@ abstract class Writer {
   /**
    * Gets the _encoding in which the output is written.
    */
-  abstract Encoding encoding();
+  @property abstract Encoding encoding();
 
 }
 
@@ -275,7 +275,7 @@ class StringWriter : Writer {
     return sb_;
   }
 
-  override Encoding encoding() {
+  @property override Encoding encoding() {
     if (encoding_ is null)
       encoding_ = new Utf8Encoding;
     return encoding_;
