@@ -1256,17 +1256,11 @@ struct VARIANT {
     DECIMAL decVal;
   }
 
-  //TODO:
-  /// Represents the _missing value.
-  version(none)static VARIANT Missing = { vt: VT_ERROR, scode: DISP_E_PARAMNOTFOUND };
+  static VARIANT Missing = { vt: VT_ERROR, scode: DISP_E_PARAMNOTFOUND };
 
-  //TODO:
-  /// Represents the _nothing value.
-  version(none)static VARIANT Nothing = { vt: VT_DISPATCH, pdispVal: null };
+  static VARIANT Nothing = { vt: VT_DISPATCH, pdispVal: null };
 
-  //TODO:
-  /// Represents the _null value.
-  version(none)static VARIANT Null = { vt: VT_NULL };
+  static VARIANT Null = { vt: VT_NULL };
 
   /**
    * Initializes a new instance using the specified _value and _type.
