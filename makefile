@@ -2,12 +2,10 @@ DEPS=juno\base\collections.d juno\base\core.d juno\base\environment.d juno\base\
 
 juno: juno.lib juno/juno.args
 
-dom.obj: juno/xml/dom.d
-	dmd -c juno/xml/dom.d
-mail.obj: juno/net/mail.d
-	dmd -c juno/net/mail.d
-juno.lib: dom.obj mail.obj $(DEPS)
-	dmd -lib -ofjuno.lib $(args) @juno/juno.args dom.obj mail.obj
+xsl.obj: juno/xml/xsl.d
+	dmd -c -property juno/xml/xsl.d
+juno.lib: xsl.obj $(DEPS)
+	dmd -lib -ofjuno.lib -property -O -inline -release $(args) @juno/juno.args xsl.obj
 
 events: juno examples/com/events.d
 	dmd $(args) examples/com/events.d juno.lib -Ijuno
@@ -18,6 +16,6 @@ messagebeep: juno
 relativepath: juno
 	dmd $(args) examples/dll/relativepath.d juno.lib -Ijuno
 xmlwrite: juno examples/xml/write.d
-    dmd $(args) examples/xml/write.d juno.lib -Ijuno
+	dmd $(args) examples/xml/write.d juno.lib -Ijuno
 xmlnavigate: juno examples/xml/navigate.d
-    dmd $(args) examples/xml/navigate.d juno.lib -Ijuno
+	dmd $(args) examples/xml/navigate.d juno.lib -Ijuno

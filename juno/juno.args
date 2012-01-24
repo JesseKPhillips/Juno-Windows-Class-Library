@@ -24,13 +24,14 @@ juno\com\server.d
 juno\com\bstr.d
 juno\com\reflect.d
 juno\xml\core.d
-juno\xml\xsl.d
+juno\xml\dom.d
 juno\xml\msxml.d
 juno\xml\streaming.d
 juno\xml\all.d
 juno\net\all.d
 juno\net\core.d
 juno\net\client.d
+juno\net\mail.d
 juno\security\crypto.d
 juno\utils\process.d
 juno\utils\registry.d
