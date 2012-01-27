@@ -627,7 +627,7 @@ class Watcher {
 
   /**
    */
-  final void bufferSize(uint value) {
+  final @property void bufferSize(uint value) {
     if (bufferSize_ != value) {
       if (value < 4096)
         value = 4096;
@@ -637,50 +637,50 @@ class Watcher {
     }
   }
   /// ditto
-  final uint bufferSize() {
+  final @property uint bufferSize() {
     return bufferSize_;
   }
 
   /**
    */
-  final void path(string value) {
+  final @property void path(string value) {
     if (std.string.icmp(directory_, value) != 0) {
       directory_ = value;
       restart();
     }
   }
   /// ditto
-  final string path() {
+  final @property string path() {
     return directory_;
   }
 
   /**
    */
-  final void filter(string value) {
+  final @property void filter(string value) {
     if (std.string.icmp(filter_, value) != 0)
       filter_ = value;
   }
   /// ditto
-  final string filter() {
+  final @property string filter() {
     return filter_;
   }
 
   /**
    */
-  final void notifyFilters(NotifyFilters value) {
+  final @property void notifyFilters(NotifyFilters value) {
     if (notifyFilters_ != value) {
       notifyFilters_ = value;
       restart();
     }
   }
   /// ditto
-  final NotifyFilters notifyFilters() {
+  final @property NotifyFilters notifyFilters() {
     return notifyFilters_;
   }
 
   /**
    */
-  final void enableEvents(bool value) {
+  final @property void enableEvents(bool value) {
     if (enabled_ != value) {
       enabled_ = value;
 
@@ -690,7 +690,7 @@ class Watcher {
         stopEvents();
     }
   }
-  final bool enableEvents() {
+  final @property bool enableEvents() {
     return enabled_;
   }
 

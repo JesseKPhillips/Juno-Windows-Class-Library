@@ -926,7 +926,7 @@ private final class XmlLiteReader : XmlReader {
     if (hr != S_OK)
       throw new COMException(hr);
 
-    mlang_ = CMultiLanguage.coCreate!(IMultiLanguage2);
+    mlang_ = CMultiLanguage.coCreate!(IMultiLanguage2)();
     readerImpl_.SetProperty(XmlReaderProperty.MultiLanguage, cast(int)cast(void*)mlang_);
     readerImpl_.SetProperty(XmlReaderProperty.ConformanceLevel, cast(int)settings.conformanceLevel);
     readerImpl_.SetProperty(XmlReaderProperty.DtdProcessing, settings.prohibitDtd ? 0 : 1);
@@ -1425,7 +1425,7 @@ private final class XmlLiteWriter : XmlWriter {
     if (encoding is null)
       encoding = Encoding.UTF8;
 
-    mlang_ = CMultiLanguage.coCreate!(IMultiLanguage2);
+    mlang_ = CMultiLanguage.coCreate!(IMultiLanguage2)();
     writerImpl_.SetProperty(XmlWriterProperty.MultiLanguage, cast(int)cast(void*)mlang_);
     writerImpl_.SetProperty(XmlWriterProperty.ConformanceLevel, cast(int)settings.conformanceLevel);
     writerImpl_.SetProperty(XmlWriterProperty.OmitXmlDeclaration, settings.omitXmlDeclaration ? 1 : 0);

@@ -40,8 +40,8 @@ class XmlNamespaceManager {
   private IMXNamespaceManager nsmgrImpl_;
 
   this() {
-    if ((nsmgrImpl_ = MXNamespaceManager60.coCreate!(IMXNamespaceManager)) is null) {
-      if ((nsmgrImpl_ = MXNamespaceManager40.coCreate!(IMXNamespaceManager)) is null) {
+    if ((nsmgrImpl_ = MXNamespaceManager60.coCreate!(IMXNamespaceManager)()) is null) {
+      if ((nsmgrImpl_ = MXNamespaceManager40.coCreate!(IMXNamespaceManager)()) is null) {
         nsmgrImpl_ = MXNamespaceManager.coCreate!(IMXNamespaceManager, ExceptionPolicy.Throw)();
       }
     }
@@ -1962,9 +1962,9 @@ class XmlDocument : XmlNode {
     // MSXML 6.0 is the preferred implementation. According to MSDN, MSXML 4.0 is only suitable for legacy code, but we'll use if 
     // it's available on the system. MSXML 5.0 was part of Office 2003.
     IXMLDOMDocument2 doc;
-    if ((doc = DOMDocument60.coCreate!(IXMLDOMDocument3)) !is null)
+    if ((doc = DOMDocument60.coCreate!(IXMLDOMDocument3)()) !is null)
       msxmlVersion_ = 6;
-    else if ((doc = DOMDocument40.coCreate!(IXMLDOMDocument2)) !is null)
+    else if ((doc = DOMDocument40.coCreate!(IXMLDOMDocument2)()) !is null)
       msxmlVersion_ = 4;
     else if ((doc = DOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.Throw)()) !is null)
       msxmlVersion_ = 3;

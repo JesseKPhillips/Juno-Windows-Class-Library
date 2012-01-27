@@ -762,10 +762,10 @@ class List(T) : IList!(T) {
     return size_;
   }
 
-  final void capacity(int value) {
+  final @property void capacity(int value) {
     items_.length = value;
   }
-  final int capacity() {
+  final @property int capacity() {
     return items_.length;
   }
 

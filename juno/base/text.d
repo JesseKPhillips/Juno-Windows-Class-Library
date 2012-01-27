@@ -208,7 +208,7 @@ static ~this() {
 
 private void initCodePageInfo() {
   synchronized {
-    if (auto mlang = CMultiLanguage.coCreate!(IMultiLanguage2)) {
+    if (auto mlang = CMultiLanguage.coCreate!(IMultiLanguage2)()) {
       scope(exit) mlang.Release();
 
       IEnumCodePage cp;

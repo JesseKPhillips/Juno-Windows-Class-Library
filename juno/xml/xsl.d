@@ -232,8 +232,8 @@ final class XslTransform {
       document_ = doc;
       args_ = args;
 
-      if ((template_ = XSLTemplate60.coCreate!(IXSLTemplate)) is null) {
-        if ((template_ = XSLTemplate40.coCreate!(IXSLTemplate)) is null)
+      if ((template_ = XSLTemplate60.coCreate!(IXSLTemplate)()) is null) {
+        if ((template_ = XSLTemplate40.coCreate!(IXSLTemplate)()) is null)
           template_ = XSLTemplate30.coCreate!(IXSLTemplate, ExceptionPolicy.Throw)();
       }
 
@@ -301,8 +301,8 @@ final class XslTransform {
    * Initializes a new instance.
    */
   this() {
-    if ((stylesheet_ = FreeThreadedDOMDocument60.coCreate!(IXMLDOMDocument3)) is null) {
-      if ((stylesheet_ = FreeThreadedDOMDocument40.coCreate!(IXMLDOMDocument2)) is null)
+    if ((stylesheet_ = FreeThreadedDOMDocument60.coCreate!(IXMLDOMDocument3)()) is null) {
+      if ((stylesheet_ = FreeThreadedDOMDocument40.coCreate!(IXMLDOMDocument2)()) is null)
         stylesheet_ = FreeThreadedDOMDocument30.coCreate!(IXMLDOMDocument2, ExceptionPolicy.Throw)();
     }
 
