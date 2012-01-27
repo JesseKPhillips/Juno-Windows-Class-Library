@@ -1071,7 +1071,7 @@ struct Color {
       if (htmlTable_ == null)
         initHtmlTable();
 
-      if (auto v = value.tolower() in htmlTable_)
+      if (auto v = std.string.toLower(value) in htmlTable_)
         c = *v;
     }
 
@@ -1096,7 +1096,7 @@ struct Color {
       initNameTable();
 
     foreach (key, value; nameTable_) {
-      if (value.tolower() == name.tolower())
+      if (std.string.toLower(value) == std.string.toLower(name))
         return fromKnownColor(cast(KnownColor)key);
     }
 

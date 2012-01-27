@@ -18,7 +18,7 @@ import juno.locale.time : Calendar,
   KoreanCalendar,
   ThaiBuddhistCalendar;
 import std.utf : toUTF8;
-import std.string : icmp, tolower, toupper, wcslen;
+import std.string : icmp, toLower, toUpper, wcslen;
 import std.c.stdio : sprintf;
 import std.c.string : memcmp, memicmp;
 import std.exception;
@@ -470,7 +470,7 @@ class Culture : IFormatProvider {
 
   private static Culture getCultureWorker(uint lcid, string name) {
     if (name != null)
-      name = name.tolower();
+      name = name.toLower();
 
     if (lcid == 0) {
       if (auto value = name in nameCultures_)
@@ -2533,7 +2533,7 @@ class Region {
   /**
    */
   this(string name) {
-    name_ = name.toupper();
+    name_ = name.toUpper();
 
     if (!findCultureFromRegionName(name, cultureId_))
       throw new ArgumentException("Region name '" ~ name ~ "' is not supported.", "name");
