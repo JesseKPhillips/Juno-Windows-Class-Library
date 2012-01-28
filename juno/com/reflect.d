@@ -1415,6 +1415,9 @@ class Parameter {
         uint count;
         checkHResult(method.typeInfo_.GetNames(funcDesc.memid, bstrNames, funcDesc.cParams + 1, count));
 
+        // The element at 0 is the name of the function. We've already got this, so free it.
+        freeBstr(bstrNames[0]);
+
         //if ((funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUT) || (funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUTREF))
         //  bstrNames[1] = toBstr("value");
 
@@ -1435,10 +1438,6 @@ class Parameter {
             params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
           }
         }
-
-        //Free the BSTRs allocated by GetNames
-        for (uint index = 0; index < count; ++index)
-          freeBstr(bstrNames[index]);
 
         CoTaskMemFree(bstrNames);
       }
