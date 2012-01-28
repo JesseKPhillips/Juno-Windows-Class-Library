@@ -1351,6 +1351,12 @@ class Parameter {
 
   /**
    */
+  @property void parameterType(Type newType) {
+    parameterType_ = newType;
+  }
+
+  /**
+   */
   @property bool isIn() {
     return (attributes & ParameterAttributes.In) != 0;
   }
