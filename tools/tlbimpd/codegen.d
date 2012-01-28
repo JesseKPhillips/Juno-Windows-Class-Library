@@ -1,8 +1,9 @@
 module tlbimpd.codegen;
 
-private import juno.base.all,
-  juno.com.all,
-  tlbimpd.options;
+//private import juno.base.all, juno.com.all;
+private import juno.io.core, juno.base.text, juno.com.core, juno.com.reflect;
+private import juno.base.string : split;
+private import tlbimpd.options;
 
 private import std.string : format;
 private import std.path : getBaseName;
