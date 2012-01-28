@@ -299,7 +299,7 @@ class CodeGenerator {
           output.write(" ");
       }
       else if (type.isUnion)
-        output.write("union");
+        output.write("union ");
 
       if (!(type.isEnum && noEnumNames))
         outputType(type);
