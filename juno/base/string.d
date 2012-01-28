@@ -436,7 +436,8 @@ bool endsWith(string s, string value, bool ignoreCase = false, Culture culture =
  *   value = The string to _insert.
  * Returns: A new string with value inserted at index.
  */
-string insert(string s, int index, string value) {
+//@@TODO@@ The currently disabled std.array.insert is pretty much the same as this
+string insert(string s, size_t index, string value) {
   if (value.length == 0 || s.length == 0) {
     version(D_Version2) {
       return s.idup;
@@ -446,7 +447,7 @@ string insert(string s, int index, string value) {
     }
   }
 
-  int newLength = s.length + value.length;
+  size_t newLength = s.length + value.length;
   char[] newString = new char[newLength];
 
   newString[0 .. index] = s[0 .. index];
