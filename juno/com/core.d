@@ -2712,6 +2712,8 @@ interface IFont : IUnknown {
   int SetHdc(Handle hDC);
 }
 
+alias uint OLE_COLOR;
+
 interface IPicture : IUnknown {
   mixin(uuid("7BF80980-BF32-101A-8BBB-00AA00300CAB"));
 
