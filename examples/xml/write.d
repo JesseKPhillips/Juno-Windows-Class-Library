@@ -1,8 +1,8 @@
 ﻿module juno.examples.xml.write;
 
-import juno.xml.all;
+import juno.com.core, juno.xml.all;
 
-void main() {
+void write() {
   auto settings = new XmlWriterSettings;
   settings.indent = true;
 
@@ -14,5 +14,13 @@ void main() {
   writer.writeElementString("title", "Villette");
   writer.writeElementString("author", "Charlotte Brontë");
   writer.writeElementString("publisher", "Penguin");
-  writer.writeElementString("price", "£7.99");
+  writer.writeElementString("price", "£7.99");    
+}
+
+void main() {
+  if (juno.com.core.initAsClient())
+  {
+    scope(exit) juno.com.core.shutdown();
+    write();
+  }
 }

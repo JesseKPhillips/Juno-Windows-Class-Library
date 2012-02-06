@@ -3,7 +3,8 @@ module juno.examples.com.events;
 import juno.com.core, juno.com.client, juno.xml.msxml;
 import std.stdio : writefln;
 
-void main() {
+void events()
+{
   auto doc = DOMDocument60.coCreate!(IXMLDOMDocument3);
   scope(exit) tryRelease(doc);
 
@@ -20,5 +21,13 @@ void main() {
   doc.put_async(com_true);
 
   com_bool result;
-  doc.load("test.xml".toVariant(true), result);
+  doc.load("book.xml".toVariant(true), result);    
+}
+
+void main() {
+  if (juno.com.core.initAsClient())
+  {
+    scope(exit) juno.com.core.shutdown();
+    events();
+  }
 }

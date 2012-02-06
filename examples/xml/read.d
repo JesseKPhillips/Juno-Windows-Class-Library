@@ -1,9 +1,9 @@
 module juno.examples.xml.read;
 
-import juno.xml.all;
+import juno.xml.core, juno.xml.streaming;
 import std.stdio : writefln;
 
-void main() {
+void read() {
   scope reader = XmlReader.create("book.xml");
 
   while (reader.read()) {
@@ -30,5 +30,14 @@ void main() {
 
       default:
     }
+  }    
+}
+
+
+void main() {
+  if (juno.com.core.initAsClient())
+  {
+    scope(exit) juno.com.core.shutdown();
+    read();
   }
 }
