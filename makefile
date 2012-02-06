@@ -5,7 +5,7 @@ juno: juno.lib juno/juno.args
 xsl.obj: juno/xml/xsl.d
 	dmd -c -property juno/xml/xsl.d
 juno.lib: xsl.obj $(DEPS)
-	dmd -lib -ofjuno.lib -property -O -release $(args) @juno/juno.args xsl.obj
+	dmd -lib -ofjuno.lib -property -O -inline -release $(args) @juno/juno.args xsl.obj
 
 events: juno examples/com/events.d
 	dmd $(args) examples/com/events.d juno.lib -Ijuno
