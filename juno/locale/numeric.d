@@ -587,12 +587,8 @@ package struct Number {
         if (length < 0)
           length = nf.numberDecimalDigits;
         round(scale + length);
-        version(D_Version2) {
-          formatNumber(this, ret, length, nf);
-        }
-        else {
-          formatNumber(*this, ret, length, nf);
-        }
+        formatNumber(this, ret, length, nf);
+
         break;
       case 'g', 'G':
         bool doRounding = true;
@@ -610,23 +606,15 @@ package struct Number {
           sign = 0;
         if (sign)
           ret ~= nf.negativeSign;
-        version(D_Version2) {
-          formatGeneral(this, ret, length, (format == 'g') ? 'e' : 'E', nf);
-        }
-        else {
-          formatGeneral(*this, ret, length, (format == 'g') ? 'e' : 'E', nf);
-        }
+        
+        formatGeneral(this, ret, length, (format == 'g') ? 'e' : 'E', nf);
+
         break;
       case 'c', 'C':
         if (length < 0)
           length = nf.currencyDecimalDigits;
         round(scale + length);
-        version(D_Version2) {
-          formatCurrency(this, ret, length, nf);
-        }
-        else {
-          formatCurrency(*this, ret, length, nf);
-        }
+        formatCurrency(this, ret, length, nf);
         break;
       case 'f', 'F':
         if (length < 0)
@@ -634,12 +622,7 @@ package struct Number {
         round(scale + length);
         if (sign)
           ret ~= nf.negativeSign;
-        version(D_Version2) {
-          formatFixed(this, ret, length, null, nf.numberDecimalSeparator, null);
-        }
-        else {
-          formatFixed(*this, ret, length, null, nf.numberDecimalSeparator, null);
-        }
+        formatFixed(this, ret, length, null, nf.numberDecimalSeparator, null);
         break;
       default:
     }
@@ -838,12 +821,7 @@ private string ulongToString(ulong value, int digits) {
     value /= 10;
   }
 
-  version(D_Version2) {
-    return buffer[n .. $].idup;
-  }
-  else {
-    return buffer[n .. $].dup;
-  }
+  return buffer[n .. $].idup;
 }
 
 private string longToString(long value, int digits, string negativeSign) {
@@ -863,12 +841,7 @@ private string longToString(long value, int digits, string negativeSign) {
     buffer[n .. n + negativeSign.length] = negativeSign;
   }
 
-  version(D_Version2) {
-    return buffer[n .. $].idup;
-  }
-  else {
-    return buffer[n .. $].dup;
-  }
+  return buffer[n .. $].idup;
 }
 
 private string intToHexString(uint value, int digits, char format) {
@@ -883,12 +856,7 @@ private string intToHexString(uint value, int digits, char format) {
     value >>= 4;
   }
 
-  version(D_Version2) {
-    return buffer[n .. $].idup;
-  }
-  else {
-    return buffer[n .. $].dup;
-  }
+  return buffer[n .. $].idup;
 }
 
 private string longToHexString(ulong value, int digits, char format) {
@@ -903,12 +871,7 @@ private string longToHexString(ulong value, int digits, char format) {
     value >>= 4;
   }
 
-  version(D_Version2) {
-    return buffer[n .. $].idup;
-  }
-  else {
-    return buffer[n .. $].dup;
-  }
+  return buffer[n .. $].idup;
 }
 
 private char parseFormatSpecifier(string format, out int length) {

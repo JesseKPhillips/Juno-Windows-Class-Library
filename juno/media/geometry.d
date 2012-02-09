@@ -7,12 +7,9 @@ module juno.media.geometry;
 
 import std.math, // ceil, round
   std.string;
-version(D_Version2) {
-  import std.algorithm : min, max;
-}
-else {
-  import juno.base.math : min, max;
-}
+
+import std.algorithm : min, max;
+
 
 /**
  * Represents a pair of x- and y-coordinates that defines a point in a two-dimensional plane.
@@ -704,12 +701,8 @@ struct Rect {
    * Params: rect = The Rect with which to _intersect.
    */
   void intersect(Rect rect) {
-    version(D_Version2) {
-      Rect r = intersect(rect, this);
-    }
-    else {
-      Rect r = intersect(rect, *this);
-    }
+    Rect r = intersect(rect, this);
+
     x = r.x;
     y = r.y;
     width = r.width;
@@ -989,12 +982,8 @@ struct RectF {
    * Params: rect = The RectF with which to _intersect.
    */
   void intersect(RectF rect) {
-    version(D_Version2) {
-      RectF r = intersect(rect, this);
-    }
-    else {
-      RectF r = intersect(rect, *this);
-    }
+    RectF r = intersect(rect, this);
+    
     x = r.x;
     y = r.y;
     width = r.width;

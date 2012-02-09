@@ -25,14 +25,7 @@ import std.exception;
 import std.range;
 import std.conv;
 
-version(D_Version2) {
-  import std.string : indexOf, lastIndexOf;
-  alias indexOf find;
-  alias lastIndexOf rfind;
-}
-else {
-  import std.string : find, rfind;
-}
+import std.string : indexOf, lastIndexOf;
 
 debug import std.stdio : writefln;
 
@@ -629,8 +622,8 @@ class Culture : IFormatProvider {
     if (!isNeutral)
       s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SNATIVECTRYNAME) ~ ")";
     else {
-      int i = s.rfind("(");
-      if (i != -1 && s.rfind(")") != -1)
+      int i = s.lastIndexOf("(");
+      if (i != -1 && s.lastIndexOf(")") != -1)
         s.length = i - 1;
     }
     return s;
@@ -657,8 +650,8 @@ class Culture : IFormatProvider {
     if (!isNeutral)
       s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SENGCOUNTRY) ~ ")";
     else {
-      int i = s.rfind("(");
-      if (i != -1 && s.rfind(")") != -1)
+      int i = s.lastIndexOf("(");
+      if (i != -1 && s.lastIndexOf(")") != -1)
         s.length = i - 1;
     }
     return s;
@@ -684,14 +677,14 @@ class Culture : IFormatProvider {
     string s = getLocaleInfo(cultureId_, LOCALE_SLANGUAGE);
     if (s != null && isNeutral && cultureId_ != LOCALE_INVARIANT) {
       // Remove country from neutral cultures.
-      int i = s.rfind("(");
-      if (i != -1 && s.rfind(")") != -1)
+      int i = s.lastIndexOf("(");
+      if (i != -1 && s.lastIndexOf(")") != -1)
         s.length = i - 1;
     }
 
     if (s != null && !isNeutral && cultureId_ != LOCALE_INVARIANT) {
       // Add country to specific cultures.
-      if (s.find("(") == -1 && s.find(")") == -1)
+      if (s.indexOf("(") == -1 && s.indexOf(")") == -1)
         s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SCOUNTRY) ~ ")";
     }
 
@@ -729,7 +722,7 @@ class Culture : IFormatProvider {
 
   // Add country to specific cultures.
   private string addCountry(string s) {
-      if (s.find("(").empty && s.find(")").empty)
+      if (s.indexOf("(").empty && s.indexOf(")").empty)
           s ~= " (" ~ getLocaleInfo(cultureId_, LOCALE_SCOUNTRY) ~ ")";
 
       return s;
@@ -2024,7 +2017,7 @@ class DateTimeFormat : IFormatProvider {
   private static string getShortTime(uint culture) {
     // There is no LOCALE_SSHORTTIME, so we simulate one based on the long time pattern.
     string s = getLocaleInfo(culture, LOCALE_STIMEFORMAT);
-    int i = s.rfind(getLocaleInfo(culture, LOCALE_STIME));
+    int i = s.lastIndexOf(getLocaleInfo(culture, LOCALE_STIME));
     if (i != -1)
       s.length = i;
     return s;
@@ -2073,10 +2066,10 @@ class DateTimeFormat : IFormatProvider {
     }
 
     foreach (ref s; formats) {
-      int i = s.rfind(getLocaleInfo(culture, LOCALE_STIME));
+      int i = s.lastIndexOf(getLocaleInfo(culture, LOCALE_STIME));
       int j = -1;
       if (i != -1)
-        j = s.rfind(' ');
+        j = s.lastIndexOf(' ');
       if (i != -1 && j != -1) {
         string temp = s[0 .. j];
         temp ~= s[j .. $];
@@ -2625,23 +2618,13 @@ class Region {
   /**
    */
   @property double latitude() {
-    version(D_Version2) {
-      return std.conv.to!(double)(getGeoInfo(geoId, GEO_LATITUDE));
-    }
-    else {
-      return std.conv.toDouble(getGeoInfo(geoId, GEO_LATITUDE));
-    }
+    return std.conv.to!(double)(getGeoInfo(geoId, GEO_LATITUDE));
   }
 
   /**
    */
   @property double longitude() {
-    version(D_Version2) {
-      return std.conv.to!(double)(getGeoInfo(geoId, GEO_LONGITUDE));
-    }
-    else {
-      return std.conv.toDouble(getGeoInfo(geoId, GEO_LONGITUDE));
-    }
+    return std.conv.to!(double)(getGeoInfo(geoId, GEO_LONGITUDE));
   }
 
 }

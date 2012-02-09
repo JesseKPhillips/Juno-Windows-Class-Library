@@ -12,18 +12,9 @@ debug import std.stdio : writefln;
 extern(C) Object _d_toObject(void*);
 
 alias void delegate(Object) DisposeEvent;
-version(D_Version2) {
-  extern(C) void rt_attachDisposeEvent(Object, DisposeEvent);
-  extern(C) void rt_detachDisposeEvent(Object, DisposeEvent);
-}
-else {
-  void rt_attachDisposeEvent(Object obj, DisposeEvent dispose) {
-    obj.notifyRegister(dispose);
-  }
-  void rt_detachDisposeEvent(Object obj, DisposeEvent dispose) {
-    obj.notifyUnRegister(dispose);
-  }
-}
+
+extern(C) void rt_attachDisposeEvent(Object, DisposeEvent);
+extern(C) void rt_detachDisposeEvent(Object, DisposeEvent);
 
 struct EventInfo(R, T...) {
 

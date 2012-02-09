@@ -1566,12 +1566,7 @@ class XmlDocumentFragment : XmlNode {
   }
 
   @property override string name() {
-    version(D_Version2) {
-      return "#document-fragment".idup;
-    }
-    else {
-      return "#document-fragment".dup;
-    }
+    return "#document-fragment".idup;
   }
 
   @property override string localName() {
@@ -2371,12 +2366,7 @@ class XmlDocument : XmlNode {
    * Returns: For XmlDocument nodes, the local name is #document.
    */
   @property override string localName() {
-    version(D_Version2) {
-      return "#document".idup;
-    }
-    else {
-      return "#document".dup;
-    }
+    return "#document".idup;
   }
 
   /**

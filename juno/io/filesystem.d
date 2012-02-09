@@ -7,12 +7,8 @@ import juno.base.core,
   juno.locale.time,
   juno.io.core,
   juno.io.path;
-version(D_Version2) {
-  import core.thread;
-}
-else {
-  import std.thread;
-}
+
+import core.thread;
 static import std.path;
 
 /// Returns an array of strings containing the names of the logical drives on the current computer.
@@ -770,10 +766,6 @@ class Watcher {
         }
       }
       InterlockedDecrement(completionPortThreadCount_);
-      version(D_Version2) {}
-      else {
-        return 0;
-      }
     });
     InterlockedIncrement(completionPortThreadCount_);
     completionPortThread.start();

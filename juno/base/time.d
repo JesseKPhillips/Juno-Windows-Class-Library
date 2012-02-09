@@ -167,12 +167,7 @@ struct TimeSpan {
 
   /// ditto
   int opCmp(TimeSpan other) {
-    version(D_Version2) {
-      return compare(this, other);
-    }
-    else {
-      return compare(*this, other);
-    }
+    return compare(this, other);
   }
 
   /**
@@ -276,12 +271,7 @@ struct TimeSpan {
   }
 
   TimeSpan opPos() {
-    version(D_Version2) {
-      return this;
-    }
-    else {
-      return *this;
-    }
+    return this;
   }
 
 }
