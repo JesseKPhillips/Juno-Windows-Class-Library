@@ -3874,8 +3874,6 @@ void setRefProperty(IDispatch target, string name, ...) {
   invokeMember(name, DispatchFlags.PutRefProperty, target, argsToVariantList(args, argptr));
 }
 
-version(D_Version2)
-mixin("
 struct com_ref(T) if (is(T : IUnknown)) {
 
   T obj_;
@@ -3922,4 +3920,3 @@ struct com_ref(T) if (is(T : IUnknown)) {
   }
 
 }
-");
