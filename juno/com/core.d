@@ -1105,30 +1105,6 @@ enum : VARIANT_BOOL {
 }
 alias VARIANT_BOOL com_bool;
 
-template isStaticArray(T : U[N], U, size_t N) {
-  const isStaticArray = true;
-}
-
-template isStaticArray(T) {
-  const isStaticArray = false;
-}
-
-template isDynamicArray(T, U = void) {
-  const isDynamicArray = false;
-}
-
-template isDynamicArray(T : U[], U) {
-  const isDynamicArray = !isStaticArray!(T);
-}
-
-template isArray(T) {
-  const isArray = isStaticArray!(T) || isDynamicArray!(T);
-}
-
-template isPointer(T) {
-  const isPointer = is(T : void*);
-}
-
 /**
  * Determines the equivalent COM type of a built-in type at compile-time.
  * Examples:
