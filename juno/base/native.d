@@ -102,13 +102,7 @@ template MAKE_SCODE(uint sev, uint fac, uint code) {
   const MAKE_SCODE = ((sev << 31) | (fac << 16) | code);
 }
 
-version(D_Version2) {
-  enum Handle INVALID_HANDLE_VALUE = cast(Handle)-1;
-}
-else {
-  extern(D) // Previous definition different
-  const Handle INVALID_HANDLE_VALUE = cast(Handle)-1;
-}
+enum Handle INVALID_HANDLE_VALUE = cast(Handle)-1;
 
 ubyte HIBYTE(ushort w) {
   return cast(ubyte)((w >> 8) & 0xFF);
@@ -134,18 +128,10 @@ ushort MAKEWORD(ubyte a, ubyte b) {
   return (a & 0xFF) | (b << 8);
 }
 
-version(D_Version2) {
-  mixin("
-  const(wchar)* MAKEINTRESOURCEW(int i) {
-    return cast(wchar*)cast(uint)cast(ushort)i;
-  }
-  ");
+const(wchar)* MAKEINTRESOURCEW(int i) {
+  return cast(wchar*)cast(uint)cast(ushort)i;
 }
-else {
-  wchar* MAKEINTRESOURCEW(int i) {
-    return cast(wchar*)cast(uint)cast(ushort)i;
-  }
-}
+
 alias MAKEINTRESOURCEW MAKEINTRESOURCE;
 
 const wchar* RT_CURSOR       = MAKEINTRESOURCE(1);
@@ -1299,16 +1285,8 @@ enum : uint {
 struct SHFILEOPSTRUCTW {
   Handle hwnd;
   uint wFunc;
-  version(D_Version2) {
-    mixin("
-    const(wchar)* pFrom;
-    const(wchar)* pTo;
-    ");
-  }
-  else {
-    wchar* pFrom;
-    wchar* pTo;
-  }
+  const(wchar)* pFrom;
+  const(wchar)* pTo;
   uint fFlags;
   BOOL fAnyOperationsAborted;
   void* hNameMappings;
@@ -1431,25 +1409,14 @@ alias GetCommandLineW GetCommandLine;
 wchar** CommandLineToArgvW(in wchar* lpCmdLine, out int pNumArgs);
 alias CommandLineToArgvW CommandLineToArgv;
 
-version(D_Version2) {
-  enum : Handle {
-    HKEY_CLASSES_ROOT     = cast(Handle)0x80000000,
-    HKEY_CURRENT_USER     = cast(Handle)0x80000001,
-    HKEY_LOCAL_MACHINE    = cast(Handle)0x80000002,
-    HKEY_USERS            = cast(Handle)0x80000003,
-    HKEY_PERFORMANCE_DATA = cast(Handle)0x80000004,
-    HKEY_CURRENT_CONFIG   = cast(Handle)0x80000005,
-    HKEY_DYN_DATA         = cast(Handle)0x80000006
-  }
-}
-else {
-  extern Handle HKEY_CLASSES_ROOT;
-  extern Handle HKEY_CURRENT_USER;
-  extern Handle HKEY_LOCAL_MACHINE;
-  extern Handle HKEY_USERS;
-  extern Handle HKEY_PERFORMANCE_DATA;
-  extern Handle HKEY_CURRENT_CONFIG;
-  extern Handle HKEY_DYN_DATA;
+enum : Handle {
+  HKEY_CLASSES_ROOT     = cast(Handle)0x80000000,
+  HKEY_CURRENT_USER     = cast(Handle)0x80000001,
+  HKEY_LOCAL_MACHINE    = cast(Handle)0x80000002,
+  HKEY_USERS            = cast(Handle)0x80000003,
+  HKEY_PERFORMANCE_DATA = cast(Handle)0x80000004,
+  HKEY_CURRENT_CONFIG   = cast(Handle)0x80000005,
+  HKEY_DYN_DATA         = cast(Handle)0x80000006
 }
 
 enum : uint {
@@ -1817,31 +1784,14 @@ struct SHELLEXECUTEINFOW {
   uint cbSize = SHELLEXECUTEINFOW.sizeof;
   uint fMask;
   Handle hwnd;
-  version(D_Version2) {
-    mixin("
-    const(wchar)* lpVerb;
-    const(wchar)* lpFile;
-    const(wchar)* lpParameters;
-    const(wchar)* lpDirectory;
-    ");
-  }
-  else {
-    wchar* lpVerb;
-    wchar* lpFile;
-    wchar* lpParameters;
-    wchar* lpDirectory;
-  }
+  const(wchar)* lpVerb;
+  const(wchar)* lpFile;
+  const(wchar)* lpParameters;
+  const(wchar)* lpDirectory;
   int nShow;
   Handle hInstApp;
   void* lpIDList;
-  version(D_Version2) {
-    mixin("
-    const(wchar)* lpClass;
-    ");
-  }
-  else {
-    wchar* lpClass;
-  }
+  const(wchar)* lpClass;
   Handle hkeyClass;
   uint dwHotKey;
   union {
@@ -2908,12 +2858,7 @@ private void* addressOfFunction(string dllName, string entryPoint, CharSet charS
 
   // '#' denotes an ordinal entry.
   if (entryPoint[0] == '#') {
-    version(D_Version2) {
-      func = GetProcAddress(moduleHandle, cast(char*)std.conv.to!(ushort)(entryPoint[1 .. $]));
-    }
-    else {
-      func = GetProcAddress(moduleHandle, cast(char*)std.conv.toUshort(entryPoint[1 .. $]));
-    }
+    func = GetProcAddress(moduleHandle, cast(char*)std.conv.to!(ushort)(entryPoint[1 .. $]));
   }    
   else {
     func = GetProcAddress(moduleHandle, entryPoint.toStringz());
@@ -2924,12 +2869,7 @@ private void* addressOfFunction(string dllName, string entryPoint, CharSet charS
     if (charSet == CharSet.Auto)
       linkType = ((GetVersion() & 0x80000000) == 0) ? CharSet.Unicode : CharSet.Ansi;
 
-    version(D_Version2) {
-      string entryPointName = entryPoint.idup ~ ((linkType == CharSet.Ansi) ? 'A' : 'W');
-    }
-    else {
-      string entryPointName = entryPoint.dup ~ ((linkType == CharSet.Ansi) ? 'A' : 'W');
-    }
+    string entryPointName = entryPoint.idup ~ ((linkType == CharSet.Ansi) ? 'A' : 'W');
 
     func = GetProcAddress(moduleHandle, entryPointName.toStringz());
 

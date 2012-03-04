@@ -341,18 +341,16 @@ class OverflowException : ArithmeticException {
 
 }
 
-version(D_Version2) {
-  class OutOfMemoryException : Exception {
+class OutOfMemoryException : Exception {
 
-    private const E_OUTOFMEMORY = "Out of memory.";
+  private const E_OUTOFMEMORY = "Out of memory.";
 
-    this() {
-      super(E_OUTOFMEMORY);
-    }
-
-    this(string message) {
-      super(message);
-    }
-
+  this() {
+    super(E_OUTOFMEMORY);
   }
+
+  this(string message) {
+    super(message);
+  }
+
 }

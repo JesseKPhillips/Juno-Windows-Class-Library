@@ -24,7 +24,6 @@ juno\com\all.d
 juno\com\core.d
 juno\com\client.d
 juno\com\server.d
-juno\com\bstr.d
 juno\com\reflect.d
 juno\xml\all.d
 juno\xml\core.d

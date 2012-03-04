@@ -29,9 +29,7 @@ static import std.file,
   std.math,
   std.conv;
 
-version(D_Version2) {
-  debug import std.stdio : writeln;
-}
+debug import std.stdio : writeln;
 
 private int stringToInt(string value, int fromBase) {
   int sign = 1;
@@ -1049,16 +1047,10 @@ struct Color {
           c = fromArgb(cast(ubyte)stringToInt(value[1 .. 3], 16), cast(ubyte)stringToInt(value[3 .. 5], 16), cast(ubyte)stringToInt(value[5 .. 7], 16));
         }
         else {
-          version(D_Version2) {
-            string r = std.conv.to!(string)(value[1]);
-            string g = std.conv.to!(string)(value[2]);
-            string b = std.conv.to!(string)(value[3]);
-          }
-          else {
-            string r = .toString(value[1]);
-            string g = .toString(value[2]);
-            string b = .toString(value[3]);
-          }
+          string r = std.conv.to!(string)(value[1]);
+          string g = std.conv.to!(string)(value[2]);
+          string b = std.conv.to!(string)(value[3]);
+
           c = Color.fromArgb(cast(ubyte)stringToInt(r ~ r, 16), cast(ubyte)stringToInt(g ~ g, 16), cast(ubyte)stringToInt(b ~ b, 16));
         }
       }
@@ -1254,12 +1246,7 @@ struct Color {
       return name_;
 
     if ((state_ & STATE_KNOWNCOLOR_VALID) == 0) {
-      version(D_Version2) {
-        return std.conv.to!(string)(value_, 16u);
-      }
-      else {
-        return std.string.toString(value_, 16u);
-      }
+      return std.conv.to!(string)(value_, 16u);
     }
 
     if (nameTable_ == null)
@@ -1316,14 +1303,9 @@ struct Color {
       }
     }
     else if (isNamedColor) {
-      version(D_Version2) {
-        if (this == Color.lightGray)
-          return "LightGrey";
-      }
-      else {
-        if (*this == Color.lightGray)
-          return "LightGrey";
-      }
+      if (this == Color.lightGray)
+        return "LightGrey";
+
       return name;
     }
 
@@ -3828,44 +3810,21 @@ abstract class Brush : IDisposable {
     }
   }
 
-  version(D_Version2) {
-    private static Brush[KnownColor] brushes_; // TLS by default
-  }
-  else {
-    private static ThreadLocal!(Brush[KnownColor]) brushes_;
-  }
+  private static Brush[KnownColor] brushes_; // TLS by default
 
   static ~this() {
     brushes_ = null;
   }
 
   private static Brush fromKnownColor(KnownColor c) {
-    version(D_Version2) {
-      Brush brush;
-      if (auto value = c in brushes_) {
-        brush = *value;
-      }
-      else {
-        brush = brushes_[c] = new SolidBrush(Color.fromKnownColor(c));
-      }
-      return brush;
+    Brush brush;
+    if (auto value = c in brushes_) {
+      brush = *value;
     }
     else {
-      if (brushes_ is null)
-        brushes_ = new ThreadLocal!(Brush[KnownColor]);
-
-      auto brushes = brushes_.get();
-
-      Brush brush;
-      if (auto value = c in brushes) {
-        brush = *value;
-      }
-      else {
-        brush = brushes[c] = new SolidBrush(Color.fromKnownColor(c));
-        brushes_.set(brushes);
-      }
-      return brush;
+      brush = brushes_[c] = new SolidBrush(Color.fromKnownColor(c));
     }
+    return brush;
   }
 
   /// Gets a system-defined Brush object.
@@ -5734,44 +5693,21 @@ final class Pen : IDisposable {
     return color_;
   }
 
-  version(D_Version2) {
-    private static Pen[KnownColor] pens_;
-  }
-  else {
-    private static ThreadLocal!(Pen[KnownColor]) pens_;
-  }
+  private static Pen[KnownColor] pens_;
 
   static ~this() {
     pens_ = null;
   }
 
   private static Pen fromKnownColor(KnownColor c) {
-    version(D_Version2) {
-      Pen pen;
-      if (auto value = c in pens_) {
-        pen = *value;
-      }
-      else {
-        pen = pens_[c] = new Pen(Color.fromKnownColor(c));
-      }
-      return pen;
+    Pen pen;
+    if (auto value = c in pens_) {
+      pen = *value;
     }
     else {
-      if (pens_ is null)
-        pens_ = new ThreadLocal!(Pen[KnownColor]);
-
-      auto pens = pens_.get();
-
-      Pen pen;
-      if (auto value = c in pens) {
-        pen = *value;
-      }
-      else {
-        pen = pens[c] = new Pen(Color.fromKnownColor(c));
-        pens_.set(pens);
-      }
-      return pen;
+      pen = pens_[c] = new Pen(Color.fromKnownColor(c));
     }
+    return pen;
   }
 
   /// Gets a system-defined Pen object.

@@ -195,22 +195,12 @@ abstract class Writer {
   @property void newLine(string value) {
     if (value == null)
       value = "\r\n";
-    version(D_Version2) {
-      newLine_ = value.idup;
-    }
-    else {
-      newLine_ = value.dup;
-    }
+    newLine_ = value.idup;
   }
 
   /// ditto
   @property string newLine() {
-    version(D_Version2) {
-      return newLine_.idup;
-    }
-    else {
-      return newLine_.dup;
-    }
+    return newLine_.idup;
   }
 
   /**

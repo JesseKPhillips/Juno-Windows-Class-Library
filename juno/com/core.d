@@ -567,36 +567,21 @@ struct SAFEARRAY {
    * Remarks: If objects are stored in the array, Release is called on each object.
    */
   void destroy() {
-    version(D_Version2) {
-      SafeArrayDestroy(&this);
-    }
-    else {
-      SafeArrayDestroy(this);
-    }
+    SafeArrayDestroy(&this);
   }
 
   /**
    * Increments the _lock count of an array.
    */
   void lock() {
-    version(D_Version2) {
-      SafeArrayLock(&this);
-    }
-    else {
-      SafeArrayLock(this);
-    }
+    SafeArrayLock(&this);
   }
 
   /**
    * Decrements the lock count of an array.
    */
   void unlock() {
-    version(D_Version2) {
-      SafeArrayUnlock(&this);
-    }
-    else {
-      SafeArrayUnlock(this);
-    }
+    SafeArrayUnlock(&this);
   }
 
   /**
@@ -605,24 +590,15 @@ struct SAFEARRAY {
    */
   void length(int value) {
     auto bound = SAFEARRAYBOUND(value);
-    version(D_Version2) {
-      SafeArrayRedim(&this, &bound);
-    }
-    else {
-      SafeArrayRedim(this, &bound);
-    }
+    SafeArrayRedim(&this, &bound);
   }
   /// ditto
   int length() {
     int upperBound, lowerBound;
-    version(D_Version2) {
-      SafeArrayGetUBound(&this, 1, upperBound);
-      SafeArrayGetLBound(&this, 1, lowerBound);
-    }
-    else {
-      SafeArrayGetUBound(this, 1, upperBound);
-      SafeArrayGetLBound(this, 1, lowerBound);
-    }
+
+    SafeArrayGetUBound(&this, 1, upperBound);
+    SafeArrayGetLBound(&this, 1, lowerBound);
+
     return upperBound - lowerBound + 1;
   }
 
@@ -662,29 +638,15 @@ SAFEARRAY* SafeArrayCreateVectorEx(ushort vt, int lLbound, uint cElements, void*
 
 extern(D):
 
-version(D_Version2) {
-  string decimal_operator(string name) {
-    return "DECIMAL op" ~ name ~ "(DECIMAL d) { \n"
-      "  DECIMAL result; \n"
-      "  VarDec" ~ name ~ "(this, d, result); \n"
-      "  return result; \n"
-      "} \n"
-      "void op" ~ name ~ "Assign" ~ "(DECIMAL d) { \n"
-      "  VarDec" ~ name ~ "(this, d, this); \n"
-      "}";
-  }
-}
-else {
-  string decimal_operator(string name) {
-    return "DECIMAL op" ~ name ~ "(DECIMAL d) { \n"
-      "  DECIMAL result; \n"
-      "  VarDec" ~ name ~ "(*this, d, result); \n"
-      "  return result; \n"
-      "} \n"
-      "void op" ~ name ~ "Assign" ~ "(DECIMAL d) { \n"
-      "  VarDec" ~ name ~ "(*this, d, *this); \n"
-      "}";
-  }
+string decimal_operator(string name) {
+  return "DECIMAL op" ~ name ~ "(DECIMAL d) { \n"
+    "  DECIMAL result; \n"
+    "  VarDec" ~ name ~ "(this, d, result); \n"
+    "  return result; \n"
+    "} \n"
+    "void op" ~ name ~ "Assign" ~ "(DECIMAL d) { \n"
+    "  VarDec" ~ name ~ "(this, d, this); \n"
+    "}";
 }
 
 const ubyte DECIMAL_NEG = 0x80;
@@ -890,22 +852,12 @@ struct DECIMAL {
 
   /// Compares this instance to a specified instance.
   int compareTo(DECIMAL value) {
-    version(D_Version2) {
-      return compare(this, value);
-    }
-    else {
-      return compare(*this, value);
-    }
+    return compare(this, value);
   }
 
   /// ditto
   int opCmp(DECIMAL d) {
-    version(D_Version2) {
-      return compare(this, d);
-    }
-    else {
-      return compare(*this, d);
-    }
+    return compare(this, d);
   }
 
   /// Returns a value indicating whether two instances represent the same value.
@@ -915,22 +867,12 @@ struct DECIMAL {
 
   /// Returns a value indicating whether this instance and a specified instance represent the same _value.
   bool equals(DECIMAL value) {
-    version(D_Version2) {
-      return compare(this, value) == 0;
-    }
-    else {
-      return compare(*this, value) == 0;
-    }
+    return compare(this, value) == 0;
   }
 
   /// ditto
   bool opEquals(DECIMAL d) {
-    version(D_Version2) {
-      return compare(this, d) == 0;
-    }
-    else {
-      return compare(*this, d) == 0;
-    }
+    return compare(this, d) == 0;
   }
 
   mixin(decimal_operator("Add"));
@@ -939,12 +881,7 @@ struct DECIMAL {
   mixin(decimal_operator("Div"));
 
   DECIMAL opMod(DECIMAL d) {
-    version(D_Version2) {
-      return remainder(this, d);
-    }
-    else {
-      return remainder(*this, d);
-    }
+    return remainder(this, d);
   }
 
   DECIMAL opNeg() {
@@ -954,30 +891,15 @@ struct DECIMAL {
   }
 
   DECIMAL opPos() {
-    version(D_Version2) {
-      return this;
-    }
-    else {
-      return *this;
-    }
+    return this;
   }
 
   DECIMAL opPostInc() {
-    version(D_Version2) {
-      return this = this + DECIMAL(1);
-    }
-    else {
-      return *this = *this + DECIMAL(1);
-    }
+    return this = this + DECIMAL(1);
   }
 
   DECIMAL opPostDec() {
-    version(D_Version2) {
-      return this = this - DECIMAL(1);
-    }
-    else {
-      return *this = *this - DECIMAL(1);
-    }
+    return this = this - DECIMAL(1);
   }
 
 }
@@ -1011,14 +933,6 @@ int VarDecFix(ref DECIMAL pdecIn, out DECIMAL pdecResult);
 int VarDecInt(ref DECIMAL pdecIn, out DECIMAL pdecResult);
 int VarDecNeg(ref DECIMAL pdecIn, out DECIMAL pdecResult);
 int VarDecCmp(ref DECIMAL pdecLeft, out DECIMAL pdecRight);
-
-version(D_Version2) {
-}
-else {
-  int VarBstrFromDec(DECIMAL* pdecIn, uint lcid, uint dwFlags, out wchar* pbstrOut);
-  int VarR8FromDec(DECIMAL* pdecIn, out double pdblOut);
-  int VarDecNeg(DECIMAL* pdecIn, out DECIMAL pdecResult);
-}
 
 int VarFormat(ref VARIANT pvarIn, in wchar* pstrFormat, int iFirstDay, int iFirstWeek, uint dwFlags, out wchar* pbstrOut);
 int VarFormatFromTokens(ref VARIANT pvarIn, in wchar* pstrFormat, byte* pbTokCur, uint dwFlags, out wchar* pbstrOut, uint lcid);
@@ -1090,30 +1004,6 @@ enum : VARIANT_BOOL {
   com_false = VARIANT_FALSE
 }
 alias VARIANT_BOOL com_bool;
-
-template isStaticArray(T : U[N], U, size_t N) {
-  const isStaticArray = true;
-}
-
-template isStaticArray(T) {
-  const isStaticArray = false;
-}
-
-template isDynamicArray(T, U = void) {
-  const isDynamicArray = false;
-}
-
-template isDynamicArray(T : U[], U) {
-  const isDynamicArray = !isStaticArray!(T);
-}
-
-template isArray(T) {
-  const isArray = isStaticArray!(T) || isDynamicArray!(T);
-}
-
-template isPointer(T) {
-  const isPointer = is(T : void*);
-}
 
 /**
  * Determines the equivalent COM type of a built-in type at compile-time.
@@ -1404,12 +1294,7 @@ struct VARIANT {
   }
 
   int opCmp(VARIANT that) {
-    version(D_Version2) {
-      return VarCmp(this, that, GetThreadLocale(), 0) - 1;
-    }
-    else {
-      return VarCmp(*this, that, GetThreadLocale(), 0) - 1;
-    }
+    return VarCmp(this, that, GetThreadLocale(), 0) - 1;
   }
 
   bool opEquals(VARIANT that) {
@@ -1488,12 +1373,7 @@ int CoGetClassObject(ref GUID rclsid, uint dwClsContext, void* pvReserved, ref G
 
 struct COSERVERINFO {
   uint dwReserved1;
-  version(D_Version2) {
-    mixin("const(wchar)* pwszName;");
-  }
-  else {
-    wchar* pwszName;
-  }
+  const(wchar)* pwszName;
   COAUTHINFO* pAutInfo;
   uint dwReserved2;
 }
@@ -1759,12 +1639,7 @@ interface IRunningObjectTable : IUnknown {
 }
 
 struct MULTI_QI {
-  version(D_Version2) {
-    mixin("const(GUID)* pIID;");
-  }
-  else {
-    GUID* pIID;
-  }
+  const(GUID)* pIID;
   IUnknown pItf;
   int hr;
 }
@@ -3177,14 +3052,8 @@ template ReferenceCountImpl() {
         runFinalizer(this);
       }
 
-      version(D_Version2) {
-        core.memory.GC.removeRange(cast(void*)this);
-        core.memory.GC.free(cast(void*)this);
-      }
-      else {
-        std.gc.removeRange(cast(void*)this);
-        std.c.stdlib.free(cast(void*)this);
-      }
+      core.memory.GC.removeRange(cast(void*)this);
+      core.memory.GC.free(cast(void*)this);
     }
     return refCount_;
   }
@@ -3197,12 +3066,8 @@ template ReferenceCountImpl() {
     if (p is null)
       throw new OutOfMemoryError;
 
-    version(D_Version2) {
-      core.memory.GC.addRange(p, sz);
-    }
-    else {
-      std.gc.addRange(p, p + sz);
-    }
+    core.memory.GC.addRange(p, sz);
+ 
     return p;
   }
 
@@ -3871,8 +3736,6 @@ void setRefProperty(IDispatch target, string name, ...) {
   invokeMember(name, DispatchFlags.PutRefProperty, target, argsToVariantList(args, argptr));
 }
 
-version(D_Version2)
-mixin("
 struct com_ref(T) if (is(T : IUnknown)) {
 
   T obj_;
@@ -3919,4 +3782,3 @@ struct com_ref(T) if (is(T : IUnknown)) {
   }
 
 }
-");

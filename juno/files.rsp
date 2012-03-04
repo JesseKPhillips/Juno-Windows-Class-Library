@@ -18,7 +18,6 @@ juno\io\path
 juno\com\core
 juno\com\client
 juno\com\server
-juno\com\bstr
 juno\com\reflect
 juno\xml\core
 juno\xml\dom

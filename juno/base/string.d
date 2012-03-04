@@ -22,14 +22,8 @@ import std.exception;
 
 //debug import std.stdio : writeln;
 
-version(D_Version2) {
-  mixin("alias const(char)* stringz;");
-  mixin("alias const(wchar*) wstringz;");
-}
-else {
-  alias char* stringz;
-  alias wchar* wstringz;
-}
+alias const(char)* stringz;
+alias const(wchar*) wstringz;
 
 string toUtf8(in char* s, int index = 0, int count = -1) {
   if (s == null)
@@ -38,12 +32,8 @@ string toUtf8(in char* s, int index = 0, int count = -1) {
     count = strlen(s);
   if (count == 0)
     return "";
-  version(D_Version2) {
-    return s[index .. count].idup;
-  }
-  else {
-    return s[index .. count].dup;
-  }
+
+  return s[index .. count].idup;
 }
 
 string toUtf8(in wchar* s, int index = 0, int count = -1) {
@@ -66,16 +56,14 @@ stringz toUtf8z(in char[] s, int index = 0, int count = -1) {
   return s[index .. count].toStringz();
 }
 
-version(D_Version2) {
-  stringz toUtf8z(string s, int index = 0, int count = -1) {
-    if (s == null)
-      return "";
-    if (count == -1)
-      count = s.length;
-    if (count == 0)
-      return "";
-    return s[index .. count].toStringz();
-  }
+stringz toUtf8z(string s, int index = 0, int count = -1) {
+  if (s == null)
+    return "";
+  if (count == -1)
+    count = s.length;
+  if (count == 0)
+    return "";
+  return s[index .. count].toStringz();
 }
 
 string toUtf8(in wchar[] s, int index = 0, int count = -1) {
@@ -88,16 +76,14 @@ string toUtf8(in wchar[] s, int index = 0, int count = -1) {
   return s[index .. count].toUTF8();
 }
 
-version(D_Version2) {
-  string toUtf8(string s, int index = 0, int count = -1) {
-    if (s == null)
-      return "";
-    if (count == -1)
-      count = s.length;
-    if (count == 0)
-      return "";
-    return s[index .. count].toUTF8();
-  }
+string toUtf8(string s, int index = 0, int count = -1) {
+  if (s == null)
+    return "";
+  if (count == -1)
+    count = s.length;
+  if (count == 0)
+    return "";
+  return s[index .. count].toUTF8();
 }
 
 wstring toUtf16(string s, int index = 0, int count = -1) {
@@ -120,16 +106,14 @@ wstringz toUtf16z(in char[] s, int index = 0, int count = -1) {
   return s[index .. count].toUTF16z();
 }
 
-version(D_Version2) {
-  wstringz toUtf16z(string s, int index = 0, int count = -1) {
-    if (s == null)
-      return "";
-    if (count == -1)
-      count = s.length;
-    if (count == 0)
-      return "";
-    return s[index .. count].toUTF16z();
-  }
+wstringz toUtf16z(string s, int index = 0, int count = -1) {
+  if (s == null)
+    return "";
+  if (count == -1)
+    count = s.length;
+  if (count == 0)
+    return "";
+  return s[index .. count].toUTF16z();
 }
 
 /**
@@ -439,12 +423,7 @@ bool endsWith(string s, string value, bool ignoreCase = false, Culture culture =
 //@@TODO@@ The currently disabled std.array.insert is pretty much the same as this
 string insert(string s, size_t index, string value) {
   if (value.length == 0 || s.length == 0) {
-    version(D_Version2) {
-      return s.idup;
-    }
-    else {
-      return s.dup;
-    }
+    return s.idup;
   }
 
   size_t newLength = s.length + value.length;
@@ -848,12 +827,8 @@ private string trimHelper(string s, char[] trimChars, Trim trimType) {
     return s;
   if (len == 0)
     return null;
-  version(D_Version2) {
-    return s[left .. right + 1].idup;
-  }
-  else {
-    return s[left .. right + 1].dup;
-  }
+    
+  return s[left .. right + 1].idup;
 }
 
 /**
@@ -1112,12 +1087,8 @@ string format(IFormatProvider provider, string format, ...) {
     d.length = d.length + count;
     for (auto i = 0; i < count; i++)
       d[n + i] = value;
-    version(D_Version2) {
-      s = d.idup;
-    }
-    else {
-      s = d.dup;
-    }
+
+    s = d.idup;
   }
 
   auto types = _arguments;
@@ -1240,12 +1211,7 @@ string format(IFormatProvider provider, string format, ...) {
         chars[i++] = c;
       }
       if (i > p) {
-        version(D_Version2) {
-          fmt = chars[p .. i].idup;
-        }
-        else {
-          fmt = chars[p .. i].dup;
-        }
+        fmt = chars[p .. i].idup;
       }
     }
 

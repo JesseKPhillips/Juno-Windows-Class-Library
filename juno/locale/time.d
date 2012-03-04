@@ -1252,76 +1252,41 @@ struct DateTime {
    *   provider = An object that supplies culture-specific formatting information.
    */
   string toString(string format, IFormatProvider provider) {
-    version(D_Version2) {
-      return formatDateTime(this, format, DateTimeFormat.get(provider));
-    }
-    else {
-      return formatDateTime(*this, format, DateTimeFormat.get(provider));
-    }
+    return formatDateTime(this, format, DateTimeFormat.get(provider));
   }
 
   /// ditto
   string toString(string format) {
-    version(D_Version2) {
-      return formatDateTime(this, format, DateTimeFormat.current);
-    }
-    else {
-      return formatDateTime(*this, format, DateTimeFormat.current);
-    }
+    return formatDateTime(this, format, DateTimeFormat.current);
   }
 
   /// ditto
   string toString() {
-    version(D_Version2) {
-      return formatDateTime(this, null, DateTimeFormat.current);
-    }
-    else {
-      return formatDateTime(*this, null, DateTimeFormat.current);
-    }
+    return formatDateTime(this, null, DateTimeFormat.current);
   }
 
   /**
    */
   string toShortDateString() {
-    version(D_Version2) {
-      return formatDateTime(this, "d", DateTimeFormat.current);
-    }
-    else {
-      return formatDateTime(*this, "d", DateTimeFormat.current);
-    }
+    return formatDateTime(this, "d", DateTimeFormat.current);
   }
 
   /**
    */
   string toLongDateString() {
-    version(D_Version2) {
-      return formatDateTime(this, "D", DateTimeFormat.current);
-    }
-    else {
-      return formatDateTime(*this, "D", DateTimeFormat.current);
-    }
+    return formatDateTime(this, "D", DateTimeFormat.current);
   }
 
   /**
    */
   string toShortTimeString() {
-    version(D_Version2) {
-      return formatDateTime(this, "t", DateTimeFormat.current);
-    }
-    else {
-      return formatDateTime(*this, "t", DateTimeFormat.current);
-    }
+    return formatDateTime(this, "t", DateTimeFormat.current);
   }
 
   /**
    */
   string toLongTimeString() {
-    version(D_Version2) {
-      return formatDateTime(this, "T", DateTimeFormat.current);
-    }
-    else {
-      return formatDateTime(*this, "T", DateTimeFormat.current);
-    }
+    return formatDateTime(this, "T", DateTimeFormat.current);
   }
 
   /**
@@ -1354,12 +1319,7 @@ struct DateTime {
 
   /// ditto
   int opCmp(DateTime other) {
-    version(D_Version2) {
-      return compare(this, other);
-    }
-    else {
-      return compare(*this, other);
-    }
+    return compare(this, other);
   }
 
   /**
@@ -1382,23 +1342,13 @@ struct DateTime {
   /**
    */
   DateTime toLocal() {
-    version(D_Version2) {
-      return SystemTimeZone.current.toLocal(this);
-    }
-    else {
-      return SystemTimeZone.current.toLocal(*this);
-    }
+    return SystemTimeZone.current.toLocal(this);
   }
 
   /**
    */
   DateTime toUtc() {
-    version(D_Version2) {
-      return SystemTimeZone.current.toUtc(this);
-    }
-    else {
-      return SystemTimeZone.current.toUtc(*this);
-    }
+    return SystemTimeZone.current.toUtc(this);
   }
 
   /**
@@ -1509,12 +1459,7 @@ struct DateTime {
   }
 
   @property bool isDaylightSavingTime() {
-    version(D_Version2) {
-      return SystemTimeZone.current.isDaylightSavingTime(this);
-    }
-    else {
-      return SystemTimeZone.current.isDaylightSavingTime(*this);
-    }
+    return SystemTimeZone.current.isDaylightSavingTime(this);
   }
 
   /**

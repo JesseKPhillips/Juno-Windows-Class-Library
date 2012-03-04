@@ -18,12 +18,7 @@ import juno.base.core,
   std.stream;
 static import std.c.stdlib;
 
-version(D_Version2) {
-  debug import std.stdio : writeln, writefln;
-}
-else {
-  debug import std.stdio : writefln;
-}
+debug import std.stdio : writeln, writefln;
 
 interface IBinding : IUnknown {
   mixin(uuid("79eac9c0-baf9-11ce-8c82-00aa004ba90b"));
@@ -249,14 +244,7 @@ alias DllImport!("wininet.dll", "HttpSendRequestW",
 struct INTERNET_BUFFERSW {
   uint dwStructSize = INTERNET_BUFFERSW.sizeof;
   INTERNET_BUFFERSW* Next;
-  version(D_Version2) {
-    mixin("
-    const(wchar)* lpcszHeader;
-    ");
-  }
-  else {
-    wchar* lpcszHeader;
-  }
+  const(wchar)* lpcszHeader;
   uint dwHeadersLength;
   uint dwHeadersTotal;
   void* lpvBuffer;

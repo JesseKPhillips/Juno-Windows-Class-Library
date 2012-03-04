@@ -9,13 +9,8 @@ import juno.base.core,
   juno.com.core,
   juno.media.constants,
   juno.media.geometry;
-version(D_Version2) {
-  import core.memory;
-}
-else {
-  import std.outofmemory;
-  static import std.gc;
-}
+
+import core.memory;
 
 pragma(lib, "user32.lib");
 pragma(lib, "gdi32.lib");
@@ -830,12 +825,7 @@ private void startup() {
 }
 
 private void shutdown() {
-  version(D_Version2) {
-    GC.collect();
-  }
-  else {
-    std.gc.fullCollect();
-  }
+  GC.collect();
   isShutdown = true;
 
   GdiplusShutdown(initToken);

@@ -39,6 +39,10 @@ enum XmlWriterProperty : uint {
 
 extern(Windows):
 
+alias DllImport!("shlwapi.dll", "PathIsURLW",
+  bool function(const(wchar*) pszPath))
+  PathIsURL;
+
 alias DllImport!("xmllite.dll", "CreateXmlReader",
   int function(ref GUID riid, void** ppvObject, IMalloc pMalloc))
   CreateXmlReader;
@@ -421,19 +425,18 @@ abstract class XmlReader {
   static XmlReader create(string inputUri, XmlReaderSettings settings = null, XmlParserContext context = null) {
 
     IStream getStream(string uri) {
-      if (uri.indexOf(":\\") == 1) {
-        // eg: C:\...
+      if (PathIsURL(uri.toUtf16z()))
+      {
+        IStream ret;
+        createStreamOnUrl(uri, ret);
+        return ret;          
+      }
+      else
+      {
         IStream ret;
         createStreamOnFile(uri, STGM_READ, ret);
         return ret;
       }
-      else if (uri.indexOf(':') > 0
-        && (uri.startsWith("http") || uri.startsWith("https") || uri.startsWith("ftp"))) {
-        IStream ret;
-        createStreamOnUrl(uri, ret);
-        return ret;
-      }
-      return null;
     }
 
     if (settings is null)
