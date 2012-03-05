@@ -3,7 +3,7 @@ module juno.examples.xml.navigate;
 import juno.xml.all;
 import std.stdio : writefln;
 
-void main()
+void navigate()
 {
   XmlDocument xmlDocument = new XmlDocument();
   xmlDocument.load("book.xml");
@@ -17,5 +17,14 @@ void main()
     writefln("node text: %s", aNode.text);
     writefln("node is author: %s", aNode.createNavigator.matches("/books/book/author"));
     writefln("node is price: %s", aNode.createNavigator.matches("/books/book/price"));
+  }    
+}
+
+void main()
+{
+  if (juno.com.core.initAsClient())
+  {
+    scope(exit) juno.com.core.shutdown();
+    navigate();
   }
 }

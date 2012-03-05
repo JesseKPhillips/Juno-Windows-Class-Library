@@ -20,20 +20,12 @@ import std.algorithm;
 import std.array;
 import std.utf : toUTF8, toUTF16z;
 import core.exception, core.memory;
-
-static import std.c.stdio;
+  
+//static import std.c.stdio;
 debug import std.stdio : writefln;
 
 pragma(lib, "ole32.lib");
 pragma(lib, "oleaut32.lib");
-
-static this() {
-  startup();
-}
-
-static ~this() {
-  shutdown();
-}
 
 enum /* HRESULT */ {
   S_OK            = 0x0,
@@ -1210,7 +1202,7 @@ struct VARIANT {
    * See_Also: $(LINK2 http://msdn2.microsoft.com/en-us/library/ms221165.aspx, VariantClear).
    */
   void clear() {
-    if (isCOMAlive && !(isNull || isEmpty))
+    if (!(isNull || isEmpty))
       VariantClear(this);
   }
 
@@ -2691,18 +2683,34 @@ extern(D):
 
 package bool isCOMAlive = false;
 
-private void startup() {
-  isCOMAlive = SUCCEEDED(CoInitializeEx(null, COINIT_APARTMENTTHREADED));
+public bool initAsClient()
+{
+  if (isCOMAlive == false)
+  {
+     isCOMAlive = SUCCEEDED(CoInitializeEx(null, COINIT_APARTMENTTHREADED));
+  }
+  
+  return isCOMAlive;
 }
 
-private void shutdown() {
-  // Before we shut down COM, give classes a chance to release any COM resources.
+public bool initAsServer()
+{
+  return true;
+}
+
+public void shutdown()
+{
+  // Before we shut down COM, give classes a chance to release any COM resources.  
   try {
     GC.collect();
   }
-  finally {
-    isCOMAlive = false;
-    CoUninitialize();
+  finally
+  {
+    if (isCOMAlive)
+    {
+      isCOMAlive = false;
+      CoUninitialize();
+    }
   }
 }
 

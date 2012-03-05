@@ -2,7 +2,7 @@ module juno.examples.com.latebinding;
 
 import juno.com.core, juno.com.client;
 
-void main() {
+void bind() {
   // Create an instance of the Message object
   scope message = new DispatchObject("CDO.Message");
 
@@ -34,5 +34,13 @@ void main() {
   scope fields = config.get("Fields");
   fields.call("Update");
 
-  message.call("Send");
+  message.call("Send"); 
+}
+
+void main() {
+  if (juno.com.core.initAsClient())
+  {
+    scope(exit) juno.com.core.shutdown();
+    bind();
+  }
 }
