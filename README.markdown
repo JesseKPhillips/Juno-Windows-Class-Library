@@ -1,10 +1,3 @@
-Dear Followers
-==============
-
-I will be changing my username from he-the-great to just JessePhillips. This change however comes at the cost of clones
-using the old address dieing. This seems to be the only way to warn of such a change, so expect this some time next week,
-Thank You.
-
 Juno Windows Class Library
 ==========================
 
