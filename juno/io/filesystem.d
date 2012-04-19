@@ -857,7 +857,7 @@ class Watcher {
       return ret;
     }*/
 
-    string name = std.path.getBaseName(path);
+    string name = std.path.baseName(path);
 
     if (name == null || filter_ == null)
       return false;
@@ -875,7 +875,7 @@ class Watcher {
     string pattern = "^" ~ escape(filter_.toUpper()).replace(r"\*", ".*").replace(r"\?", ".") ~ "$";
     return std.regexp.find(name.toUpper(), pattern) != -1;*/
     // Actually, fnmatch appears to do what we want.
-    return std.path.fnmatch(name, filter_) != 0;
+    return std.path.globMatch(name, filter_) != 0;
   }
 
   private void notifyRename(WatcherChange action, string name, string oldName) {
