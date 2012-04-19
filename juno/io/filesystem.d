@@ -61,7 +61,7 @@ void createDirectory(string path) {
   string fullPath = getFullPath(path);
 
   int len = fullPath.length;
-  if (len >= 2 && (fullPath[len - 1] == std.path.sep[0] || fullPath[len - 1] == std.path.altsep[0]))
+  if (len >= 2 && std.path.isDirSeparator(fullPath[len - 1]))
     len--;
 
   string[] list;
@@ -76,7 +76,7 @@ void createDirectory(string path) {
         list ~= dir;
       else
         pathExists = true;
-      while (i > rootLen && fullPath[i] != std.path.sep[0] && fullPath[i] != std.path.altsep[0]) i--;
+      while (i > rootLen && (std.path.isDirSeparator(fullPath[i]) == false)) i--;
     }
   }
 
@@ -1020,8 +1020,7 @@ class FileSystemIterator : Iterator!(string) {
       return ret;
 
     string searchPath = combine(fullPath, searchPattern);
-    if (searchPath[$ - 1] == std.path.sep[0] 
-      || searchPath[$ - 1] == std.path.altsep[0] 
+    if (std.path.isDirSeparator(searchPath[$ - 1])
       || searchPath[$ - 1] == ':')
       searchPath ~= '*';
 

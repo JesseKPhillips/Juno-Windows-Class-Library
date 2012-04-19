@@ -46,19 +46,19 @@ string tempFileName() {
 
 package int getRootLength(string path) {
   int i, len = path.length;
-  if (len >= 1 && (path[0] == std.path.sep[0] || path[0] == std.path.altsep[0])) {
+  if (len >= 1 && std.path.isDirSeparator(path[0])) {
     i = 1;
-    if (len >= 2 && (path[1] == std.path.sep[0] || path[1] == std.path.altsep[0])) {
+    if (len >= 2 && (std.path.isDirSeparator(path[1]))) {
       i = 2;
       int n = 2;
-      while (i < len && ((path[i] != std.path.sep[0] && path[i] != std.path.altsep[0]) || --n > 0)) {
+      while (i < len && ((std.path.isDirSeparator(path[i]) == false) || --n > 0)) {
         i++;
       }
     }
   }
   else if (len >= 2 && path[1] == ':') {
     i = 2;
-    if (len >= 3 && (path[2] == std.path.sep[0] || path[2] == std.path.altsep[0])) {
+    if (len >= 3 && (std.path.isDirSeparator(path[2]))) {
       i++;
     }
   }
@@ -73,7 +73,7 @@ string getPathRoot(string path) {
 
 /// Indicates whether the specified _path string contains absolute or relative _path information.
 bool isPathRooted(string path) {
-  if ((path.length > 1 && (path[0] == std.path.sep[0] || path[0] == std.path.altsep[0])) || (path.length >= 2 && path[1] == ':'))
+  if ((path.length > 1 && (std.path.isDirSeparator(path[0]))) || (path.length >= 2 && path[1] == ':'))
     return true;
   return false;
 }
@@ -87,8 +87,8 @@ string combine(string path1, string path2) {
   if (isPathRooted(path2))
     return path2;
   char last = path1[$ - 1];
-  if (last != std.path.sep[0] && last != std.path.altsep[0] && last != ':')
-    return path1 ~ std.path.sep[0] ~ path2;
+  if (std.path.isDirSeparator(last) == false && last != ':')
+    return path1 ~ std.path.dirSeparator ~ path2;
   return path1 ~ path2;
 }
 
@@ -99,7 +99,7 @@ string getDirectoryName(string path) {
     i = path.length;
     if (i == root)
       return null;
-    while (i > root && path[--i] != std.path.sep[0] && path[i] != std.path.altsep[0]) {
+    while (i > root && (std.path.isDirSeparator(path[--i]) == false)) {
     }
     return path[0 .. i];
   }
@@ -111,7 +111,7 @@ string getDirectoryName(string path) {
 string getFileName(string path) {
   for (int i = path.length; --i >= 0;) {
     char ch = path[i];
-    if (ch == std.path.sep[0] || ch == std.path.altsep[0] || ch == ':')
+    if (std.path.isDirSeparator(ch) || ch == ':')
       return path[i + 1 .. $];
   }
   return path;
