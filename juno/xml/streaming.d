@@ -44,7 +44,7 @@ alias DllImport!("shlwapi.dll", "PathIsURLW",
   PathIsURL;
 
 alias DllImport!("xmllite.dll", "CreateXmlReader",
-  int function(ref GUID riid, void** ppvObject, IMalloc pMalloc))
+  int function(const ref GUID riid, void** ppvObject, IMalloc pMalloc))
   CreateXmlReader;
 
 alias DllImport!("xmllite.dll", "CreateXmlReaderInputWithEncodingCodePage",
@@ -56,7 +56,7 @@ alias DllImport!("xmllite.dll", "CreateXmlReaderInputWithEncodingName",
   CreateXmlReaderInputWithEncodingName;
 
 alias DllImport!("xmllite.dll", "CreateXmlWriter",
-  int function(ref GUID riid, void** ppvObject, IMalloc pMalloc))
+  int function(const ref GUID riid, void** ppvObject, IMalloc pMalloc))
   CreateXmlWriter;
 
 alias DllImport!("xmllite.dll", "CreateXmlWriterOutputWithEncodingName",

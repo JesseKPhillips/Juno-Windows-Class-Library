@@ -276,7 +276,7 @@ struct GUID {
    * Params: other = A GUID to compare to this instance.
    * Returns: true if other is equal to this instance; otherwise, false.
    */
-  bool opEquals(GUID other) {
+  bool opEquals(GUID other) const {
     return a == other.a
       && b == other.b
       && c == other.c
@@ -452,9 +452,9 @@ string uuid(string g) {
  */
 template uuidof(alias T) {
   static if (is(typeof(T)))
-    enum GUID uuidof = uuidofT!(typeof(T));
+    const GUID uuidof = uuidofT!(typeof(T));
   else
-    enum GUID uuidof = uuidofT!(T);
+    const GUID uuidof = uuidofT!(T);
 }
 
 /* Conflicts with the definition above.
@@ -1293,11 +1293,11 @@ struct VARIANT {
       || (vt == VT_UNKNOWN && punkVal is null);
   }
 
-  int opCmp(VARIANT that) {
+  int opCmp(const VARIANT that) const {
     return VarCmp(this, that, GetThreadLocale(), 0) - 1;
   }
 
-  bool opEquals(VARIANT that) {
+  bool opEquals(const VARIANT that) const {
     return opCmp(that) == 0;
   }
 
@@ -1320,16 +1320,16 @@ void VariantInit(ref VARIANT pvarg);
 int VariantClear(ref VARIANT pvarg);
 int VariantCopy(ref VARIANT pvargDest, ref VARIANT pvargSrc);
 
-int VarAdd(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarAnd(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarCat(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarDiv(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarMod(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarMul(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarOr(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarSub(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarXor(ref VARIANT pvarLeft, ref VARIANT pvarRight, out VARIANT pvarResult);
-int VarCmp(ref VARIANT pvarLeft, ref VARIANT pvarRight, uint lcid, uint dwFlags);
+int VarAdd(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarAnd(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarCat(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarDiv(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarMod(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarMul(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarOr(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarSub(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarXor(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
+int VarCmp(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, uint lcid, uint dwFlags);
 
 enum : ushort {
   VARIANT_NOVALUEPROP        = 0x1,
@@ -1350,7 +1350,7 @@ extern(Windows):
 interface IUnknown {
   mixin(uuid("00000000-0000-0000-c000-000000000046"));
 
-  int QueryInterface(ref GUID riid, void** ppvObject);
+  int QueryInterface(const ref GUID riid, void** ppvObject);
   uint AddRef();
   uint Release();
 }
@@ -1367,9 +1367,9 @@ enum : uint {
   CLSCTX_ALL              = CLSCTX_INPROC_SERVER | CLSCTX_INPROC_HANDLER | CLSCTX_LOCAL_SERVER | CLSCTX_REMOTE_SERVER
 }
 
-int CoCreateInstance(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, ref GUID riid, void** ppv);
+int CoCreateInstance(const ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, const ref GUID riid, void** ppv);
 
-int CoGetClassObject(ref GUID rclsid, uint dwClsContext, void* pvReserved, ref GUID riid, void** ppv);
+int CoGetClassObject(ref GUID rclsid, uint dwClsContext, void* pvReserved, const ref GUID riid, void** ppv);
 
 struct COSERVERINFO {
   uint dwReserved1;
@@ -1607,8 +1607,8 @@ int CreateBindCtx(uint reserved, out IBindCtx ppbc);
 interface IMoniker : IPersistStream {
   mixin(uuid("0000000f-0000-0000-c000-000000000046"));
 
-  int BindToObject(IBindCtx pbc, IMoniker pmkToLeft, ref GUID riidResult, void** ppvResult);
-  int BindToStorage(IBindCtx pbc, IMoniker pmkToLeft, ref GUID riid, void** ppv);
+  int BindToObject(IBindCtx pbc, IMoniker pmkToLeft, const ref GUID riidResult, void** ppvResult);
+  int BindToStorage(IBindCtx pbc, IMoniker pmkToLeft, const ref GUID riid, void** ppv);
   int Reduce(IBindCtx pbc, uint dwReduceHowFar, ref IMoniker ppmkToLeft, out IMoniker ppmkReduced);
   int ComposeWith(IMoniker pmkRight, bool fOnlyIfNotGeneric, out IMoniker ppmkComposite);
   int Enum(bool fForward, out IEnumMoniker ppenumMoniker);
@@ -2504,7 +2504,7 @@ int CreateErrorInfo(out IErrorInfo pperrinfo);
 interface ISupportErrorInfo : IUnknown {
   mixin(uuid("df0b3d60-548f-101b-8e65-08002b2bd119"));
 
-  int InterfaceSupportsErrorInfo(ref GUID riid);
+  int InterfaceSupportsErrorInfo(const ref GUID riid);
 }
 
 struct LICINFO {
@@ -3006,7 +3006,7 @@ template Interfaces(TList...) {
 template QueryInterfaceImpl(TList...) {
 
   extern(Windows)
-  int QueryInterface(ref GUID riid, void** ppvObject) {
+  int QueryInterface(const ref GUID riid, void** ppvObject) {
     if (ppvObject is null)
       return E_POINTER;
 
