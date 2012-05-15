@@ -162,8 +162,16 @@ class Uri {
   }
 
   override hash_t toHash() {
-    string hashString = getComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery);
-    return typeid(string).getHash(&hashString);
+    string hashString;
+    try hashString = getComponents(UriComponents.SchemeAndServer | UriComponents.PathAndQuery);
+    catch(Exception) {
+       /* Don't need to do anything */
+    }
+    return safeHash(hashString);
+  }
+
+  hash_t safeHash(string s) @trusted nothrow {
+     return typeid(string).getHash(&s);
   }
 
   /**
@@ -207,7 +215,7 @@ class Uri {
    * Gets the specified _components.
    * Params: components = Specifies which parts of the URI to return.
    */
-  final string getComponents(UriComponents components) {
+  final string getComponents(UriComponents components) @safe {
     if (!isAbsolute)
       throw new InvalidOperationException("This operation is not supported for a relative URI.");
 
@@ -317,14 +325,14 @@ class Uri {
   /**
    * Indicates whether the instance is absolute.
    */
-  final @property bool isAbsolute() {
+  final @property bool isAbsolute() @safe nothrow {
     return scheme_ != null;
   }
 
   /**
    * Indicates whether the instance is a file URI.
    */
-  final @property bool isFile() {
+  final @property bool isFile() @safe nothrow {
     return scheme_ == fileScheme.schemeName;
   }
 
@@ -395,7 +403,7 @@ class Uri {
   /**
    * Indicates whether the port value of the URI is the default for this scheme.
    */
-  @property bool isDefaultPort() {
+  @property bool isDefaultPort() @safe nothrow {
     return (getDefaultPort(scheme_) == port_);
   }
 
@@ -520,8 +528,8 @@ class Uri {
     }
   }
 
-  private int getDefaultPort(string scheme) {
-    scheme = scheme.toLower();
+  private int getDefaultPort(string scheme) @safe nothrow {
+    scheme = scheme.safeToLower();
 
     if (scheme == httpScheme.schemeName)
       return httpScheme.defaultPort;
@@ -1687,3 +1695,10 @@ bool ping(string hostNameOrAddress, uint timeout = Ping.DEFAULT_TIMEOUT) {
   scope sender = new Ping;
   return (sender.send(hostNameOrAddress, timeout).status == IPStatus.Success);
 }
+
+@property string safeToLower(string s) @trusted nothrow {
+  try return s.toLower();
+  catch(Exception)
+     return "";
+}
+

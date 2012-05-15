@@ -742,7 +742,7 @@ class Watcher {
     if (isHandleInvalid)
       throw new FileNotFoundException("Unable to find the specified file.", directory_);
 
-    auto completionPortThread = new Thread({
+    auto completionPortThread = new Thread(function() {
       uint errorCode;
       uint numBytes;
       uint key;

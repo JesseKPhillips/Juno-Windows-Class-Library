@@ -14,7 +14,7 @@ private import juno.base.core,
 /**
  * Converts the specified _value to its equivalent string representation.
  */
-string toString(T)(T value, string format = null, IFormatProvider provider = null) {
+string toString(T)(T value, string format = null, IFormatProvider provider = null) @trusted {
   static if (is(T == ubyte)
     || is(T == ushort)
     || is(T == uint))
