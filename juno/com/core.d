@@ -630,7 +630,7 @@ int SafeArrayCopy(SAFEARRAY* psa, out SAFEARRAY* ppsaOut);
 int SafeArrayPtrOfIndex(SAFEARRAY* psa, int* rgIndices, void** ppvData);
 int SafeArraySetRecordInfo(SAFEARRAY* psa, IRecordInfo prinfo);
 int SafeArrayGetRecordInfo(SAFEARRAY* psa, out IRecordInfo prinfo);
-int SafeArraySetIID(SAFEARRAY* psa, ref GUID guid);
+int SafeArraySetIID(SAFEARRAY* psa, const ref GUID guid);
 int SafeArrayGetIID(SAFEARRAY* psa, out GUID pguid);
 int SafeArrayGetVartype(SAFEARRAY* psa, out ushort pvt);
 SAFEARRAY* SafeArrayCreateVector(ushort vt, int lLbound, uint cElements);
@@ -1369,7 +1369,7 @@ enum : uint {
 
 int CoCreateInstance(const ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, const ref GUID riid, void** ppv);
 
-int CoGetClassObject(ref GUID rclsid, uint dwClsContext, void* pvReserved, const ref GUID riid, void** ppv);
+int CoGetClassObject(const ref GUID rclsid, uint dwClsContext, void* pvReserved, const ref GUID riid, void** ppv);
 
 struct COSERVERINFO {
   uint dwReserved1;
@@ -1378,7 +1378,7 @@ struct COSERVERINFO {
   uint dwReserved2;
 }
 
-int CoCreateInstanceEx(ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, COSERVERINFO* pServerInfo, uint dwCount, MULTI_QI* pResults);
+int CoCreateInstanceEx(const ref GUID rclsid, IUnknown pUnkOuter, uint dwClsContext, COSERVERINFO* pServerInfo, uint dwCount, MULTI_QI* pResults);
 
 enum {
   CLASS_E_NOAGGREGATION     = 0x80040110,
@@ -1397,7 +1397,7 @@ enum {
 interface IClassFactory : IUnknown {
   mixin(uuid("00000001-0000-0000-c000-000000000046"));
 
-  int CreateInstance(IUnknown pUnkOuter, ref GUID riid, void** ppvObject);
+  int CreateInstance(IUnknown pUnkOuter, const ref GUID riid, void** ppvObject);
   int LockServer(int fLock);
 }
 
@@ -1418,10 +1418,10 @@ int CoGetMalloc(uint dwMemContext/* = 1*/, out IMalloc ppMalloc);
 interface IMarshal : IUnknown {
   mixin(uuid("00000003-0000-0000-c000-000000000046"));
 
-  int GetUnmarshalClass(ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags, out GUID pCid);
-  int GetMarshalSizeMax(ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags, out uint pSize);
-  int MarshalInterface(IStream pStm, ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags);
-  int UnmarshalInterface(IStream pStm, ref GUID riid, void** ppv);
+  int GetUnmarshalClass(const ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags, out GUID pCid);
+  int GetMarshalSizeMax(const ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags, out uint pSize);
+  int MarshalInterface(IStream pStm, const ref GUID riid, void* pv, uint dwDestContext, void* pvDestContext, uint mshlflags);
+  int UnmarshalInterface(IStream pStm, const ref GUID riid, void** ppv);
   int ReleaseMarshalData(IStream pStm);
   int DisconnectObject(uint dwReserved);
 }
@@ -1511,15 +1511,15 @@ interface IStorage : IUnknown {
   int DestroyElement(wchar* pwcsName);
   int RenameElement(wchar* pwcsOldName, wchar* pwcsNewName);
   int SetElementTimes(wchar* pwcsName, ref FILETIME pctime, ref FILETIME patime, ref FILETIME pmtime);
-  int SetClass(ref GUID clsid);
+  int SetClass(const ref GUID clsid);
   int SetStateBits(uint grfStateBits, uint grfMask);
   int Stat(out STATSTG pstatstg, uint grfStatFlag);
 }
 
 int ReadClassStg(IStorage pStg, out GUID pclsid);
-int WriteClassStg(IStorage pStg, ref GUID rclsid);
+int WriteClassStg(IStorage pStg, const ref GUID rclsid);
 int ReadClassStm(IStream pStm, out GUID pclsid);
-int WriteClassStm(IStream pStm, ref GUID rclsid);
+int WriteClassStm(IStream pStm, const ref GUID rclsid);
 
 struct STGOPTIONS {
   ushort usVersion;
@@ -1536,7 +1536,7 @@ enum : uint {
 }
 
 int StgOpenStorage(in wchar* pwcsName, IStorage pstgPriority, uint grfMode, wchar** snbExclude, uint reserved, out IStorage ppstgOpen);
-int StgOpenStorageEx(in wchar* pwcsName, uint grfMode, uint stgfmt, uint grfAttrs, STGOPTIONS* pStgOptions, SECURITY_DESCRIPTOR* pSecurityDescriptor, ref GUID riid, void** ppObjectOpen);
+int StgOpenStorageEx(in wchar* pwcsName, uint grfMode, uint stgfmt, uint grfAttrs, STGOPTIONS* pStgOptions, SECURITY_DESCRIPTOR* pSecurityDescriptor, const ref GUID riid, void** ppObjectOpen);
 
 interface IStream : ISequentialStream {
   mixin(uuid("0000000c-0000-0000-c000-000000000046"));
@@ -1958,8 +1958,8 @@ interface IDispatch : IUnknown {
 
   int GetTypeInfoCount(out uint pctinfo);
   int GetTypeInfo(uint iTInfo, uint lcid, out ITypeInfo ppTInfo);
-  int GetIDsOfNames(ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId);
-  int Invoke(int dispIdMember, ref GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint* puArgError);
+  int GetIDsOfNames(const ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId);
+  int Invoke(int dispIdMember, const ref GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint* puArgError);
 }
 
 enum TYPEKIND {
@@ -2219,7 +2219,7 @@ interface ITypeInfo : IUnknown {
   int GetDllEntry(int memid, INVOKEKIND invKind, wchar** pBstrDllName, wchar** pBstrName, ushort* pwOrdinal);
   int GetRefTypeInfo(uint hRefType, out ITypeInfo ppTInfo);
   int AddressOfMember(int memid, INVOKEKIND invKind, void** ppv);
-  int CreateInstance(IUnknown pUnkOuter, ref GUID riid, void** ppvObj);
+  int CreateInstance(IUnknown pUnkOuter, const ref GUID riid, void** ppvObj);
   int GetMops(int memid, wchar** pBstrMops);
   int GetContainingTypeLib(out ITypeLib ppTLib, out uint pIndex);
   int ReleaseTypeAttr(TYPEATTR* pTypeAttr);
@@ -2233,7 +2233,7 @@ interface ITypeLib : IUnknown {
   uint GetTypeInfoCount();
   int GetTypeInfo(uint index, out ITypeInfo ppTInfo);
   int GetTypeInfoType(uint index, out TYPEKIND pTKind);
-  int GetTypeInfoOfGuid(ref GUID guid, out ITypeInfo ppTInfo);
+  int GetTypeInfoOfGuid(const ref GUID guid, out ITypeInfo ppTInfo);
   int GetLibAttr(out TLIBATTR* ppTLibAttr);
   int GetTypeComp(out ITypeComp ppTComp);
   int GetDocumentation(int index, wchar** pBstrName, wchar** pBstrDocString, uint* pBstrHelpContext, wchar** pBstrHelpFile);
@@ -2251,12 +2251,12 @@ enum REGKIND {
 }
 
 int LoadTypeLibEx(in wchar* szFile, REGKIND regkind, out ITypeLib pptlib);
-int LoadRegTypeLib(ref GUID rgiud, ushort wVerMajor, ushort wVerMinor, uint lcid, out ITypeLib pptlib);
-int QueryPathOfRegTypeLib(ref GUID guid, ushort wVerMajor, ushort wVerMinor, uint lcid, out wchar* lpbstrPathName);
+int LoadRegTypeLib(const ref GUID rgiud, ushort wVerMajor, ushort wVerMinor, uint lcid, out ITypeLib pptlib);
+int QueryPathOfRegTypeLib(const ref GUID guid, ushort wVerMajor, ushort wVerMinor, uint lcid, out wchar* lpbstrPathName);
 int RegisterTypeLib(ITypeLib ptlib, in wchar* szFullPath, in wchar* szHelpDir);
-int UnRegisterTypeLib(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
+int UnRegisterTypeLib(const ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
 int RegisterTypeLibForUser(ITypeLib ptlib, wchar* szFullPath, wchar* szHelpDir);
-int UnRegisterTypeLibForUser(ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
+int UnRegisterTypeLibForUser(const ref GUID libID, ushort wVerMajor, ushort wVerMinor, uint lcid, SYSKIND syskind);
 
 interface ITypeComp : IUnknown {
   mixin(uuid("00020403-0000-0000-c000-000000000046"));
@@ -2277,7 +2277,7 @@ interface IEnumVARIANT : IUnknown {
 interface ICreateTypeInfo : IUnknown {
   mixin(uuid("00020405-0000-0000-c000-000000000046"));
 
-  int SetGuid(ref GUID guid);
+  int SetGuid(const ref GUID guid);
   int SetTypeFlags(uint uTypeFlags);
   int SetDocString(wchar* szStrDoc);
   int SetHelpContext(uint dwHelpContext);
@@ -2308,7 +2308,7 @@ interface ICreateTypeLib : IUnknown {
   int CreateTypeInfo(wchar* szName, TYPEKIND tkind, out ICreateTypeInfo ppCTInfo);
   int SetName(wchar* szName);
   int SetVersion(ushort wMajorVerNum, ushort wMinorVerNum);
-  int SetGuid(ref GUID guid);
+  int SetGuid(const ref GUID guid);
   int SetDocString(wchar* szDoc);
   int SetHelpFileName(wchar* szHelpFileName);
   int SetHelpContext(uint dwHelpContext);
@@ -2327,11 +2327,11 @@ interface ICreateTypeInfo2 : ICreateTypeInfo {
   int DeleteVarDesc(uint index);
   int DeleteVarDescByMemId(int memid);
   int DeleteImplType(uint index);
-  int SetCustData(ref GUID guid, ref VARIANT pVarVal);
-  int SetFuncCustData(uint index, ref GUID guid, ref VARIANT pVarVal);
-  int SetParamCustData(uint indexFunc, uint indexParam, ref GUID guid, ref VARIANT pVarVal);
-  int SetVarCustData(uint index, ref GUID guid, ref VARIANT pVarVal);
-  int SetImplTypeCustData(uint index, ref GUID guid, ref VARIANT pVarVal);
+  int SetCustData(const ref GUID guid, ref VARIANT pVarVal);
+  int SetFuncCustData(uint index, const ref GUID guid, ref VARIANT pVarVal);
+  int SetParamCustData(uint indexFunc, uint indexParam, const ref GUID guid, ref VARIANT pVarVal);
+  int SetVarCustData(uint index, const ref GUID guid, ref VARIANT pVarVal);
+  int SetImplTypeCustData(uint index, const ref GUID guid, ref VARIANT pVarVal);
   int SetHelpStringContext(uint dwHelpStringContext);
   int SetFuncHelpStringContext(uint index, uint dwHelpStringContext);
   int SetVarHelpStringContext(uint index, uint dwHelpStringContext);
@@ -2342,7 +2342,7 @@ interface ICreateTypeLib2 : ICreateTypeLib {
   mixin(uuid("0002040f-0000-0000-c000-000000000046"));
 
   int DeleteTypeInfo(wchar* szName);
-  int SetCustData(ref GUID guid, ref VARIANT pVarVal);
+  int SetCustData(const ref GUID guid, ref VARIANT pVarVal);
   int SetHelpStringContext(uint dwHelpStringContext);
   int SetHelpStringDll(wchar* szFileName);
 }
@@ -2380,7 +2380,7 @@ struct CUSTDATA {
 interface ITypeLib2 : ITypeLib {
   mixin(uuid("00020411-0000-0000-c000-000000000046"));
 
-  int GetCustData(ref GUID guid, out VARIANT pVarVal);
+  int GetCustData(const ref GUID guid, out VARIANT pVarVal);
   int GetLibStatistics(out uint pcUniqueNames, out uint pcchUniqueNames);
   int GetDocumentation2(int index, uint lcid, wchar** pBstrHelpString, uint* pdwHelpContext, wchar** pBstrHelpStringDll);
   int GetAllCustData(out CUSTDATA pCustData);
@@ -2393,11 +2393,11 @@ interface ITypeInfo2 : ITypeInfo {
   int GetTypeFlags(out uint pTypeFlags);
   int GetFuncIndexOfMemId(int memid, INVOKEKIND invKind, out uint pFuncIndex);
   int GetVarIndexOfMemId(int memid, out uint pVarIndex);
-  int GetCustData(ref GUID guid, out VARIANT pVarVal);
-  int GetFuncCustData(uint index, ref GUID guid, out VARIANT pVarVal);
-  int GetParamCustData(uint indexFunc, uint indexParam, ref GUID guid, out VARIANT pVarVal);
-  int GetVarCustData(uint index, ref GUID guid, out VARIANT pVarVal);
-  int GetImplTypeCustData(uint index, ref GUID guid, out VARIANT pVarVal);
+  int GetCustData(const ref GUID guid, out VARIANT pVarVal);
+  int GetFuncCustData(uint index, const ref GUID guid, out VARIANT pVarVal);
+  int GetParamCustData(uint indexFunc, uint indexParam, const ref GUID guid, out VARIANT pVarVal);
+  int GetVarCustData(uint index, const ref GUID guid, out VARIANT pVarVal);
+  int GetImplTypeCustData(uint index, const ref GUID guid, out VARIANT pVarVal);
   int GetDocumentation2(int memid, uint lcid, wchar** pBstrHelpString, uint* pdwHelpContext, wchar** pBstrHelpStringDll);
   int GetAllCustData(out CUSTDATA pCustData);
   int GetAllFuncCustData(uint index, out CUSTDATA pCustData);
@@ -2434,11 +2434,11 @@ interface ICatInformation : IUnknown {
   mixin(uuid("0002E013-0000-0000-c000-000000000046"));
 
   int EnumCategories(uint lcid, out IEnumCATEGORYINFO ppenumCategoryInfo);
-  int GetCategoryDesc(ref GUID rcatid, uint lcid, out wchar* pszDesc);
+  int GetCategoryDesc(const ref GUID rcatid, uint lcid, out wchar* pszDesc);
   int EnumClassesOfCategories(uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq, out IEnumGUID ppenumClsid);
-  int IsClassOfCategories(ref GUID rclsid, uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq);
-  int EnumImplCategoriesOfClass(ref GUID rclsid, out IEnumGUID ppenumCatid);
-  int EnumReqCategoriesOfClass(ref GUID rclsid, out IEnumGUID ppenumCatid);
+  int IsClassOfCategories(const ref GUID rclsid, uint cImplemented, GUID* rgcatidImpl, uint cRequired, GUID* rgcatidReq);
+  int EnumImplCategoriesOfClass(const ref GUID rclsid, out IEnumGUID ppenumCatid);
+  int EnumReqCategoriesOfClass(const ref GUID rclsid, out IEnumGUID ppenumCatid);
 }
 
 abstract final class StdComponentCategoriesMgr {
@@ -2451,7 +2451,7 @@ interface IConnectionPointContainer : IUnknown {
   mixin(uuid("b196b284-bab4-101a-b69c-00aa00341d07"));
 
   int EnumConnectionPoints(out IEnumConnectionPoints ppEnum);
-  int FindConnectionPoint(ref GUID riid, out IConnectionPoint ppCP);
+  int FindConnectionPoint(const ref GUID riid, out IConnectionPoint ppCP);
 }
 
 interface IEnumConnectionPoints : IUnknown {
@@ -2518,7 +2518,7 @@ interface IClassFactory2 : IClassFactory {
 
   int GetLicInfo(out LICINFO pLicInfo);
   int RequestLicKey(uint dwReserved, out wchar* pBstrKey);
-  int CreateInstanceLic(IUnknown pUnkOuter, IUnknown pUnkReserved, ref GUID riid, wchar* bstrKey, void** ppvObj);
+  int CreateInstanceLic(IUnknown pUnkOuter, IUnknown pUnkReserved, const ref GUID riid, wchar* bstrKey, void** ppvObj);
 }
 
 struct TEXTMETRICOLE {
@@ -2623,8 +2623,8 @@ struct PICTDESC {
   Handle handle;
 }
 
-int OleCreatePictureIndirect(PICTDESC* lpPictDesc, ref GUID riid, int fOwn, void** lplpvObj);
-int OleLoadPicture(IStream lpstream, int lSize, int fRunmode, ref GUID riid, void** lplpvObj);
+int OleCreatePictureIndirect(PICTDESC* lpPictDesc, const ref GUID riid, int fOwn, void** lplpvObj);
+int OleLoadPicture(IStream lpstream, int lSize, int fRunmode, const ref GUID riid, void** lplpvObj);
 
 int OleInitialize(void* pvReserved);
 void OleUninitialize();
@@ -2649,9 +2649,9 @@ enum : uint {
   ACTIVEOBJECT_WEAK
 }
 
-int RegisterActiveObject(IUnknown punk, ref GUID rclsid, uint dwFlags, out uint pdwRegister);
+int RegisterActiveObject(IUnknown punk, const ref GUID rclsid, uint dwFlags, out uint pdwRegister);
 int RevokeActiveObject(uint dwRegister, void* pvReserved);
-int GetActiveObject(ref GUID rclsid, void* pvReserved, out IUnknown ppunk);
+int GetActiveObject(const ref GUID rclsid, void* pvReserved, out IUnknown ppunk);
 
 enum : uint {
   MSHLFLAGS_NORMAL = 0x0,
@@ -2668,10 +2668,10 @@ enum : uint {
   MSHCTX_CROSSCTX
 }
 
-int CoMarshalInterface(IStream pStm, ref GUID riid, IUnknown pUnk, uint dwDestContext, void* pvDestContext, uint mshlflags);
-int CoUnmarshalInterface(IStream pStm, ref GUID riid, void** ppv);
+int CoMarshalInterface(IStream pStm, const ref GUID riid, IUnknown pUnk, uint dwDestContext, void* pvDestContext, uint mshlflags);
+int CoUnmarshalInterface(IStream pStm, const ref GUID riid, void** ppv);
 
-int ProgIDFromCLSID(ref GUID clsid, out wchar* lplpszProgID);
+int ProgIDFromCLSID(const ref GUID clsid, out wchar* lplpszProgID);
 int CLSIDFromProgID(in wchar* lpszProgID, out GUID lpclsid);
 int CLSIDFromProgIDEx(in wchar* lpszProgID, out GUID lpclsid);
 
@@ -3116,12 +3116,12 @@ template IDispatchImpl(T...) {
     return E_NOTIMPL;
   }
 
-  int GetIDsOfNames(ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId) {
+  int GetIDsOfNames(const ref GUID riid, wchar** rgszNames, uint cNames, uint lcid, int* rgDispId) {
     rgDispId = null;
     return E_NOTIMPL;
   }
 
-  int Invoke(int dispIdMember, ref GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint* puArgError) {
+  int Invoke(int dispIdMember, const ref GUID riid, uint lcid, ushort wFlags, DISPPARAMS* pDispParams, VARIANT* pVarResult, EXCEPINFO* pExcepInfo, uint* puArgError) {
     return DISP_E_UNKNOWNNAME;
   }
 
