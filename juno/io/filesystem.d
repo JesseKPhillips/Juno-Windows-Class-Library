@@ -1,5 +1,7 @@
 module juno.io.filesystem;
 
+import std.string;
+
 import juno.base.core,
   juno.base.string,
   juno.base.events,
@@ -1013,7 +1015,7 @@ class FileSystemIterator : Iterator!(string) {
 
     string fullPath = getFullPath(path_);
 
-    string searchPattern = searchPattern_.trimEnd('\t', '\n', '\v', '\f', '\r', '\u0085', '\u00a0');
+    string searchPattern = searchPattern_.stripRight();
     if (searchPattern == ".")
       searchPattern = "*";
     if (searchPattern.length == 0)

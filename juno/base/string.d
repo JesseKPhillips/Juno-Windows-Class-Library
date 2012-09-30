@@ -9,6 +9,9 @@
  */
 module juno.base.string;
 
+import std.typecons;
+import std.conv;
+
 import juno.base.core,
   juno.locale.constants,
   juno.locale.core,
@@ -910,25 +913,41 @@ private enum TypeCode {
   Invariant = 'y'
 }
 
-private TypeInfo skipConstOrInvariant(TypeInfo t) {
+private const(TypeInfo) skipConstOrInvariant(const TypeInfo t) {
+  Rebindable!(typeof(return)) anst = t;
   while (true) {
-    if (t.classinfo.name.length == 18 && t.classinfo.name[9 .. 18] == "Invariant")
-      t = (cast(TypeInfo_Invariant)t).next;
-    else if (t.classinfo.name.length == 14 && t.classinfo.name[9 .. 14] == "Const")
-      t = (cast(TypeInfo_Const)t).next;
+    if (anst.classinfo.name.length == 18 && anst.classinfo.name[9 .. 18]
+            == "Invariant")
+      anst = (cast(TypeInfo_Invariant)anst).next;
+    else if (anst.classinfo.name.length == 18 && anst.classinfo.name[9 .. 18]
+            == "Immutable") // In case class name is changed
+      anst = (cast(TypeInfo_Invariant)anst).next;
+    else if (anst.classinfo.name.length == 14 && anst.classinfo.name[9 .. 14]
+            == "Const")
+      anst = (cast(TypeInfo_Const)anst).next;
     else
       break;
   }
-  return t;
+  return anst;
+}
+
+unittest {
+  assert(typeid(immutable Argument) != typeid(Argument));
+  assert(skipConstOrInvariant(typeid(Argument))
+          == typeid(Argument));
+  assert(skipConstOrInvariant(typeid(const Argument))
+          == typeid(Argument));
+  assert(skipConstOrInvariant(typeid(immutable Argument))
+          == typeid(Argument));
 }
 
 private struct Argument {
 
-  TypeInfo type;
+  Rebindable!(const TypeInfo) type;
   TypeCode typeCode;
   void* value;
 
-  static Argument opCall(TypeInfo type, void* value) {
+  static Argument opCall(const TypeInfo type, void* value) {
     Argument self;
 
     self.type = type;
@@ -951,7 +970,7 @@ private struct Argument {
   string toString(string format, IFormatProvider provider) {
     switch (typeCode) {
       case TypeCode.Array:
-        TypeInfo ti = type;
+        Rebindable!(const TypeInfo) ti = type;
         TypeCode tc = typeCode;
 
         if (ti.classinfo.name.length == 14 && ti.classinfo.name[9 .. 14] == "Array") {
@@ -976,7 +995,7 @@ private struct Argument {
           break;
         }
 
-        return type.toString();
+        return to!string(type);
 
       case TypeCode.Bool:
         return *cast(bool*)value ? "True" : "False";
@@ -1018,7 +1037,7 @@ private struct Argument {
 
       case TypeCode.Struct:
         static if (is(DateTime)) {
-          if (type == typeid(DateTime))
+          if (to!(const TypeInfo)(type) == typeid(DateTime))
             return (*cast(DateTime*)value).toString(format, provider);
         }
         if (auto ti = cast(TypeInfo_Struct)type) {
@@ -1029,7 +1048,7 @@ private struct Argument {
         goto case;
 
       case TypeCode.Function, TypeCode.Delegate, TypeCode.Typedef:
-        return type.toString();
+        return to!string(type);
 
       default:
         break;
@@ -1047,7 +1066,7 @@ private struct ArgumentList {
   static ArgumentList opCall(TypeInfo[] types, va_list argptr) {
     ArgumentList self;
 
-    foreach (type; types) {
+    foreach (Rebindable!(const TypeInfo) type; types) {
       type = skipConstOrInvariant(type);
       auto arg = Argument(type, argptr);
       self.args ~= arg;
