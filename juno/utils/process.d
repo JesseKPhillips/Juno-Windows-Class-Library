@@ -1,5 +1,7 @@
 module juno.utils.process;
 
+import std.file;
+
 import juno.base.core,
   juno.base.string,
   juno.base.threading,
@@ -120,7 +122,7 @@ class Process {
     if (start_.arguments != null)
       commandLine ~= " " ~ start_.arguments;
     auto pCommandLine = commandLine.toUtf16z();
-    auto pWorkingDirectory = juno.io.path.currentDirectory().toUtf16z();
+    auto pWorkingDirectory = getcwd().toUtf16z();
     uint creationFlags = 0;
 
     /*if (start_.userName != null) {
