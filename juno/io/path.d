@@ -15,7 +15,13 @@ static import std.path;
 /// The maximum character length of a path.
 const int MaxPath = 260;
 
-/// Returns the current working directory for the current process.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.file.getcwd instead.)
+
+ * Returns the current working directory for the current process.
+ */
+deprecated
 string currentDirectory() {
   wchar[MaxPath + 1] buffer;
   uint len = GetCurrentDirectory(buffer.length, buffer.ptr);
@@ -44,6 +50,7 @@ string tempFileName() {
   return toUtf8(buffer.ptr);
 }
 
+deprecated
 package int getRootLength(string path) {
   int i, len = path.length;
   if (len >= 1 && std.path.isDirSeparator(path[0])) {
@@ -65,20 +72,33 @@ package int getRootLength(string path) {
   return i;
 }
 
+deprecated
 string getPathRoot(string path) {
   if (path == null)
     return null;
   return path[0 .. getRootLength(path)];
 }
 
-/// Indicates whether the specified _path string contains absolute or relative _path information.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.path.isRooted instead.)
+ *
+ * Indicates whether the specified _path string contains absolute or relative _path information.
+ */
+deprecated
 bool isPathRooted(string path) {
   if ((path.length > 1 && (std.path.isDirSeparator(path[0]))) || (path.length >= 2 && path[1] == ':'))
     return true;
   return false;
 }
 
-/// Combines two path strings.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.path.buildPath instead.)
+ *
+ * Combines two path strings.
+ */
+deprecated
 string combine(string path1, string path2) {
   if (path2.length == 0)
     return path1;
@@ -92,6 +112,7 @@ string combine(string path1, string path2) {
   return path1 ~ path2;
 }
 
+deprecated
 string getDirectoryName(string path) {
   int root = getRootLength(path);
   int i = path.length;
@@ -107,7 +128,13 @@ string getDirectoryName(string path) {
   assert(false);
 }
 
-/// Returns the file name and extension of the specified _path string.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.path.baseName instead.)
+ *
+ * Returns the file name and extension of the specified _path string.
+ */
+deprecated
 string getFileName(string path) {
   for (int i = path.length; --i >= 0;) {
     char ch = path[i];
@@ -117,7 +144,13 @@ string getFileName(string path) {
   return path;
 }
 
-/// Returns the absolute _path for the specified _path string.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.path.absolutePath instead.)
+ *
+ * Returns the absolute _path for the specified _path string.
+ */
+deprecated
 string getFullPath(string path) {
   auto p = path.toUtf16z();
 
