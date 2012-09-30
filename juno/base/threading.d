@@ -1,8 +1,11 @@
 /**
+ * Deprecated. Use core.thread, std.concurrency, std.parallelism.
+ *
  * Copyright: (c) 2009 John Chapman
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
+deprecated:
 module juno.base.threading;
 
 import juno.base.core,
@@ -11,17 +14,25 @@ import juno.base.core,
   juno.base.time;
 
 /**
+ *   $(RED Deprecated.
+ *         Please use core.thread.sleep instead.)
+ *
  * Suspends the current thread for a specified time.
  * Params: milliseconds = The number of _milliseconds for which the thread is blocked. Specify -1 to block the thread indefinitely.
  */
+deprecated
 void sleep(uint milliseconds) {
   .Sleep(milliseconds);
 }
 
 /**
+ *   $(RED Deprecated.
+ *         Please use core.thread.sleep instead.)
+ *
  * Suspends the current thread for a specified time.
  * Params: timeout = The amount of time for which the thread is blocked. Specify -1 to block the thread indefinitely.
  */
+deprecated
 void sleep(TimeSpan timeout) {
   .Sleep(cast(uint)timeout.totalMilliseconds);
 }
