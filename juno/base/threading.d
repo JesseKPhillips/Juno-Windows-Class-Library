@@ -5,8 +5,8 @@
  *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
-deprecated:
 module juno.base.threading;
+deprecated:
 
 import juno.base.core,
   juno.base.string,
