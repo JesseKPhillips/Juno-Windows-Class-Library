@@ -792,10 +792,12 @@ string trimEnd(string s, char[] trimChars ...) {
   return trimHelper(s, trimChars, Trim.Tail);
 }
 
-private string trimHelper(string s, char[] trimChars, Trim trimType) {
+@safe nothrow pure
+private string trimHelper(string s, in char[] trimChars, Trim trimType) {
   int right = s.length - 1;
   int left;
 
+  // Trim head
   if (trimType != Trim.Tail) {
     for (left = 0; left < s.length; left++) {
       char ch = s[left];
@@ -809,6 +811,7 @@ private string trimHelper(string s, char[] trimChars, Trim trimType) {
         break;
     }
   }
+  // Trim tail
   if (trimType != Trim.Head) {
     for (right = s.length - 1; right >= left; right--) {
       char ch = s[right];
@@ -829,7 +832,7 @@ private string trimHelper(string s, char[] trimChars, Trim trimType) {
   if (len == 0)
     return null;
     
-  return s[left .. right + 1].idup;
+  return s[left .. right + 1];
 }
 
 /**
@@ -852,6 +855,7 @@ string substring(string s, int index, int len) {
  * ditto
  */
 deprecated
+@safe nothrow pure
 string substring(string s, int index) {
   return s[index..$];
 }
@@ -908,6 +912,7 @@ private enum TypeCode {
   Invariant = 'y'
 }
 
+nothrow pure
 private const(TypeInfo) skipConstOrInvariant(const TypeInfo t) {
   Rebindable!(typeof(return)) anst = t;
   while (true) {
@@ -942,6 +947,7 @@ private struct Argument {
   TypeCode typeCode;
   void* value;
 
+  nothrow pure
   static Argument opCall(const TypeInfo type, void* value) {
     Argument self;
 
@@ -1058,6 +1064,7 @@ private struct ArgumentList {
   Argument[] args;
   int size;
 
+  nothrow pure
   static ArgumentList opCall(TypeInfo[] types, va_list argptr) {
     ArgumentList self;
 
@@ -1075,6 +1082,7 @@ private struct ArgumentList {
     return self;
   }
 
+  nothrow pure
   Argument opIndex(int index) {
     return args[index];
   }
