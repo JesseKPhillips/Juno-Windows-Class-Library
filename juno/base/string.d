@@ -9,8 +9,10 @@
  */
 module juno.base.string;
 
-import std.typecons;
 import std.conv;
+import std.string;
+import std.typecons;
+import std.uni;
 
 import juno.base.core,
   juno.locale.constants,
@@ -467,12 +469,8 @@ private char[] WhitespaceChars = [ '\t', '\n', '\v', '\f', '\r', ' ' ];
  * Params: c = A character.
  * Returns: true if c is white space; otherwise, false.
  */
-bool isWhitespace(char c) {
-  foreach (ch; WhitespaceChars) {
-    if (ch == c)
-      return true;
-  }
-  return false;
+bool isWhitespace(char c) @safe nothrow pure{
+  return isWhite(c);
 }
 
 /**
@@ -770,7 +768,7 @@ private enum Trim {
  */
 string trim(string s, char[] trimChars ...) {
   if (trimChars.length == 0)
-    trimChars = WhitespaceChars;
+    return strip(s);
   return trimHelper(s, trimChars, Trim.Both);
 }
 
@@ -780,7 +778,7 @@ string trim(string s, char[] trimChars ...) {
  */
 string trimStart(string s, char[] trimChars ...) {
   if (trimChars.length == 0)
-    trimChars = WhitespaceChars;
+    return stripLeft(s);
   return trimHelper(s, trimChars, Trim.Head);
 }
 
@@ -790,7 +788,7 @@ string trimStart(string s, char[] trimChars ...) {
  */
 string trimEnd(string s, char[] trimChars ...) {
   if (trimChars.length == 0)
-    trimChars = WhitespaceChars;
+    return stripRight(s);
   return trimHelper(s, trimChars, Trim.Tail);
 }
 
@@ -835,6 +833,8 @@ private string trimHelper(string s, char[] trimChars, Trim trimType) {
 }
 
 /**
+ *   $(RED Deprecated.
+ *         Please use string slicing instead.)
  * Retrieves a _substring from s starting at the specified character position and has a specified length.
  * Params:
  *   s = A string.
@@ -842,23 +842,18 @@ private string trimHelper(string s, char[] trimChars, Trim trimType) {
  *   length = The number of characters in the _substring.
  * Returns: The _substring of length that begins at index in s.
  */
-string substring(string s, int index, int length) {
-  if (length == 0)
-    return null;
-
-  if (index == 0 && length == s.length)
-    return s;
-
-  char[] ret = new char[length];
-  memcpy(ret.ptr, s.ptr + index, length * char.sizeof);
-  return assumeUnique(ret);
+deprecated
+@safe nothrow pure
+string substring(string s, int index, int len) {
+  return s[index..index+len];
 }
 
 /**
  * ditto
  */
+deprecated
 string substring(string s, int index) {
-  return substring(s, index, s.length - index);
+  return s[index..$];
 }
 
 /**
@@ -1086,6 +1081,22 @@ private struct ArgumentList {
 
 }
 
+pure
+private void append(ref string s, char value, int count) {
+  char[] d = s.dup;
+  int n = d.length;
+  d.length = d.length + count;
+  d[n..$] = value;
+
+  s = assumeUnique(d);
+}
+unittest {
+  string a = "Hello";
+  append(a, 'n', 5);
+  assert(a == "Hellonnnnn");
+}
+
+
 /**
  * Replaces the _format items in the specified string with string representations of the corresponding items in the specified argument list.
  * Params:
@@ -1098,16 +1109,6 @@ string format(IFormatProvider provider, string format, ...) {
 
   void formatError() {
     throw new FormatException("Input string was not in correct format.");
-  }
-
-  void append(ref string s, char value, int count) {
-    char[] d = s.dup;
-    int n = d.length;
-    d.length = d.length + count;
-    for (auto i = 0; i < count; i++)
-      d[n + i] = value;
-
-    s = d.idup;
   }
 
   auto types = _arguments;
