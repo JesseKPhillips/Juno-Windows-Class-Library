@@ -1331,6 +1331,24 @@ int VarSub(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT 
 int VarXor(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, out VARIANT pvarResult);
 int VarCmp(const ref VARIANT pvarLeft, const ref VARIANT pvarRight, uint lcid, uint dwFlags);
 
+unittest {
+  VARIANT pvarLeft, pvarRight, pvarResult;
+
+  VariantInit(pvarLeft);
+  VariantClear(pvarLeft);
+  VariantCopy(pvarLeft, pvarRight);
+  VarAdd(pvarLeft, pvarRight, pvarResult);
+  VarAnd(pvarLeft, pvarRight, pvarResult);
+  VarCat(pvarLeft, pvarRight, pvarResult);
+  VarDiv(pvarLeft, pvarRight, pvarResult);
+  VarMod(pvarLeft, pvarRight, pvarResult);
+  VarMul(pvarLeft, pvarRight, pvarResult);
+  VarOr(pvarLeft, pvarRight, pvarResult);
+  VarSub(pvarLeft, pvarRight, pvarResult);
+  VarXor(pvarLeft, pvarRight, pvarResult);
+  VarCmp(pvarLeft, pvarRight, GetThreadLocale(), 0);
+}
+
 enum : ushort {
   VARIANT_NOVALUEPROP        = 0x1,
   VARIANT_ALPHABOOL          = 0x2,
