@@ -1,5 +1,7 @@
 module juno.io.filesystem;
 
+import std.file;
+import std.path;
 import std.string;
 
 import juno.base.core,
@@ -32,30 +34,17 @@ string[] logicalDrives() {
 }
 
 /// Returns the volume and/or root information for the specified _path.
+///
+/// Recommend std.path
+@safe pure
 string getDirectoryRoot(string path) {
-  string fullPath = getFullPath(path);
-  return getDirectoryRootImpl(fullPath);
-}
-
-private string getDirectoryRootImpl(string path) {
-  if (path == null)
-    return null;
-  return path[0 .. getRootLength(path)];
+  return rootName(absolutePath(path));
 }
 
 /// Determines whether the specified _path refers to an existing directory on disk.
 bool directoryExists(string path) {
-  if (path == null)
-    return false;
-  string fullPath = getFullPath(path);
-  return directoryExistsImpl(path);
-}
-
-private bool directoryExistsImpl(string path) {
-  WIN32_FILE_ATTRIBUTE_DATA data;
-  if (GetFileAttributesEx(path.toUtf16z(), 0, data) != 0)
-    return (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
-  return false;
+  if(!exists(path)) return false;
+  return isDir(path);
 }
 
 /// Creates all the directories in the specified _path.
@@ -74,7 +63,7 @@ void createDirectory(string path) {
     for (int i = len - 1; i >= rootLen; i--) {
       string dir = fullPath[0 .. i + 1];
 
-      if (!directoryExistsImpl(dir))
+      if (!directoryExists(dir))
         list ~= dir;
       else
         pathExists = true;
@@ -94,7 +83,7 @@ void createDirectory(string path) {
         firstError = lastError;
       }
       else {
-        if (fileExistsImpl(name)) {
+        if (fileExists(name)) {
           firstError = lastError;
           errorPath = name;
         }
@@ -104,7 +93,7 @@ void createDirectory(string path) {
 
   if (list.length == 0 && !pathExists) {
     string root = getDirectoryRoot(fullPath);
-    if (!directoryExistsImpl(root))
+    if (!directoryExists(root))
       ioError(ERROR_PATH_NOT_FOUND, root);
     return;
   }
@@ -209,18 +198,8 @@ FileAttributes getFileAttributes(string path) {
 
 /// Determines whether the specified file exists.
 bool fileExists(string path) {
-  if (path == null)
-    return false;
-
-  string fullPath = getFullPath(path);
-  return fileExistsImpl(fullPath);
-}
-
-private bool fileExistsImpl(string path) {
-  WIN32_FILE_ATTRIBUTE_DATA data;
-  if (GetFileAttributesEx(path.toUtf16z(), 0, data) != 0)
-    return (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0;
-  return false;
+  if(!exists(path)) return false;
+  return isFile(path);
 }
 
 /// Deletes the specified file.
@@ -250,7 +229,7 @@ void moveFile(string sourceFileName, string destFileName) {
   string fullSourceFileName = getFullPath(sourceFileName);
   string fullDestFileName = getFullPath(destFileName);
 
-  if (!fileExistsImpl(fullSourceFileName))
+  if (!fileExists(fullSourceFileName))
     ioError(ERROR_FILE_NOT_FOUND, fullSourceFileName);
 
   if (MoveFile(fullSourceFileName.toUtf16z(), fullDestFileName.toUtf16z()) == 0)
