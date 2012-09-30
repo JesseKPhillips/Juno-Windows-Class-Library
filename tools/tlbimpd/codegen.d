@@ -6,7 +6,7 @@ private import juno.base.string : split;
 private import tlbimpd.options;
 
 private import std.string : format;
-private import std.path : getBaseName;
+private import std.path : baseName;
 
 debug private import std.stdio;
 
@@ -107,7 +107,7 @@ class CodeGenerator {
     if (emitComments) {
       foreach (reference; typeLib.getReferences()) {
         if (reference !is null) {
-          string fileName = getBaseName(reference.location);
+          string fileName = baseName(reference.location);
           if (fileName != null)
             output.writeln("/*[importlib(\"" ~ fileName ~ "\")]*/");
         }

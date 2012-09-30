@@ -11,7 +11,7 @@ import juno.base.core,
        juno.locale.convert;
 
 import std.stdio : writefln, writeln;
-import std.path : getBaseName, getExt;
+import std.path : baseName, extension;
 import std.stream : File, FileMode;
 
 void printLogo() {
@@ -90,7 +90,7 @@ void main(string[] args) {
 
     parser.parse(args[1 .. $]);
 
-    if (getExt(typeLibPath) == "d") {
+    if (extension(typeLibPath) == "d") {
       scope s = new File(typeLibPath, FileMode.In);
       typeLibPath = null;
 
@@ -169,7 +169,7 @@ void main(string[] args) {
       }
       finally {
         if (!slientMode && succeeded) {
-          writefln("Type library '" ~ getBaseName(actualTypeLibPath) ~ "' exported to '" ~ outputFileName ~ "'.");
+          writefln("Type library '" ~ baseName(actualTypeLibPath) ~ "' exported to '" ~ outputFileName ~ "'.");
           writeln();
         }
       }
