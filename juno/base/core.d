@@ -50,6 +50,11 @@ Object cloneObject(Object obj) {
   return clone;
 }
 
+/**
+ *   $(RED Deprecated.
+ *         Please use std.typecons.Nullable instead.)
+ */
+deprecated
 struct Optional(T) {
 
   private T value_;

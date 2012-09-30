@@ -5,6 +5,8 @@
  */
 module juno.net.core;
 
+import std.typecons;
+
 import juno.base.core,
   juno.base.string,
   juno.base.text,
@@ -860,15 +862,15 @@ alias DllImport!("iphlpapi.dll", "Icmp6SendEcho2",
 extern(D):
 
 private @property bool isWin2k() {
-  static Optional!(bool) isWin2k_;
-  if (!isWin2k_.hasValue)
+  static Nullable!(bool) isWin2k_;
+  if (isWin2k_.isNull)
     isWin2k_ = (osVersion.major == 5 && osVersion.minor == 0);
-  return isWin2k_.value;
+  return isWin2k_;
 }
 
 private @property bool supportsIPv6() {
-  static Optional!(bool) supportsIPv6_;
-  if (!supportsIPv6_.hasValue) {
+  static Nullable!(bool) supportsIPv6_;
+  if (supportsIPv6_.isNull) {
     uint s = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (GetLastError() != WSAEAFNOSUPPORT)
       supportsIPv6_ = true;
@@ -877,7 +879,7 @@ private @property bool supportsIPv6() {
 
     closesocket(s);
   }
-  return supportsIPv6_.value;
+  return supportsIPv6_;
 }
 
 private SocketOSException socketException(uint errorCode = GetLastError()) {

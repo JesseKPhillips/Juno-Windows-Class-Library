@@ -8,6 +8,8 @@
  */
 module juno.security.crypto;
 
+import std.typecons;
+
 import juno.base.core,
   juno.base.string,
   juno.base.environment,
@@ -77,15 +79,15 @@ alias DllImport!("bcrypt.dll", "BCryptGenRandom",
 extern(D):
 
 private @property bool bcryptSupported() {
-  static Optional!(bool) bcryptSupported_;
+  static Nullable!(bool) bcryptSupported_;
 
-  if (!bcryptSupported_.hasValue) {
+  if (bcryptSupported_.isNull) {
     Handle h = LoadLibrary("bcrypt");
     scope(exit) FreeLibrary(h);
     bcryptSupported_ = (h != Handle.init);
   }
 
-  return bcryptSupported_.value;
+  return bcryptSupported_;
 }
 
 private void blockCopy(T, TI1 = int, TI2 = TI1, TI3 = TI1)(T[] src, TI1 srcOffset, T[] dst, TI2 dstOffset, TI3 count) {

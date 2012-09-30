@@ -1,6 +1,7 @@
 module juno.utils.process;
 
 import std.file;
+import std.typecons;
 
 import juno.base.core,
   juno.base.string,
@@ -42,10 +43,10 @@ class ProcessStart {
 
 class Process {
 
-  private Optional!(Handle) handle_;
+  private Nullable!(Handle) handle_;
   private string machineName_;
   private bool isRemote_;
-  private Optional!(uint) id_;
+  private Nullable!(uint) id_;
   private string processName_;
   private ProcessInfo processInfo_;
 
@@ -68,8 +69,8 @@ class Process {
   }
 
   final void close() {
-    if (handle_.hasValue && (handle_.value != Handle.init)) {
-      CloseHandle(handle_.value);
+    if (!handle_.isNull && (handle_ != Handle.init)) {
+      CloseHandle(handle_);
       // Re-initialize so handle_.hasValue returns false.
       //handle_ = (Optional!(Handle)).init;
     }
@@ -161,9 +162,9 @@ class Process {
     ensureProcessId();
 
     Handle handle;
-    if (!handle_.hasValue) {
-      handle = OpenProcess(PROCESS_TERMINATE, FALSE, id_.value);
-      if (handle_.value == Handle.init)
+    if (handle_.isNull) {
+      handle = OpenProcess(PROCESS_TERMINATE, FALSE, id_);
+      if (handle_ == Handle.init)
         throw new Win32Exception;
     }
     else {
@@ -172,7 +173,7 @@ class Process {
       WaitForSingleObjectEx(waitHandle, 0, 1);
       CloseHandle(waitHandle);*/
 
-      handle = handle_.value;
+      handle = handle_;
     }
     if (!TerminateProcess(handle, -1))
       throw new Win32Exception;
@@ -194,9 +195,9 @@ class Process {
   }
 
   private void ensureProcessId() {
-    if (!id_.hasValue) {
+    if (id_.isNull) {
       PROCESS_BASIC_INFORMATION info;
-      int status = NtQueryInformationProcess(handle_.value, PROCESS_INFORMATION_CLASS.ProcessBasicInformation, &info, info.sizeof, null);
+      int status = NtQueryInformationProcess(handle_, PROCESS_INFORMATION_CLASS.ProcessBasicInformation, &info, info.sizeof, null);
       if (status != 0)
         throw new InvalidOperationException;
 
@@ -210,7 +211,7 @@ class Process {
     if (processInfo_ is null) {
       auto processInfos = getProcessInfos();
       foreach (processInfo; processInfos) {
-        if (processInfo.processId == id_.value) {
+        if (processInfo.processId == id_) {
           processInfo_ = processInfo;
           break;
         }
@@ -221,12 +222,12 @@ class Process {
   final Handle handle() {
     ensureProcessId();
 
-    if (!handle_.hasValue) {
-      handle_ = OpenProcess(PROCESS_ALL_ACCESS, FALSE, id_.value);
-      if (handle_.value == Handle.init)
+    if (handle_.isNull) {
+      handle_ = OpenProcess(PROCESS_ALL_ACCESS, FALSE, id_);
+      if (handle_ == Handle.init)
         throw new Win32Exception;
     }
-    return handle_.value;
+    return handle_;
   }
 
   final string processName() {
@@ -243,7 +244,7 @@ class Process {
 
   final uint id() {
     ensureProcessId();
-    return id_.value;
+    return id_;
   }
 
   private static ProcessInfo[] getProcessInfos() {
