@@ -33,7 +33,7 @@ string systemDirectory() {
 string tempPath() {
   wchar[MaxPath] buffer;
   uint len = GetTempPath(MaxPath, buffer.ptr);
-  return getFullPath(buffer[0 .. len].toUtf8());
+  return std.path.absolutePath(buffer[0 .. len].toUtf8());
 }
 
 /// Creates a uniquely named temporary file on disk and returns the path of that file.
