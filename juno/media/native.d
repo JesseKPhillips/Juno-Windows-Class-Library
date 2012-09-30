@@ -11,6 +11,7 @@ import juno.base.core,
   juno.media.geometry;
 
 import core.memory;
+import core.exception;
 
 pragma(lib, "user32.lib");
 pragma(lib, "gdi32.lib");
@@ -838,11 +839,11 @@ package Throwable statusException(Status status) {
     case Status.InvalidParameter:
       return new ArgumentException("Parameter is not valid.");
     case Status.OutOfMemory:
-      return new OutOfMemoryException;
+      return new OutOfMemoryError;
     case Status.ObjectBusy:
       return new InvalidOperationException("Object is currently in use elsewhere.");
     case Status.InsufficientBuffer:
-      return new OutOfMemoryException;
+      return new OutOfMemoryError;
     case Status.NotImplemented:
       return new NotImplementedException("Not implemented.");
     case Status.Win32Error:

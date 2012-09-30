@@ -346,6 +346,8 @@ class OverflowException : ArithmeticException {
 
 }
 
+/* Use core.exception.OutOfMemoryError */
+deprecated
 class OutOfMemoryException : Exception {
 
   private const E_OUTOFMEMORY = "Out of memory.";
