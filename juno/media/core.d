@@ -9,6 +9,8 @@
  */
 module juno.media.core;
 
+import std.path;
+
 import juno.base.core,
   juno.base.string,
   juno.base.threading,
@@ -6703,7 +6705,7 @@ abstract class Image : IDisposable {
     if (!std.file.exists(fileName))
       throw new FileNotFoundException(fileName);
 
-    fileName = juno.io.path.getFullPath(fileName);
+    fileName = absolutePath(fileName);
 
     Handle nativeImage;
 
