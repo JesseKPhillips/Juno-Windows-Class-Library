@@ -7,6 +7,9 @@
  */
 module juno.base.environment;
 
+import std.regex;
+import std.process;
+
 import juno.base.core,
   juno.base.string,
   juno.base.native;
@@ -83,30 +86,14 @@ int getTickCount() {
  * ---
  */
 string expandEnvironmentVariables(string name) {
-  string[] parts = name.split('%');
+    return replace!(m => getenv(m[1]))(name, regex("%(.*?)%", "g"));
+}
 
-  int c = 100;
-  wchar[] buffer = new wchar[c];
-  for (int i = 1; i < parts.length - 1; i++) {
-    if (parts[i].length > 0) {
-      string temp = "%" ~ parts[i] ~ "%";
-      uint n = ExpandEnvironmentStrings(temp.toUtf16z(), buffer.ptr, c);
-      while (n > c) {
-        c = n;
-        buffer.length = c;
-        n = ExpandEnvironmentStrings(temp.toUtf16z(), buffer.ptr, c);
-      }
-    }
-  }
-
-  uint n = ExpandEnvironmentStrings(name.toUtf16z(), buffer.ptr, c);
-  while (n > c) {
-    c = n;
-    buffer.length = c;
-    n = ExpandEnvironmentStrings(name.toUtf16z(), buffer.ptr, c);
-  }
-
-  return .toUtf8(buffer.ptr);
+// Disable test as these depend on enviroment which can change.
+version(none)
+unittest {
+ assert(expandEnvironmentVariables("Drive: %SystemDrive%.") == "Drive: C:.");
+ assert(expandEnvironmentVariables("Root:%SystemRoot%") == r"Root:C:\Windows");
 }
 
 /**
