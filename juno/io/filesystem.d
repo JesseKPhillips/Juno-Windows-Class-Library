@@ -47,7 +47,13 @@ bool directoryExists(string path) {
   return isDir(path);
 }
 
-/// Creates all the directories in the specified _path.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.file.mkdirRecurse instead.)
+ *
+ * Creates all the directories in the specified _path.
+ */
+deprecated
 void createDirectory(string path) {
   string fullPath = getFullPath(path);
 
@@ -130,7 +136,13 @@ void deleteDirectory(string path, DeleteOption option = DeleteOption.DeletePerma
     ioError(errorCode, fullPath);
 }
 
-/// Moves a file or a directory and its contents to a new location.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.file.rename instead.)
+ *
+ * Moves a file or a directory and its contents to a new location.
+ */
+deprecated
 void moveDirectory(string sourceDirName, string destDirName) {
   string fullSourceDirName = getFullPath(sourceDirName);
   string fullDestDirName = getFullPath(destDirName);
@@ -144,7 +156,13 @@ void moveDirectory(string sourceDirName, string destDirName) {
   }
 }
 
-/// Returns the creation date and time of a directory or file.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.file.timeCreated instead.)
+ *
+ * Returns the creation date and time of a directory or file.
+ */
+deprecated
 DateTime getCreationTime(string path) {
   string fullPath = getFullPath(path);
 
@@ -158,7 +176,13 @@ DateTime getCreationTime(string path) {
   return DateTime.fromFileTime((cast(long)data.ftCreationTime.dwHighDateTime << 32) | data.ftCreationTime.dwLowDateTime);
 }
 
-/// Returns the date and time a directory or file was last accessed.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.file.timeLastAccessed instead.)
+ *
+ * Returns the date and time a directory or file was last accessed.
+ */
+deprecated
 DateTime getLastAccessTime(string path) {
   string fullPath = getFullPath(path);
 
@@ -172,7 +196,13 @@ DateTime getLastAccessTime(string path) {
   return DateTime.fromFileTime((cast(long)data.ftLastAccessTime.dwHighDateTime << 32) | data.ftLastAccessTime.dwLowDateTime);
 }
 
-/// Returns the date and time a directory or file was last written to.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.file.timeLastModified instead.)
+ *
+ * Returns the date and time a directory or file was last written to.
+ */
+deprecated
 DateTime getLastWriteTime(string path) {
   string fullPath = getFullPath(path);
 
@@ -224,7 +254,13 @@ void deleteFile(string path, DeleteOption option = DeleteOption.DeletePermanentl
     ioError(errorCode, fullPath);
 }
 
-/// Moves the specified file to a new location.
+/**
+ *   $(RED Deprecated.
+ *         Please use std.file.rename instead.)
+ *
+ * Moves the specified file to a new location.
+ */
+deprecated
 void moveFile(string sourceFileName, string destFileName) {
   string fullSourceFileName = getFullPath(sourceFileName);
   string fullDestFileName = getFullPath(destFileName);
@@ -955,6 +991,7 @@ class Watcher {
 }
 
 ///
+deprecated
 interface Iterator(T) {
 
   ///
@@ -962,6 +999,7 @@ interface Iterator(T) {
 
 }
 
+deprecated
 class FileSystemIterator : Iterator!(string) {
 
   private string path_;
@@ -1045,26 +1083,39 @@ class FileSystemIterator : Iterator!(string) {
 }
 
 /**
+ *   $(RED Deprecated.
+ *         Please use std.file.dirEntries instead.)
+ *
  * Returns an iterable collection of directory names in the specified _path.
  */
+deprecated
 Iterator!(string) enumDirectories(string path, string searchPattern = "*") {
   return enumFileSystemNames(path, searchPattern, false, true);
 }
 
 /**
+ *   $(RED Deprecated.
+ *         Please use std.file.dirEntries instead.)
+ *
  * Returns an iterable collection of file names in the specified _path.
  */
+deprecated
 Iterator!(string) enumFiles(string path, string searchPattern = "*") {
   return enumFileSystemNames(path, searchPattern, true, false);
 }
 
 /**
+ *   $(RED Deprecated.
+ *         Please use std.file.dirEntries instead.)
+
  * Returns an iterable collection of file-system entries in the specified _path.
  */
+deprecated
 Iterator!(string) enumFileSystemEntries(string path, string searchPattern = "*") {
   return enumFileSystemNames(path, searchPattern, true, true);
 }
 
+deprecated
 private Iterator!(string) enumFileSystemNames(string path, string searchPattern, bool includeFiles, bool includeDirs) {
   return new FileSystemIterator(path, searchPattern, includeFiles, includeDirs);
 }
