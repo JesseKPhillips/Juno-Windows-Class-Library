@@ -116,7 +116,7 @@ enum DeleteOption {
 
 /// Deletes the directory from the specified _path.
 void deleteDirectory(string path, DeleteOption option = DeleteOption.DeletePermanently) {
-  string fullPath = getFullPath(path);
+  string fullPath = absolutePath(path);
 
   /*if (RemoveDirectory(path.toUtf16z()) == 0) {
     uint errorCode = GetLastError();
@@ -218,7 +218,7 @@ DateTime getLastWriteTime(string path) {
 
 /// Returns the attributes of the file on the specified _path.
 FileAttributes getFileAttributes(string path) {
-  string fullPath = getFullPath(path);
+  string fullPath = absolutePath(path);
 
   WIN32_FILE_ATTRIBUTE_DATA data;
   if (!GetFileAttributesEx(fullPath.toUtf16z(), 0, data))
@@ -234,7 +234,7 @@ bool fileExists(string path) {
 
 /// Deletes the specified file.
 void deleteFile(string path, DeleteOption option = DeleteOption.DeletePermanently) {
-  string fullPath = getFullPath(path);
+  string fullPath = absolutePath(path);
 
   /*if (DeleteFile(fullPath.toUtf16z()) == 0) {
     uint errorCode = GetLastError();
@@ -274,8 +274,8 @@ void moveFile(string sourceFileName, string destFileName) {
 
 /// Copies an existing file to a new file, with the option to _overwrite a file of the same name.
 void copyFile(string sourceFileName, string destFileName, bool overwrite = false) {
-  string fullSourceFileName = getFullPath(sourceFileName);
-  string fullDestFileName = getFullPath(destFileName);
+  string fullSourceFileName = absolutePath(sourceFileName);
+  string fullDestFileName = absolutePath(destFileName);
 
   if (CopyFile(fullSourceFileName.toUtf16z(), fullDestFileName.toUtf16z(), overwrite ? 0 : 1) == 0) {
     uint errorCode = GetLastError();
@@ -285,11 +285,11 @@ void copyFile(string sourceFileName, string destFileName, bool overwrite = false
 
 /// Replaces the contents of the specified file with the contents of another, deleting the original, and creating a backup of the replaced file and optionally ignores merge errors.
 void replaceFile(string sourceFileName, string destFileName, string backupFileName, bool ignoreMergeErrors = false) {
-  string fullSourceFileName = getFullPath(sourceFileName);
-  string fullDestFileName = getFullPath(destFileName);
+  string fullSourceFileName = absolutePath(sourceFileName);
+  string fullDestFileName = absolutePath(destFileName);
   string fullBackupFileName;
   if (backupFileName != null)
-    fullBackupFileName = getFullPath(backupFileName);
+    fullBackupFileName = absolutePath(backupFileName);
 
   uint flags = REPLACEFILE_WRITE_THROUGH;
   if (ignoreMergeErrors)
@@ -301,7 +301,7 @@ void replaceFile(string sourceFileName, string destFileName, string backupFileNa
 
 /// Encrypts a file so that only the user account used to encrypt the file can decrypt it.
 void encryptFile(string path) {
-  string fullPath = getFullPath(path);
+  string fullPath = absolutePath(path);
 
   if (EncryptFile(fullPath.toUtf16z()) == 0) {
     uint errorCode = GetLastError();
@@ -311,7 +311,7 @@ void encryptFile(string path) {
 
 /// Decrypts a file that was encrypted by the current user account using the encryptFile method.
 void decryptFile(string path) {
-  string fullPath = getFullPath(path);
+  string fullPath = absolutePath(path);
 
   if (DecryptFile(fullPath.toUtf16z(), 0) == 0) {
     uint errorCode = GetLastError();
@@ -342,8 +342,10 @@ void decryptFile(string path) {
  * std.stdio.writefln("Available free space on drive %s: %s", drive, s);
  * ---
  */
-ulong getAvailableFreeSpace(string driveName) {
-  string name = getPathRoot(driveName);
+ulong getAvailableFreeSpace(string path) {
+  string name = driveName(absolutePath(path));
+  if(name[$] != '\\')
+    name ~= "\\";
 
   ulong freeSpace, totalSize, totalFreeSpace;
   if (!GetDiskFreeSpaceEx(name.toUtf16z(), freeSpace, totalSize, totalFreeSpace)) {
@@ -355,8 +357,10 @@ ulong getAvailableFreeSpace(string driveName) {
 
 /**
  */
-ulong getTotalSize(string driveName) {
-  string name = getPathRoot(driveName);
+ulong getTotalSize(string path) {
+  string name = driveName(absolutePath(path));
+  if(name[$] != '\\')
+    name ~= "\\";
 
   ulong freeSpace, totalSize, totalFreeSpace;
   if (!GetDiskFreeSpaceEx(name.toUtf16z(), freeSpace, totalSize, totalFreeSpace)) {
@@ -368,8 +372,10 @@ ulong getTotalSize(string driveName) {
 
 /**
  */
-ulong getTotalFreeSpace(string driveName) {
-  string name = getPathRoot(driveName);
+ulong getTotalFreeSpace(string path) {
+  string name = driveName(absolutePath(path));
+  if(name[$] != '\\')
+    name ~= "\\";
 
   ulong freeSpace, totalSize, totalFreeSpace;
   if (!GetDiskFreeSpaceEx(name.toUtf16z(), freeSpace, totalSize, totalFreeSpace)) {
@@ -381,8 +387,10 @@ ulong getTotalFreeSpace(string driveName) {
 
 /**
  */
-string getVolumeLabel(string driveName) {
-  string name = getPathRoot(driveName);
+string getVolumeLabel(string path) {
+  string name = driveName(absolutePath(path));
+  if(name[$] != '\\')
+    name ~= "\\";
 
   wchar[MAX_PATH + 1] volumeBuffer;
   uint serialNumber, maxComponentLength, fileSystemFlags;
@@ -395,8 +403,10 @@ string getVolumeLabel(string driveName) {
 
 /**
  */
-void setVolumeLabel(string driveName, string volumeLabel) {
-  string name = getPathRoot(driveName);
+void setVolumeLabel(string path, string volumeLabel) {
+  string name = driveName(absolutePath(path));
+  if(name[$] != '\\')
+    name ~= "\\";
 
   if (!SetVolumeLabel(name.toUtf16z(), volumeLabel.toUtf16z())) {
     uint errorCode = GetLastError();
