@@ -3,9 +3,9 @@ DEPS=juno\base\collections.d juno\base\core.d juno\base\environment.d juno\base\
 juno: juno.lib juno/juno.args
 
 xsl.obj: juno/xml/xsl.d
-	dmd -c -property juno/xml/xsl.d
+	dmd -c -property juno/xml/xsl.d -Dddoc
 juno.lib: xsl.obj $(DEPS)
-	dmd -lib -ofjuno.lib -property -O -inline -release $(args) @juno/juno.args xsl.obj
+	dmd -lib -ofjuno.lib -property -O -inline -release $(args) @juno/juno.args xsl.obj -Dddoc
 
 events: juno examples/com/events.d
 	dmd $(args) examples/com/events.d juno.lib -Ijuno
