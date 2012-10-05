@@ -21,6 +21,7 @@ import std.array;
 import std.utf : toUTF8, toUTF16z;
 import core.exception, core.memory;
 
+import std.system;
 import std.uuid;
   
 //static import std.c.stdio;
@@ -395,11 +396,6 @@ struct GUID {
 
 alias GUID Guid;
 
-bool bigEndian() {
-  int i = 1;
-  return *cast(ubyte*)&i == 0;
-}
-
 /**
  * Translates a std.uuid to a GUID
  */
@@ -411,7 +407,7 @@ Guid guid(UUID uid) {
 
   // GUID Uses Native Endian in first three groupings
   // UUID is all big Endian
-  if(!bigEndian()) {
+  if(endian == Endian.littleEndian) {
     quickFill[0..4].reverse();
     quickFill[4..6].reverse();
     quickFill[6..8].reverse();
@@ -449,7 +445,7 @@ UUID uuid(GUID uid) {
 
   // GUID Uses Native Endian in first three groupings
   // UUID is all big Endian
-  if(!bigEndian()) {
+  if(endian == Endian.littleEndian) {
     ans.data[0..4].reverse();
     ans.data[4..6].reverse();
     ans.data[6..8].reverse();
