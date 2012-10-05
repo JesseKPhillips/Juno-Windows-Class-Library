@@ -20,6 +20,8 @@ import std.algorithm;
 import std.array;
 import std.utf : toUTF8, toUTF16z;
 import core.exception, core.memory;
+
+import std.uuid;
   
 //static import std.c.stdio;
 debug import std.stdio : writefln;
@@ -154,6 +156,13 @@ struct GUID {
    * A GUID whose value is all zeros.
    */
   static GUID empty = { 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0 };
+
+  /**
+   * Initialize a new instance using the specified std.uuid
+   */
+  static GUID opCall(UUID id) {
+    return guid(id);
+  }
 
   /**
    * Initializes _a new instance using the specified integers and bytes.
@@ -385,6 +394,88 @@ struct GUID {
 }
 
 alias GUID Guid;
+
+bool bigEndian() {
+  int i = 1;
+  return *cast(ubyte*)&i == 0;
+}
+
+/**
+ * Translates a std.uuid to a GUID
+ */
+Guid guid(UUID uid) {
+  GUID ans;
+  // Easy when slice-able
+  auto quickFill = (cast(ubyte*)&ans)[0..16];
+  quickFill[] = uid.data[];
+
+  // GUID Uses Native Endian in first three groupings
+  // UUID is all big Endian
+  if(!bigEndian()) {
+    quickFill[0..4].reverse();
+    quickFill[4..6].reverse();
+    quickFill[6..8].reverse();
+  }
+  // Last 8 bytes are the same
+
+  return ans;
+}
+
+unittest {
+  import std.typecons;
+  Tuple!(GUID, GUID) getBoth(string g) {
+    return tuple(guid(UUID(g)), GUID(g));
+  }
+  auto ids = getBoth("2933bf8f-7b36-11d2-b20e-00c04f983e60");
+  assert(ids[0] == ids[1]);
+
+  ids = getBoth("2933bf80-7b36-11d2-b20e-00c04f983e60");
+  assert(ids[0] == ids[1]);
+
+  ids = getBoth("8c033caa-6cd6-4f73-b728-4531af74945f");
+  assert(ids[0] == ids[1]);
+
+  ids = getBoth("0c05d096-f45b-4aca-ad1a-aa0bc25518dc");
+  assert(ids[0] == ids[1]);
+}
+
+/**
+ * Translates a GUID to a std.uuid
+ */
+UUID uuid(GUID uid) {
+  UUID ans;
+  // Easy when slice-able
+  ans.data[] = (cast(ubyte*)&uid)[0..16];
+
+  // GUID Uses Native Endian in first three groupings
+  // UUID is all big Endian
+  if(!bigEndian()) {
+    ans.data[0..4].reverse();
+    ans.data[4..6].reverse();
+    ans.data[6..8].reverse();
+  }
+  // Last 8 bytes are the same
+
+  return ans;
+}
+
+unittest {
+  import std.typecons;
+  Tuple!(UUID, UUID) getBoth(string g) {
+    return tuple(uuid(GUID(g)), UUID(g));
+  }
+  auto ids = getBoth("2933bf8f-7b36-11d2-b20e-00c04f983e60");
+  assert(ids[0] == ids[1]);
+
+  ids = getBoth("2933bf80-7b36-11d2-b20e-00c04f983e60");
+  assert(ids[0] == ids[1]);
+
+  ids = getBoth("8c033caa-6cd6-4f73-b728-4531af74945f");
+  assert(ids[0] == ids[1]);
+
+  ids = getBoth("0c05d096-f45b-4aca-ad1a-aa0bc25518dc");
+  assert(ids[0] == ids[1]);
+}
 
 /**
  * Retrieves the ProgID for a given class identifier (CLSID).
