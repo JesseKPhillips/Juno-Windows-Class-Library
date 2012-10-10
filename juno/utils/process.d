@@ -11,6 +11,8 @@ import juno.base.core,
 static import juno.io.path;
 import std.c.stdlib : malloc, realloc, free;
 
+import std.conv;
+
 debug import std.stdio : writefln;
 
 private extern(C) int _wcsicmp(in wchar*, in wchar*);
@@ -266,7 +268,7 @@ class Process {
 
       if (*slash == '\\') slash++;
 
-      return toUtf8(slash, 0, period - slash);
+      return to!string(toArray(slash, period - slash));
     }
 
     ProcessInfo[uint] processInfos;

@@ -18,6 +18,8 @@ import juno.base.core,
   std.stream;
 static import std.c.stdlib;
 
+import std.conv;
+
 debug import std.stdio : writeln, writefln;
 
 interface IBinding : IUnknown {
@@ -521,7 +523,7 @@ private class DownloadBitsCallback : BindStatusCallback {
     Release();
 
     if (FAILED(hresult))
-      throw new NetException(toUtf8(szError));
+      throw new NetException(to!string(toArray(szError)));
 
     if (downloadCompleted !is null)
       downloadCompleted(buffer);

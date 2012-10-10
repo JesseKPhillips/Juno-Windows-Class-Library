@@ -231,17 +231,21 @@ enum SpecialFolder {
 string getFolderPath(SpecialFolder folder) {
   wchar[MaxPath] buffer;
   // SHGetFolderPath fails if folder is a virtual folder, eg SpecialFolder.Network.
-  if (SHGetFolderPath(Handle.init, cast(int)folder, Handle.init, SHGFP_TYPE_CURRENT, buffer.ptr) == 0)
-    return .toUtf8(buffer.ptr);
-  return null;
+  auto err = SHGetFolderPath(Handle.init, cast(int)folder, Handle.init, SHGFP_TYPE_CURRENT, buffer.ptr);
+  if(err)
+    return null;
+  return to!string(toArray(buffer.ptr));
 }
 
 /// Creates a uniquely named temporary file on disk and returns the path of that file.
 string tempFileName() {
   wchar[MaxPath] buffer;
-  GetTempPath(MaxPath, buffer.ptr);
-  GetTempFileName(buffer.ptr, "tmp", 0, buffer.ptr);
-  return toUtf8(buffer.ptr);
+  if(!GetTempPath(MaxPath, buffer.ptr))
+    throw new Win32Exception();
+  if(!GetTempFileName(buffer.ptr, "tmp", 0, buffer.ptr))
+    throw new Win32Exception();
+  // The string length is unknown
+  return to!string(toArray(buffer.ptr));
 }
 
 unittest {

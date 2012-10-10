@@ -12,6 +12,7 @@ module juno.base.string;
 import std.conv;
 import std.string;
 import std.typecons;
+import std.traits;
 import std.uni;
 
 import juno.base.core,
@@ -30,6 +31,39 @@ import std.exception;
 alias const(char)* stringz;
 alias const(wchar*) wstringz;
 
+/**
+ * Provides convenience to turn an character pointer
+ * into an array.
+ *
+ * Finish conversion using to!string(toArray(myPtr))
+ *
+ * Second optional parameter is useful for performance
+ * if the string length is already known. Or the string
+ * is not null teminated.
+ */
+const(T)[] toArray(T)(in T* s, size_t len = 0) if(isSomeChar!T
+                                               && !is(T == dchar)) {
+  if(len)
+    return s[0..len];
+  else
+  static if(is(T == char))
+    return s[0..strlen(s)];
+  else static if(is(T == wchar))
+    return s[0..wcslen(s)];
+}
+
+unittest {
+  char[] arr = to!(char[])("My test\0");
+  char* test = arr.ptr;
+  assert("My test" == toArray(test));
+
+  wchar[] arr2 = to!(wchar[])("My test\0"w);
+  wchar* test2 = arr2.ptr;
+  assert("My test"w == toArray(test2));
+  assert(is(typeof(toArray(test2)) == const(wchar)[]));
+}
+
+deprecated
 string toUtf8(in char* s, int index = 0, int count = -1) {
   if (s == null)
     return "";
@@ -41,6 +75,7 @@ string toUtf8(in char* s, int index = 0, int count = -1) {
   return s[index .. count].idup;
 }
 
+deprecated
 string toUtf8(in wchar* s, int index = 0, int count = -1) {
   if (s == null)
     return "";
@@ -51,6 +86,7 @@ string toUtf8(in wchar* s, int index = 0, int count = -1) {
   return s[index .. count].toUTF8();
 }
 
+deprecated
 stringz toUtf8z(in char[] s, int index = 0, int count = -1) {
   if (s == null)
     return "";
@@ -61,6 +97,7 @@ stringz toUtf8z(in char[] s, int index = 0, int count = -1) {
   return s[index .. count].toStringz();
 }
 
+deprecated
 stringz toUtf8z(string s, int index = 0, int count = -1) {
   if (s == null)
     return "";
@@ -71,6 +108,7 @@ stringz toUtf8z(string s, int index = 0, int count = -1) {
   return s[index .. count].toStringz();
 }
 
+deprecated
 string toUtf8(in wchar[] s, int index = 0, int count = -1) {
   if (s == null)
     return "";
@@ -81,6 +119,7 @@ string toUtf8(in wchar[] s, int index = 0, int count = -1) {
   return s[index .. count].toUTF8();
 }
 
+deprecated
 string toUtf8(string s, int index = 0, int count = -1) {
   if (s == null)
     return "";
@@ -91,6 +130,7 @@ string toUtf8(string s, int index = 0, int count = -1) {
   return s[index .. count].toUTF8();
 }
 
+deprecated
 wstring toUtf16(string s, int index = 0, int count = -1) {
   if (s == null)
     return "";
@@ -101,6 +141,7 @@ wstring toUtf16(string s, int index = 0, int count = -1) {
   return s[index .. count].toUTF16();
 }
 
+deprecated
 wstringz toUtf16z(in char[] s, int index = 0, int count = -1) {
   if (s == null)
     return "";
@@ -111,6 +152,7 @@ wstringz toUtf16z(in char[] s, int index = 0, int count = -1) {
   return s[index .. count].toUTF16z();
 }
 
+deprecated
 wstringz toUtf16z(string s, int index = 0, int count = -1) {
   if (s == null)
     return "";

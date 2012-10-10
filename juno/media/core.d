@@ -27,7 +27,7 @@ import juno.base.core,
 
 import std.algorithm : min, max;
 import std.ascii;
-static import std.file,
+import std.file,
   std.math,
   std.conv;
 
@@ -8962,7 +8962,7 @@ final class FontFamily : IDisposable {
     Status status = GdipGetFamilyName(nativeFamily_, buffer.ptr, language);
     if (status != Status.OK)
       throw statusException(status);
-    return toUtf8(buffer.ptr);
+    return to!string(toArray(buffer.ptr));
   }
 
   /**

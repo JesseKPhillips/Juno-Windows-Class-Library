@@ -18,6 +18,8 @@ import juno.base.core,
   juno.media.native;
 import std.c.string;
 
+import std.conv;
+
 /**
  * Specifies the attributes of a bitmap image.
  */
@@ -190,11 +192,11 @@ final class ImageCodecInfo {
         with (pCodecs[i]) {
           clsid = Clsid;
           formatId = FormatID;
-          if (CodecName) codecName = .toUtf8(CodecName);
-          if (DllName) dllName = .toUtf8(DllName);
-          if (FormatDescription) formatDescription = .toUtf8(FormatDescription);
-          if (FilenameExtension) filenameExtension = .toUtf8(FilenameExtension);
-          if (MimeType) mimeType = .toUtf8(MimeType);
+          if (CodecName) codecName = to!string(toArray(CodecName));
+          if (DllName) dllName = to!string(toArray(DllName));
+          if (FormatDescription) formatDescription = to!string(toArray(FormatDescription));
+          if (FilenameExtension) filenameExtension = to!string(toArray(FilenameExtension));
+          if (MimeType) mimeType = to!string(toArray(MimeType));
           flags = cast(ImageCodecFlags)Flags;
 
           signaturePatterns.length = SigCount;
@@ -235,11 +237,11 @@ final class ImageCodecInfo {
         with (pCodecs[i]) {
           clsid = Clsid;
           formatId = FormatID;
-          codecName = .toUtf8(CodecName);
-          if (DllName) dllName = .toUtf8(DllName);
-          if (FormatDescription) formatDescription = .toUtf8(FormatDescription);
-          if (FilenameExtension) filenameExtension = .toUtf8(FilenameExtension);
-          if (MimeType) mimeType = .toUtf8(MimeType);
+          codecName = to!string(toArray(CodecName));
+          if (DllName) dllName = to!string(toArray(DllName));
+          if (FormatDescription) formatDescription = to!string(toArray(FormatDescription));
+          if (FilenameExtension) filenameExtension = to!string(toArray(FilenameExtension));
+          if (MimeType) mimeType = to!string(toArray(MimeType));
           flags = cast(ImageCodecFlags)Flags;
 
           signaturePatterns.length = SigCount;

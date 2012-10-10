@@ -1,5 +1,6 @@
 module juno.io.filesystem;
 
+import std.conv;
 import std.file;
 import std.path;
 import std.string;
@@ -397,7 +398,7 @@ string getVolumeLabel(string path) {
     uint errorCode = GetLastError();
     ioError(errorCode, name);
   }
-  return toUtf8(volumeBuffer.ptr);
+  return to!string(toArray(volumeBuffer.ptr));
 }
 
 /**
@@ -948,7 +949,7 @@ class Watcher {
           notify = cast(FILE_NOTIFY_INFORMATION*)(buffer + offset);
           offset += notify.NextEntryOffset;
 
-          string name = toUtf8(notify.FileName.ptr, 0, notify.FileNameLength / 2);
+          string name = to!string(toArray(notify.FileName.ptr, notify.FileNameLength / 2));
 
           // Like System.IO.FileSystemWatcher, we just want one rename notification.
           if (notify.Action == FILE_ACTION_RENAMED_OLD_NAME) {

@@ -15,7 +15,9 @@ import juno.base.core,
   juno.com.core,
   juno.xml.core,
   std.stream;
+
 import std.base64;
+import std.conv;
 import std.exception;
 
 enum XmlReaderProperty : uint {
@@ -1044,35 +1046,35 @@ private final class XmlLiteReader : XmlReader {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetBaseUri(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property string name() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetQualifiedName(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property string prefix() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetPrefix(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property string localName() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetLocalName(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property string namespaceURI() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetNamespaceUri(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property bool hasValue() {
@@ -1083,7 +1085,7 @@ private final class XmlLiteReader : XmlReader {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetValue(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property int attributeCount() {

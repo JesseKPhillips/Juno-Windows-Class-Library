@@ -2049,7 +2049,7 @@ final class RsaCryptoServiceProvider : Rsa {
     CRYPT_OID_INFO oidInfo;
     if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
-    string oid = toUtf8(oidInfo.pszOID);
+    string oid = to!string(toArray(oidInfo.pszOID));
 
     scope hashAlgorithm = nameToHashAlgorithm(algorithm);
     ubyte[] hash = hashAlgorithm.computeHash(buffer, offset, count);
@@ -2066,7 +2066,7 @@ final class RsaCryptoServiceProvider : Rsa {
     CRYPT_OID_INFO oidInfo;
     if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
-    string oid = toUtf8(oidInfo.pszOID);
+    string oid = to!string(toArray(oidInfo.pszOID));
 
     scope hashAlgorithm = nameToHashAlgorithm(algorithm);
     ubyte[] hash = hashAlgorithm.computeHash(input);
@@ -2106,7 +2106,7 @@ final class RsaCryptoServiceProvider : Rsa {
     CRYPT_OID_INFO oidInfo;
     if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
-    string oid = toUtf8(oidInfo.pszOID);
+    string oid = to!string(toArray(oidInfo.pszOID));
 
     scope hashAlgorithm = nameToHashAlgorithm(algorithm);
     ubyte[] hash = hashAlgorithm.computeHash(data, offset, count);
@@ -2118,7 +2118,7 @@ final class RsaCryptoServiceProvider : Rsa {
     CRYPT_OID_INFO oidInfo;
     if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
-    string oid = toUtf8(oidInfo.pszOID);
+    string oid = to!string(toArray(oidInfo.pszOID));
 
     scope hashAlgorithm = nameToHashAlgorithm(algorithm);
     ubyte[] hash = hashAlgorithm.computeHash(data);

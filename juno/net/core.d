@@ -996,12 +996,12 @@ class IPHost {
     auto host = new IPHost;
 
     if (entry.h_name != null)
-      host.hostName = toUtf8(entry.h_name);
+      host.hostName = to!string(toArray(entry.h_name));
 
     for (int i = 0;; i++) {
       if (entry.h_aliases[i] == null)
         break;
-      host.aliases ~= toUtf8(entry.h_aliases[i]);
+      host.aliases ~= to!string(toArray(entry.h_aliases[i]));
     }
 
     for (int i = 0;; i++) {
@@ -1022,7 +1022,7 @@ class IPHost {
 
     while (info != null) {
       if (host.hostName == null && info.ai_canonname != null)
-        host.hostName = toUtf8(info.ai_canonname);
+        host.hostName = to!string(toArray(info.ai_canonname));
 
       if (info.ai_family == AF_INET || info.ai_family == AF_INET6) {
         if (info.ai_family == AF_INET6) {
@@ -1190,7 +1190,7 @@ class IPAddress {
       if (family_ == AddressFamily.INET6) {
         if (supportsIPv6) {
           uint stringLength = 256;
-          wchar[] string = new wchar[stringLength];
+          wchar[] str = new wchar[stringLength];
 
           ubyte[sockaddr_in6.sizeof] addr;
           addr[0 .. 2] = [cast(ubyte)family_, cast(ubyte)(family_ >> 8)];
@@ -1201,10 +1201,10 @@ class IPAddress {
           if (scopeId_ > 0)
             addr[24 .. $] = [cast(ubyte)scopeId_, cast(ubyte)(scopeId_ >> 8), cast(ubyte)(scopeId_ >> 16), cast(ubyte)(scopeId_ >> 24)];
 
-          if (WSAAddressToString(cast(sockaddr*)addr.ptr, addr.length, null, string.ptr, stringLength) != 0)
+          if (WSAAddressToString(cast(sockaddr*)addr.ptr, addr.length, null, str.ptr, stringLength) != 0)
             throw socketException();
 
-          string_ = toUtf8(string.ptr);
+          string_ = to!string(toArray(str.ptr));
         }
         else {
           // Should only be needed for Win2k without the IPv6 add-on.
@@ -1227,7 +1227,7 @@ class IPAddress {
         }
       }
       else {
-        string_ = toUtf8(inet_ntoa(*cast(in_addr*)&address_));
+        string_ = to!string(toArray(inet_ntoa(*cast(in_addr*)&address_)));
       }
     }
     return string_;
