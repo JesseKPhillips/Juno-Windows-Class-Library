@@ -23,3 +23,8 @@ xmlnavigate: juno examples/xml/navigate.d
 	dmd $(args) examples/xml/navigate.d juno.lib -Ijuno
 textimage: juno examples/media/textimage.d
 	dmd $(args) examples/media/textimage.d juno.lib -Ijuno
+
+client: juno examples/com/server/client.d examples/com/server/hello.d
+	dmd $(args) examples/com/server/client.d examples/com/server/hello.d juno.lib -Ijuno
+server: juno examples/com/server/server.d examples/com/server/hello.d client
+	dmd $(args) -ofserver.dll examples/com/server/server.d examples/com/server/hello.d juno.lib -Ijuno examples/com/server/server.def
