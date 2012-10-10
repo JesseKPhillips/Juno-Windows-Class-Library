@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <assemblyIdentity name="client.exe" version="1.0.0.0" type="win32"/>
+  <file name="C:\\Program Files\\My COM Server\\server.dll">
+    <comClass clsid="{35115e92-33f5-4e14-9d0a-bd43c80a75af}" description="SaysHello" threadingModel="Apartment"/>
+ </file>
+</assembly>
