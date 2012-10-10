@@ -12,6 +12,8 @@ import juno.base.core,
   juno.base.native;
 static import std.path;
 
+import std.conv;
+
 /// The maximum character length of a path.
 const int MaxPath = 260;
 
@@ -25,21 +27,25 @@ deprecated
 string currentDirectory() {
   wchar[MaxPath + 1] buffer;
   uint len = GetCurrentDirectory(buffer.length, buffer.ptr);
-  return buffer[0 .. len].toUtf8();
+  return to!string(buffer[0 .. len]);
 }
 
 /// Returns the path of the system directory.
 string systemDirectory() {
   wchar[MaxPath + 1] buffer;
   uint len = GetSystemDirectory(buffer.ptr, buffer.length);
-  return buffer[0 .. len].toUtf8();
+  if(!len)
+    throw new Win32Exception();
+  return to!string(buffer[0 .. len]);
 }
 
 /// Returns the path of the system's temporary folder.
 string tempPath() {
   wchar[MaxPath] buffer;
   uint len = GetTempPath(MaxPath, buffer.ptr);
-  return std.path.absolutePath(buffer[0 .. len].toUtf8());
+  if(!len)
+    throw new Win32Exception();
+  return std.path.absolutePath(to!string(buffer[0 .. len]));
 }
 
 deprecated

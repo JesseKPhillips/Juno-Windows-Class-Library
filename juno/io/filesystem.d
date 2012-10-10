@@ -13,7 +13,6 @@ import juno.base.core,
   juno.io.path;
 
 import core.thread;
-static import std.path;
 
 /// Returns an array of strings containing the names of the logical drives on the current computer.
 string[] logicalDrives() {
@@ -82,7 +81,7 @@ void createDirectory(string path) {
   string errorPath;
 
   foreach_reverse (name; list) {
-    result = CreateDirectory(name.toUtf16z(), null) != 0;
+    result = CreateDirectory(name.toUTF16z(), null) != 0;
     if (!result && firstError == 0) {
       uint lastError = GetLastError();
       if (lastError != ERROR_ALREADY_EXISTS) {
@@ -118,7 +117,7 @@ enum DeleteOption {
 void deleteDirectory(string path, DeleteOption option = DeleteOption.DeletePermanently) {
   string fullPath = absolutePath(path);
 
-  /*if (RemoveDirectory(path.toUtf16z()) == 0) {
+  /*if (RemoveDirectory(path.toUTF16z()) == 0) {
     uint errorCode = GetLastError();
     ioError(errorCode, path);
   }*/
@@ -128,7 +127,7 @@ void deleteDirectory(string path, DeleteOption option = DeleteOption.DeletePerma
   fileOp.fFlags = FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI;
   if (option == DeleteOption.AllowUndo)
     fileOp.fFlags |= FOF_ALLOWUNDO;
-  fileOp.pFrom = (fullPath ~ '\0').toUtf16z();
+  fileOp.pFrom = (fullPath ~ '\0').toUTF16z();
 
   int errorCode = SHFileOperation(fileOp);
   SHChangeNotify(SHCNE_DISKEVENTS, SHCNF_DWORD, null, null);
@@ -147,7 +146,7 @@ void moveDirectory(string sourceDirName, string destDirName) {
   string fullSourceDirName = getFullPath(sourceDirName);
   string fullDestDirName = getFullPath(destDirName);
 
-  if (MoveFile(fullSourceDirName.toUtf16z(), fullDestDirName.toUtf16z()) == 0) {
+  if (MoveFile(fullSourceDirName.toUTF16z(), fullDestDirName.toUTF16z()) == 0) {
     uint errorCode = GetLastError();
     if (errorCode == ERROR_FILE_NOT_FOUND) {
       ioError(ERROR_PATH_NOT_FOUND, fullSourceDirName);
@@ -167,7 +166,7 @@ DateTime getCreationTime(string path) {
   string fullPath = getFullPath(path);
 
   WIN32_FILE_ATTRIBUTE_DATA data;
-  if (!GetFileAttributesEx(fullPath.toUtf16z(), 0, data)) {
+  if (!GetFileAttributesEx(fullPath.toUTF16z(), 0, data)) {
     uint errorCode = GetLastError();
     if (errorCode != ERROR_FILE_NOT_FOUND)
       ioError(errorCode, fullPath);
@@ -187,7 +186,7 @@ DateTime getLastAccessTime(string path) {
   string fullPath = getFullPath(path);
 
   WIN32_FILE_ATTRIBUTE_DATA data;
-  if (!GetFileAttributesEx(fullPath.toUtf16z(), 0, data)) {
+  if (!GetFileAttributesEx(fullPath.toUTF16z(), 0, data)) {
     uint errorCode = GetLastError();
     if (errorCode != ERROR_FILE_NOT_FOUND)
       ioError(errorCode, fullPath);
@@ -207,7 +206,7 @@ DateTime getLastWriteTime(string path) {
   string fullPath = getFullPath(path);
 
   WIN32_FILE_ATTRIBUTE_DATA data;
-  if (!GetFileAttributesEx(fullPath.toUtf16z(), 0, data)) {
+  if (!GetFileAttributesEx(fullPath.toUTF16z(), 0, data)) {
     uint errorCode = GetLastError();
     if (errorCode != ERROR_FILE_NOT_FOUND)
       ioError(errorCode, fullPath);
@@ -221,7 +220,7 @@ FileAttributes getFileAttributes(string path) {
   string fullPath = absolutePath(path);
 
   WIN32_FILE_ATTRIBUTE_DATA data;
-  if (!GetFileAttributesEx(fullPath.toUtf16z(), 0, data))
+  if (!GetFileAttributesEx(fullPath.toUTF16z(), 0, data))
     ioError(GetLastError(), fullPath);
   return cast(FileAttributes)data.dwFileAttributes;
 }
@@ -236,7 +235,7 @@ bool fileExists(string path) {
 void deleteFile(string path, DeleteOption option = DeleteOption.DeletePermanently) {
   string fullPath = absolutePath(path);
 
-  /*if (DeleteFile(fullPath.toUtf16z()) == 0) {
+  /*if (DeleteFile(fullPath.toUTF16z()) == 0) {
     uint errorCode = GetLastError();
     if (errorCode != ERROR_FILE_NOT_FOUND)
       ioError(errorCode, fullPath);
@@ -246,7 +245,7 @@ void deleteFile(string path, DeleteOption option = DeleteOption.DeletePermanentl
   fileOp.fFlags = FOF_SILENT | FOF_NOCONFIRMATION | FOF_NOERRORUI;
   if (option == DeleteOption.AllowUndo)
     fileOp.fFlags |= FOF_ALLOWUNDO;
-  fileOp.pFrom = (fullPath ~ '\0').toUtf16z();
+  fileOp.pFrom = (fullPath ~ '\0').toUTF16z();
 
   int errorCode = SHFileOperation(fileOp);
   SHChangeNotify(SHCNE_DISKEVENTS, SHCNF_DWORD, null, null);
@@ -268,7 +267,7 @@ void moveFile(string sourceFileName, string destFileName) {
   if (!fileExists(fullSourceFileName))
     ioError(ERROR_FILE_NOT_FOUND, fullSourceFileName);
 
-  if (MoveFile(fullSourceFileName.toUtf16z(), fullDestFileName.toUtf16z()) == 0)
+  if (MoveFile(fullSourceFileName.toUTF16z(), fullDestFileName.toUTF16z()) == 0)
     ioError(GetLastError(), null);
 }
 
@@ -277,7 +276,7 @@ void copyFile(string sourceFileName, string destFileName, bool overwrite = false
   string fullSourceFileName = absolutePath(sourceFileName);
   string fullDestFileName = absolutePath(destFileName);
 
-  if (CopyFile(fullSourceFileName.toUtf16z(), fullDestFileName.toUtf16z(), overwrite ? 0 : 1) == 0) {
+  if (CopyFile(fullSourceFileName.toUTF16z(), fullDestFileName.toUTF16z(), overwrite ? 0 : 1) == 0) {
     uint errorCode = GetLastError();
     ioError(errorCode, destFileName);
   }
@@ -295,7 +294,7 @@ void replaceFile(string sourceFileName, string destFileName, string backupFileNa
   if (ignoreMergeErrors)
     flags |= REPLACEFILE_IGNORE_MERGE_ERRORS;
 
-  if (ReplaceFile(fullDestFileName.toUtf16z(), fullSourceFileName.toUtf16z(), fullBackupFileName.toUtf16z(), flags, null, null) == 0)
+  if (ReplaceFile(fullDestFileName.toUTF16z(), fullSourceFileName.toUTF16z(), fullBackupFileName.toUTF16z(), flags, null, null) == 0)
     ioError(GetLastError(), null);
 }
 
@@ -303,7 +302,7 @@ void replaceFile(string sourceFileName, string destFileName, string backupFileNa
 void encryptFile(string path) {
   string fullPath = absolutePath(path);
 
-  if (EncryptFile(fullPath.toUtf16z()) == 0) {
+  if (EncryptFile(fullPath.toUTF16z()) == 0) {
     uint errorCode = GetLastError();
     ioError(errorCode, fullPath);
   }
@@ -313,7 +312,7 @@ void encryptFile(string path) {
 void decryptFile(string path) {
   string fullPath = absolutePath(path);
 
-  if (DecryptFile(fullPath.toUtf16z(), 0) == 0) {
+  if (DecryptFile(fullPath.toUTF16z(), 0) == 0) {
     uint errorCode = GetLastError();
     ioError(errorCode, fullPath);
   }
@@ -348,7 +347,7 @@ ulong getAvailableFreeSpace(string path) {
     name ~= "\\";
 
   ulong freeSpace, totalSize, totalFreeSpace;
-  if (!GetDiskFreeSpaceEx(name.toUtf16z(), freeSpace, totalSize, totalFreeSpace)) {
+  if (!GetDiskFreeSpaceEx(name.toUTF16z(), freeSpace, totalSize, totalFreeSpace)) {
     uint errorCode = GetLastError();
     ioError(errorCode, name);
   }
@@ -363,7 +362,7 @@ ulong getTotalSize(string path) {
     name ~= "\\";
 
   ulong freeSpace, totalSize, totalFreeSpace;
-  if (!GetDiskFreeSpaceEx(name.toUtf16z(), freeSpace, totalSize, totalFreeSpace)) {
+  if (!GetDiskFreeSpaceEx(name.toUTF16z(), freeSpace, totalSize, totalFreeSpace)) {
     uint errorCode = GetLastError();
     ioError(errorCode, name);
   }
@@ -378,7 +377,7 @@ ulong getTotalFreeSpace(string path) {
     name ~= "\\";
 
   ulong freeSpace, totalSize, totalFreeSpace;
-  if (!GetDiskFreeSpaceEx(name.toUtf16z(), freeSpace, totalSize, totalFreeSpace)) {
+  if (!GetDiskFreeSpaceEx(name.toUTF16z(), freeSpace, totalSize, totalFreeSpace)) {
     uint errorCode = GetLastError();
     ioError(errorCode, name);
   }
@@ -394,7 +393,7 @@ string getVolumeLabel(string path) {
 
   wchar[MAX_PATH + 1] volumeBuffer;
   uint serialNumber, maxComponentLength, fileSystemFlags;
-  if (!GetVolumeInformation(name.toUtf16z(), volumeBuffer.ptr, volumeBuffer.length, serialNumber, maxComponentLength, fileSystemFlags, null, 0)) {
+  if (!GetVolumeInformation(name.toUTF16z(), volumeBuffer.ptr, volumeBuffer.length, serialNumber, maxComponentLength, fileSystemFlags, null, 0)) {
     uint errorCode = GetLastError();
     ioError(errorCode, name);
   }
@@ -408,7 +407,7 @@ void setVolumeLabel(string path, string volumeLabel) {
   if(name[$] != '\\')
     name ~= "\\";
 
-  if (!SetVolumeLabel(name.toUtf16z(), volumeLabel.toUtf16z())) {
+  if (!SetVolumeLabel(name.toUTF16z(), volumeLabel.toUTF16z())) {
     uint errorCode = GetLastError();
     ioError(errorCode, name);
   }
@@ -759,7 +758,7 @@ class Watcher {
     stopWatching_ = false;
 
     directoryHandle_ = CreateFile(
-      directory_.toUtf16z(), 
+      directory_.toUTF16z(),
       FILE_LIST_DIRECTORY, 
       FILE_SHARE_READ | FILE_SHARE_DELETE | FILE_SHARE_WRITE, 
       null, 
@@ -1061,7 +1060,7 @@ class FileSystemIterator : Iterator!(string) {
     WIN32_FIND_DATA findData;
     uint lastError;
 
-    Handle hFind = FindFirstFile(searchPath.toUtf16z(), findData);
+    Handle hFind = FindFirstFile(searchPath.toUTF16z(), findData);
     if (hFind != INVALID_HANDLE_VALUE) {
       scope(exit) FindClose(hFind);
 

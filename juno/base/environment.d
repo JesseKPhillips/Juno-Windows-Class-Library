@@ -51,9 +51,12 @@ unittest {
 
 /**
  * Gets or sets the NetBIOS name of the local computer.
+ *
+ * Throws: Win32Exception
  */
-void getMachineName(string value) {
-  SetComputerName(value.toUtf16z());
+@property void machineName(string value) {
+  if(!SetComputerName(value.toUTF16z()))
+    throw new Win32Exception();
 }
 /// ditto
 string getMachineName() {

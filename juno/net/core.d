@@ -15,9 +15,11 @@ import juno.base.core,
   juno.locale.convert,
   std.c.windows.winsock,
   std.socket;
-import std.utf : toUTF8;
+import std.utf : toUTF8, toUTFz;
 import core.stdc.string : memcpy;
 debug import std.stdio : writefln;
+
+import std.conv : to;
 
 pragma(lib, "ws2_32.lib");
 
@@ -976,14 +978,14 @@ class IPHost {
       addrinfo* info;
       addrinfo hints = addrinfo(AI_CANONNAME, AF_UNSPEC);
 
-      if (getaddrinfo(hostName.toUtf8z(), null, &hints, &info) != 0)
+      if (getaddrinfo(hostName.toUTFz!(char*)(), null, &hints, &info) != 0)
         throw socketException();
       scope(exit) freeaddrinfo(info);
 
       return fromAddrInfo(info);
     }
 
-    auto he = gethostbyname(hostName.toUtf8z());
+    auto he = gethostbyname(hostName.toUTFz!(char*)());
     if (he == null) 
       throw socketException();
 
@@ -1242,7 +1244,7 @@ class IPAddress {
         sockaddr_in6 addr;
         int addrLength = addr.sizeof;
 
-        if (WSAStringToAddress(ipString.toUtf16z(), AF_INET6, null, cast(sockaddr*)&addr, addrLength) == 0)
+        if (WSAStringToAddress(ipString.toUTF16z(), AF_INET6, null, cast(sockaddr*)&addr, addrLength) == 0)
           return new IPAddress((cast(ubyte*)&addr)[8 .. addrLength], addr.sin6_scope_id);
 
         if (tryParse)
@@ -1257,7 +1259,7 @@ class IPAddress {
       }
     }
     else {
-      uint address = inet_addr(ipString.toUtf8z());
+      uint address = inet_addr(ipString.toUTFz!(char*)());
       if (address == ~0) {
         if (tryParse)
           return null;

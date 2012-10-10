@@ -17,6 +17,8 @@ import juno.base.core,
 
 debug import std.stdio : writefln;
 
+import std.conv;
+
 /**
  * Adds namespaces to a collection and provides scope management.
  *
@@ -76,7 +78,7 @@ class XmlNamespaceManager {
     wchar[100] pwchPrefix;
     int cchPrefix = pwchPrefix.length;
     if (nsmgrImpl_.getPrefix(uri.toUTF16z(), 0, pwchPrefix.ptr, cchPrefix) == S_OK)
-      return toUtf8(pwchPrefix.ptr, 0, cchPrefix);
+      return to!string(pwchPrefix[0..cchPrefix]);
     return null;
   }
 
@@ -89,7 +91,7 @@ class XmlNamespaceManager {
     wchar[100] pwchUri;
     int cchUri = pwchUri.length;
     if (nsmgrImpl_.getURI(prefix.toUTF16z(), null, pwchUri.ptr, cchUri) == S_OK)
-      return toUtf8(pwchUri.ptr, 0, cchUri);
+      return to!string(pwchUri[0..cchUri]);
     return null;
   }
 
@@ -117,7 +119,7 @@ class XmlNamespaceManager {
       wchar[100] pwchPrefix;
       int cchPrefix = pwchPrefix.length;
       if ((hr = nsmgrImpl_.getDeclaredPrefix(index, pwchPrefix.ptr, cchPrefix)) == S_OK) {
-        string s = toUtf8(pwchPrefix.ptr, 0, cchPrefix);
+        string s = to!string(pwchPrefix[0..cchPrefix]);
         if ((result = action(s)) != 0)
           break;
         index++;

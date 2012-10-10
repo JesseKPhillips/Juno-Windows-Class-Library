@@ -512,7 +512,7 @@ struct Console {
    * Params: value = The text to be displayed in the _title bar of the console.
    */
   static @property void title(string value) {
-    SetConsoleTitle(value.toUtf16z());
+    SetConsoleTitle(value.toUTF16z());
   }
   /// ditto
   static @property string title() {

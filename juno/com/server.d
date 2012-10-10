@@ -93,6 +93,8 @@ import juno.base.core,
 
 import core.runtime, core.sys.windows.dll;
 
+import std.conv;
+
 private __gshared Handle moduleHandle_;
 private __gshared int lockCount_;
 
@@ -111,7 +113,17 @@ string getLocation()
 {
   wchar[MAX_PATH] buffer;
   uint len = GetModuleFileName(moduleHandle_, buffer.ptr, buffer.length);
-  return juno.base.string.toUtf8(buffer.ptr, 0, len);
+  if(!len)
+    throw new Win32Exception();
+  else if(len == MAX_PATH) {
+    if(GetLastError() == ERROR_INSUFFICIENT_BUFFER)
+        throw new Win32Exception();
+  }
+  return to!string(buffer[0..len]);
+}
+
+unittest {
+  assert(getLocation().length > 0);
 }
 
 ///

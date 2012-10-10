@@ -13,6 +13,8 @@ import juno.base.core,
   std.utf;
 static import std.c.stdlib;
 
+import std.conv;
+
 /// Specifies the data types to use when storing values in the registry.
 enum RegistryValueKind {
   Unknown      = 0,  /// Indicates an unsupported registry data type.
@@ -205,7 +207,7 @@ final class RegistryKey {
     name = fixName(name);
 
     Handle result;
-    int ret = RegOpenKeyEx(hkey_, name.toUtf16z(), 0, (writable ? (KEY_READ | KEY_WRITE) : KEY_READ), result);
+    int ret = RegOpenKeyEx(hkey_, name.toUTF16z(), 0, (writable ? (KEY_READ | KEY_WRITE) : KEY_READ), result);
 
     if (ret == ERROR_SUCCESS && result != INVALID_HANDLE_VALUE) {
       auto key = new RegistryKey(result, writable, false);
@@ -232,7 +234,7 @@ final class RegistryKey {
 
     uint disposition;
     Handle result;
-    int ret = RegCreateKeyEx(hkey_, name.toUtf16z(), 0, null, cast(uint)options, (writable ? (KEY_READ | KEY_WRITE) : KEY_READ), null, result, disposition);
+    int ret = RegCreateKeyEx(hkey_, name.toUTF16z(), 0, null, cast(uint)options, (writable ? (KEY_READ | KEY_WRITE) : KEY_READ), null, result, disposition);
 
     if (ret == ERROR_SUCCESS && result != INVALID_HANDLE_VALUE) {
       auto key = new RegistryKey(result, writable, false);
@@ -275,7 +277,7 @@ final class RegistryKey {
         key.close();
       }
 
-      int ret = RegDeleteKey(hkey_, name.toUtf16z());
+      int ret = RegDeleteKey(hkey_, name.toUTF16z());
       if (ret != ERROR_SUCCESS) {
         if (ret == ERROR_FILE_NOT_FOUND && throwOnMissingSubKey)
           throw new ArgumentException("Cannot delete a subkey tree because the subkey does not exist.");
@@ -317,7 +319,7 @@ final class RegistryKey {
         key.close();
       }
 
-      int ret = RegDeleteKey(hkey_, name.toUtf16z());
+      int ret = RegDeleteKey(hkey_, name.toUTF16z());
       if (ret != ERROR_SUCCESS)
         throw new Win32Exception(ret);
     }
@@ -335,7 +337,7 @@ final class RegistryKey {
     if (!writable_)
       throw new UnauthorizedAccessException("Cannot write to the registry key.");
 
-    int ret = RegDeleteValue(hkey_, name.toUtf16z());
+    int ret = RegDeleteValue(hkey_, name.toUTF16z());
     if (ret == ERROR_FILE_NOT_FOUND && throwOnMissingValue)
       throw new ArgumentException("Cannot delete a subkey tree because the subkey does not exist.");
   }
@@ -347,7 +349,7 @@ final class RegistryKey {
    */
   RegistryValueKind getValueKind(string name) {
     uint type;
-    int ret = RegQueryValueEx(hkey_, name.toUtf16z(), null, &type, null, null);
+    int ret = RegQueryValueEx(hkey_, name.toUTF16z(), null, &type, null, null);
     return cast(RegistryValueKind)type;
   }
 
@@ -362,18 +364,18 @@ final class RegistryKey {
   T getValue(T)(string name, T defaultValue = T.init, RegistryValueOptions options = RegistryValueOptions.None) {
 
     string expandEnvironmentVariables(string name) {
-      auto src = name.toUtf16z();
+      auto src = name.toUTF16z();
       uint size = ExpandEnvironmentStringsW(src, null, 0);
 
       wchar[] dst = new wchar[size];
       size = ExpandEnvironmentStrings(src, dst.ptr, cast(uint)dst.length);
       if (size == 0)
         throw new Win32Exception(GetLastError());
-      return .toUtf8(dst[0 .. size - 1].ptr);
+      return to!string(dst[0 .. size - 1]);
     }
 
     bool expandEnvironmentNames = (options != RegistryValueOptions.DoNotExpandEnvironmentNames);
-    auto lpName = name.toUtf16z();
+    auto lpName = name.toUTF16z();
 
     uint type, size;
     int ret = RegQueryValueEx(hkey_, lpName, null, &type, null, &size);
@@ -396,7 +398,7 @@ final class RegistryKey {
       if (type == REG_SZ || type == REG_EXPAND_SZ) {
         wchar[] b = new wchar[size / wchar.sizeof];
         ret = RegQueryValueEx(hkey_, lpName, null, &type, cast(ubyte*)b.ptr, &size);
-        auto data = .toUtf8(b[0 .. (size / wchar.sizeof) - 1].ptr);
+        auto data = to!string(b[0 .. (size / wchar.sizeof) - 1]);
 
         if (type == REG_EXPAND_SZ && expandEnvironmentNames)
           data = expandEnvironmentVariables(data);
@@ -471,7 +473,7 @@ final class RegistryKey {
         valueKind = RegistryValueKind.String;
     }
 
-    auto lpName = name.toUtf16z();
+    auto lpName = name.toUTF16z();
 
     int ret = ERROR_SUCCESS;
     try {
@@ -503,7 +505,7 @@ final class RegistryKey {
           else
             data = std.string.format("%s", value);
 
-          ret = RegSetValueEx(hkey_, lpName, 0, cast(uint)valueKind, cast(ubyte*)data.toUtf16z(), (data.length * wchar.sizeof) + 2);
+          ret = RegSetValueEx(hkey_, lpName, 0, cast(uint)valueKind, cast(ubyte*)data.toUTF16z(), (data.length * wchar.sizeof) + 2);
           break;
 
         case RegistryValueKind.MultiString:
@@ -516,7 +518,7 @@ final class RegistryKey {
             wchar[] buffer = new wchar[size];
             int index;
             foreach (s; value) {
-              wstring ws = s.toUtf16();
+              wstring ws = s.toUTF16();
 
               int pos = index + ws.length;
               buffer[index .. pos] = ws;
@@ -590,7 +592,7 @@ final class RegistryKey {
         int ret = RegEnumValue(hkey_, i, name.ptr, nameLen, null, null, null, null);
         if (ret != ERROR_SUCCESS)
           throw new Win32Exception(ret);
-        names[i] = .toUtf8(name[0 .. nameLen].ptr);
+        names[i] = to!string(name[0 .. nameLen]);
       }
     }
 
@@ -622,7 +624,7 @@ final class RegistryKey {
         int ret = RegEnumKeyEx(hkey_, i, name.ptr, nameLen, null, null, null, null);
         if (ret != ERROR_SUCCESS)
           throw new Win32Exception(ret);
-        names[i] = .toUtf8(name[0 .. nameLen].ptr);
+        names[i] = to!string(name[0 .. nameLen]);
       }
     }
 

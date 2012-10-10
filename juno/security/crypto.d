@@ -21,6 +21,9 @@ static import std.string;
 import std.c.string : memmove;
 import std.c.stdlib : malloc, free;
 
+import std.conv;
+import std.utf : toUTFz;
+
 pragma(lib, "crypt32.lib");
 
 debug import std.stdio : writefln;
@@ -117,7 +120,7 @@ class CryptoException : Exception {
     wchar[256] buffer;
     uint result = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, null, errorCode, 0, buffer.ptr, buffer.length + 1, null);
     if (result != 0)
-      return toUtf8(buffer[0 .. result]);
+      return to!string(buffer[0 .. result]);
     return std.string.format("Unspecified error (0x%08X)", errorCode);
   }
 
@@ -800,7 +803,7 @@ private final class CAPIHashAlgorithm {
   this(string provider, uint providerType, uint algorithm) {
     algorithm_ = algorithm;
 
-    if (!CryptAcquireContext(provider_, null, provider.toUtf16z(), providerType, CRYPT_VERIFYCONTEXT))
+    if (!CryptAcquireContext(provider_, null, provider.toUTF16z(), providerType, CRYPT_VERIFYCONTEXT))
       throw new CryptoException(GetLastError());
 
     initialize();
@@ -1793,7 +1796,7 @@ private HashAlgorithm nameToHashAlgorithm(string algorithm) {
 
 private uint oidToAlgId(string oid) {
   CRYPT_OID_INFO oidInfo;
-  if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_OID_KEY, oid.toUtf8z(), 0))
+  if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_OID_KEY, oid.toUTFz!(char*)(), 0))
     oidInfo = *pOidInfo;
   uint algId = oidInfo.Algid;
   // Default to SHA1
@@ -2044,7 +2047,7 @@ final class RsaCryptoServiceProvider : Rsa {
   ///
   ubyte[] signData(ubyte[] buffer, uint offset, uint count, string algorithm) {
     CRYPT_OID_INFO oidInfo;
-    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUtf16z(), 0))
+    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
     string oid = toUtf8(oidInfo.pszOID);
 
@@ -2061,7 +2064,7 @@ final class RsaCryptoServiceProvider : Rsa {
   /// ditto
   ubyte[] signData(Stream input, string algorithm) {
     CRYPT_OID_INFO oidInfo;
-    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUtf16z(), 0))
+    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
     string oid = toUtf8(oidInfo.pszOID);
 
@@ -2101,7 +2104,7 @@ final class RsaCryptoServiceProvider : Rsa {
   ///
   bool verifyData(ubyte[] data, uint offset, uint count, string algorithm, ubyte[] signature) {
     CRYPT_OID_INFO oidInfo;
-    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUtf16z(), 0))
+    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
     string oid = toUtf8(oidInfo.pszOID);
 
@@ -2113,7 +2116,7 @@ final class RsaCryptoServiceProvider : Rsa {
   ///
   bool verifyData(Stream data, string algorithm, ubyte[] signature) {
     CRYPT_OID_INFO oidInfo;
-    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUtf16z(), 0))
+    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
     string oid = toUtf8(oidInfo.pszOID);
 
@@ -2127,7 +2130,7 @@ final class RsaCryptoServiceProvider : Rsa {
     ensureKeyPair();
 
     CRYPT_OID_INFO oidInfo;
-    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_OID_KEY, oid.toUtf8z(), 0))
+    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_OID_KEY, oid.toUTFz!(char*)(), 0))
       oidInfo = *pOidInfo;
 
     Handle tempHash;
@@ -2339,7 +2342,7 @@ final class DsaCryptoServiceProvider : Dsa {
     ensureKeyPair();
 
     CRYPT_OID_INFO oidInfo;
-    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_OID_KEY, oid.toUtf8z(), 0))
+    if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_OID_KEY, oid.toUTFz!(char*)(), 0))
       oidInfo = *pOidInfo;
 
     Handle tempHash;

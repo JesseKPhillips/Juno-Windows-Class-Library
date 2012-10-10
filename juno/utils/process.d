@@ -101,8 +101,8 @@ class Process {
       sei.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_FLAG_NO_UI | SEE_MASK_FLAG_DDEWAIT;
       sei.nShow = /*SW_SHOWNORMAL*/ 1;
 
-      sei.lpFile = start_.fileName.toUtf16z();
-      sei.lpParameters = start_.arguments.toUtf16z();
+      sei.lpFile = start_.fileName.toUTF16z();
+      sei.lpParameters = start_.arguments.toUTF16z();
 
       if (!ShellExecuteEx(sei))
         throw new Win32Exception;
@@ -122,8 +122,8 @@ class Process {
     string commandLine = "\"" ~ start_.fileName ~ "\"";
     if (start_.arguments != null)
       commandLine ~= " " ~ start_.arguments;
-    auto pCommandLine = commandLine.toUtf16z();
-    auto pWorkingDirectory = getcwd().toUtf16z();
+    auto pCommandLine = commandLine.toUTF16z();
+    auto pWorkingDirectory = getcwd().toUTF16z();
     uint creationFlags = 0;
 
     /*if (start_.userName != null) {
@@ -132,7 +132,7 @@ class Process {
         pPassword = secureStringToUnicode(start_.password);
 
       uint logonFlags = 0;
-      if (!CreateProcessWithLogonW(start_.userName.toUtf16z(), pPassword, start_.domain.toUtf16z(), logonFlags, null, pCommandLine, creationFlags, null, pWorkingDirectory, &startupInfo, &processInfo))
+      if (!CreateProcessWithLogonW(start_.userName.toUTF16z(), pPassword, start_.domain.toUTF16z(), logonFlags, null, pCommandLine, creationFlags, null, pWorkingDirectory, &startupInfo, &processInfo))
         throw new Win32Exception;
 
       processHandle = processInfo.hProcess;
@@ -352,7 +352,7 @@ class ServiceController {
 
     auto pArgs = cast(wchar**)LocalAlloc(LMEM_FIXED, args.length * (wchar*).sizeof);
     foreach (i, arg; args)
-      pArgs[i] = arg.toUtf16z();
+      pArgs[i] = arg.toUTF16z();
     scope(exit) LocalFree(pArgs);
 
     if (StartService(serviceHandle, args.length, pArgs) != TRUE)
@@ -417,7 +417,7 @@ class ServiceController {
       if (machineName_ == "." || machineName_ == null)
         serviceManagerHandle_ = OpenSCManager(null, null, SC_MANAGER_CONNECT);
       else
-        serviceManagerHandle_ = OpenSCManager(machineName_.toUtf16z(), null, SC_MANAGER_CONNECT);
+        serviceManagerHandle_ = OpenSCManager(machineName_.toUTF16z(), null, SC_MANAGER_CONNECT);
 
       if (serviceManagerHandle_ == Handle.init)
         throw new Win32Exception;
@@ -426,7 +426,7 @@ class ServiceController {
 
   private Handle getServiceHandle(uint access) {
     ensureServiceManagerHandle();
-    Handle serviceHandle = OpenService(serviceManagerHandle_, serviceName().toUtf16z(), access);
+    Handle serviceHandle = OpenService(serviceManagerHandle_, serviceName().toUTF16z(), access);
     if (serviceHandle == Handle.init)
       throw new Win32Exception;
     return serviceHandle;

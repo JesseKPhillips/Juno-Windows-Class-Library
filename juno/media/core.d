@@ -3229,7 +3229,7 @@ final class Graphics : IDisposable {
       if (font is null)
         throw new ArgumentNullException("font");
 
-      Status status = GdipDrawString(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, brush.nativeBrush_);
+      Status status = GdipDrawString(nativeGraphics_, s.toUTF16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, brush.nativeBrush_);
       if (status != Status.OK)
         throw statusException(status);
     }
@@ -3254,7 +3254,7 @@ final class Graphics : IDisposable {
     RectF boundingBox;
     int codepointsFitted, linesFilled;
 
-    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
+    Status status = GdipMeasureString(nativeGraphics_, s.toUTF16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -3274,7 +3274,7 @@ final class Graphics : IDisposable {
     RectF boundingBox;
     int codepointsFitted, linesFilled;
 
-    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
+    Status status = GdipMeasureString(nativeGraphics_, s.toUTF16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -3293,7 +3293,7 @@ final class Graphics : IDisposable {
     RectF layoutRect = RectF(0, 0, layoutArea.width, layoutArea.height);
     RectF boundingBox;
 
-    Status status = GdipMeasureString(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
+    Status status = GdipMeasureString(nativeGraphics_, s.toUTF16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, boundingBox, codepointsFitted, linesFilled);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -3322,7 +3322,7 @@ final class Graphics : IDisposable {
       nativeRegions[i] = regions[i].nativeRegion_;
     }
 
-    status = GdipMeasureCharacterRanges(nativeGraphics_, s.toUtf16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, regionCount, nativeRegions.ptr);
+    status = GdipMeasureCharacterRanges(nativeGraphics_, s.toUTF16z(), -1, font.nativeFont_, layoutRect, (format is null) ? Handle.init : format.nativeFormat_, regionCount, nativeRegions.ptr);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -6710,8 +6710,8 @@ abstract class Image : IDisposable {
     Handle nativeImage;
 
     Status status = useEmbeddedColorManagement 
-      ? GdipLoadImageFromFileICM(fileName.toUtf16z(), nativeImage)
-      : GdipLoadImageFromFile(fileName.toUtf16z(), nativeImage);
+      ? GdipLoadImageFromFileICM(fileName.toUTF16z(), nativeImage)
+      : GdipLoadImageFromFile(fileName.toUTF16z(), nativeImage);
     if (status != Status.OK)
       throw statusException(status);
 
@@ -6812,7 +6812,7 @@ abstract class Image : IDisposable {
       pParams = encoderParams.forGDIplus();
 
     Guid g = encoder.clsid;
-    Status status = GdipSaveImageToFile(nativeImage_, fileName.toUtf16z(), g, pParams);
+    Status status = GdipSaveImageToFile(nativeImage_, fileName.toUTF16z(), g, pParams);
 
     if (pParams !is null)
       LocalFree(cast(Handle)pParams);
@@ -7070,8 +7070,8 @@ final class Bitmap : Image {
     //fileName = juno.io.path.getFullPath(fileName);
 
     Status status = useEmbeddedColorManagement
-      ? GdipCreateBitmapFromFileICM(fileName.toUtf16z(), nativeImage_)
-      : GdipCreateBitmapFromFile(fileName.toUtf16z(), nativeImage_);
+      ? GdipCreateBitmapFromFileICM(fileName.toUTF16z(), nativeImage_)
+      : GdipCreateBitmapFromFile(fileName.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7150,7 +7150,7 @@ final class Bitmap : Image {
     // MemoryStream which Image.fromStream can use.
 
     Handle nativeImage;
-    Status status = GdipCreateBitmapFromResource(hinstance, bitmapName.toUtf16z(), nativeImage);
+    Status status = GdipCreateBitmapFromResource(hinstance, bitmapName.toUTF16z(), nativeImage);
     if (status != Status.OK)
       throw statusException(status);
     return new Bitmap(nativeImage);
@@ -7347,7 +7347,7 @@ final class Metafile : Image {
     if (!std.file.exists(fileName))
       throw new FileNotFoundException(fileName);
 
-    Status status = GdipCreateMetafileFromFile(fileName.toUtf16z(), nativeImage_);
+    Status status = GdipCreateMetafileFromFile(fileName.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7370,7 +7370,7 @@ final class Metafile : Image {
       }
     }
 
-    Status status = GdipCreateMetafileFromWmfFile(fileName.toUtf16z(), gpheader, nativeImage_);
+    Status status = GdipCreateMetafileFromWmfFile(fileName.toUTF16z(), gpheader, nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7392,7 +7392,7 @@ final class Metafile : Image {
   /**
    */
   this(Handle referenceHdc, EmfType emfType, string description = null) {
-    Status status = GdipRecordMetafile(referenceHdc, emfType, null, MetafileFrameUnit.GdiCompatible, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafile(referenceHdc, emfType, null, MetafileFrameUnit.GdiCompatible, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7400,7 +7400,7 @@ final class Metafile : Image {
   /**
    */
   this(Handle referenceHdc, RectF frameRect, MetafileFrameUnit frameUnit = MetafileFrameUnit.GdiCompatible, EmfType emfType = EmfType.EmfPlusDual, string description = null) {
-    Status status = GdipRecordMetafile(referenceHdc, emfType, &frameRect, frameUnit, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafile(referenceHdc, emfType, &frameRect, frameUnit, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7408,7 +7408,7 @@ final class Metafile : Image {
   /**
    */
   this(Handle referenceHdc, Rect frameRect, MetafileFrameUnit frameUnit = MetafileFrameUnit.GdiCompatible, EmfType emfType = EmfType.EmfPlusDual, string description = null) {
-    Status status = GdipRecordMetafileI(referenceHdc, emfType, &frameRect, frameUnit, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafileI(referenceHdc, emfType, &frameRect, frameUnit, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7416,7 +7416,7 @@ final class Metafile : Image {
   /**
    */
   this(string fileName, Handle referenceHdc, EmfType emfType = EmfType.EmfPlusDual, string description = null) {
-    Status status = GdipRecordMetafileFileName(fileName.toUtf16z(), referenceHdc, emfType, null, MetafileFrameUnit.GdiCompatible, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafileFileName(fileName.toUTF16z(), referenceHdc, emfType, null, MetafileFrameUnit.GdiCompatible, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7424,7 +7424,7 @@ final class Metafile : Image {
   /**
    */
   this(string fileName, Handle referenceHdc, RectF frameRect, MetafileFrameUnit frameUnit = MetafileFrameUnit.GdiCompatible, EmfType emfType = EmfType.EmfPlusDual, string description = null) {
-    Status status = GdipRecordMetafileFileName(fileName.toUtf16z(), referenceHdc, emfType, &frameRect, frameUnit, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafileFileName(fileName.toUTF16z(), referenceHdc, emfType, &frameRect, frameUnit, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7432,7 +7432,7 @@ final class Metafile : Image {
   /**
    */
   this(string fileName, Handle referenceHdc, Rect frameRect, MetafileFrameUnit frameUnit = MetafileFrameUnit.GdiCompatible, EmfType emfType = EmfType.EmfPlusDual, string description = null) {
-    Status status = GdipRecordMetafileFileNameI(fileName.toUtf16z(), referenceHdc, emfType, &frameRect, frameUnit, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafileFileNameI(fileName.toUTF16z(), referenceHdc, emfType, &frameRect, frameUnit, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7443,7 +7443,7 @@ final class Metafile : Image {
     auto s = new COMStream(stream);
     scope(exit) tryRelease(s);
 
-    Status status = GdipRecordMetafileStream(s, referenceHdc, emfType, null, MetafileFrameUnit.GdiCompatible, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafileStream(s, referenceHdc, emfType, null, MetafileFrameUnit.GdiCompatible, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7454,7 +7454,7 @@ final class Metafile : Image {
     auto s = new COMStream(stream);
     scope(exit) tryRelease(s);
 
-    Status status = GdipRecordMetafileStream(s, referenceHdc, emfType, &frameRect, frameUnit, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafileStream(s, referenceHdc, emfType, &frameRect, frameUnit, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7463,7 +7463,7 @@ final class Metafile : Image {
     auto s = new COMStream(stream);
     scope(exit) tryRelease(s);
 
-    Status status = GdipRecordMetafileStreamI(s, referenceHdc, emfType, &frameRect, frameUnit, description.toUtf16z(), nativeImage_);
+    Status status = GdipRecordMetafileStreamI(s, referenceHdc, emfType, &frameRect, frameUnit, description.toUTF16z(), nativeImage_);
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7918,7 +7918,7 @@ final class Path {
    */
   void addString(string s, FontFamily family, FontStyle style, float emSize, PointF origin, StringFormat format) {
     RectF layoutRect = RectF(origin.x, origin.y, 0, 0);
-    Status status = GdipAddPathString(nativePath_, s.toUtf16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
+    Status status = GdipAddPathString(nativePath_, s.toUTF16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7926,7 +7926,7 @@ final class Path {
   /**
    */
   void addString(string s, FontFamily family, FontStyle style, float emSize, RectF layoutRect, StringFormat format) {
-    Status status = GdipAddPathString(nativePath_, s.toUtf16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
+    Status status = GdipAddPathString(nativePath_, s.toUTF16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7935,7 +7935,7 @@ final class Path {
    */
   void addString(string s, FontFamily family, FontStyle style, float emSize, Point origin, StringFormat format) {
     Rect layoutRect = Rect(origin.x, origin.y, 0, 0);
-    Status status = GdipAddPathStringI(nativePath_, s.toUtf16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
+    Status status = GdipAddPathStringI(nativePath_, s.toUTF16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -7943,7 +7943,7 @@ final class Path {
   /**
    */
   void addString(string s, FontFamily family, FontStyle style, float emSize, Rect layoutRect, StringFormat format) {
-    Status status = GdipAddPathStringI(nativePath_, s.toUtf16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
+    Status status = GdipAddPathStringI(nativePath_, s.toUTF16z(), -1, (family is null ? Handle.init : family.nativeFamily_), style, emSize, layoutRect, (format is null ? Handle.init : format.nativeFormat_));
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -8818,7 +8818,7 @@ final class PrivateFontCollection : FontCollection {
   /**
    */
   void addFontFile(string fileName) {
-    Status status = GdipPrivateAddFontFile(nativeFontCollection_, fileName.toUtf16z());
+    Status status = GdipPrivateAddFontFile(nativeFontCollection_, fileName.toUTF16z());
     if (status != Status.OK)
       throw statusException(status);
   }
@@ -8863,7 +8863,7 @@ final class FontFamily : IDisposable {
   /**
    */
   this(string name, FontCollection fontCollection = null) {
-    Status status = GdipCreateFontFamilyFromName(name.toUtf16z(), (fontCollection is null) ? Handle.init : fontCollection.nativeFontCollection_, nativeFamily_);
+    Status status = GdipCreateFontFamilyFromName(name.toUTF16z(), (fontCollection is null) ? Handle.init : fontCollection.nativeFontCollection_, nativeFamily_);
     if (status != Status.OK) {
       if (createDefaultOnFail_) {
         status = GdipGetGenericFontFamilySansSerif(nativeFamily_);
