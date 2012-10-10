@@ -132,7 +132,7 @@ void unlock() {
 ///
 class ClassFactory(T) : Implements!(IClassFactory) {
 
-  int CreateInstance(IUnknown pUnkOuter, ref GUID riid, void** ppvObject) {
+  int CreateInstance(IUnknown pUnkOuter, const ref GUID riid, void** ppvObject) {
     if (pUnkOuter !is null && riid != uuidof!(IUnknown))
       return CLASS_E_NOAGGREGATION;
 
@@ -253,7 +253,7 @@ int DllCanUnloadNowImpl()
 }
 
 ///
-template Export(T...) {
+mixin template Export(T...) {
 
   import juno.base.core;
 
