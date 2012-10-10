@@ -2798,6 +2798,11 @@ static string getErrorMessage(uint errorCode) {
   return std.string.format("Unspecified error (0x%08X)", errorCode);
 }
 
+/**
+ * Generic Win32 Exception.
+ *
+ * The default contructor obtains the last error code and message.
+ */
 class Win32Exception : Exception {
 
   private uint errorCode_;
@@ -2811,7 +2816,7 @@ class Win32Exception : Exception {
     errorCode_ = errorCode;
   }
 
-  uint errorCode() {
+  @property uint errorCode() {
     return errorCode_;
   }
 

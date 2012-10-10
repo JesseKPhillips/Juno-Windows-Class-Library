@@ -432,7 +432,10 @@ class Culture : IFormatProvider {
    * Params: culture = A _culture identifier.
    * Returns: A read-only Culture object.
    */
-  static Culture get(uint culture) {
+  static Culture get(uint culture)
+  in {
+    assert(culture <= 0, "Number greater than zero required.");
+  } body {
     if (culture <= 0)
       throw new ArgumentException("Number greater than zero required.", "culture");
 

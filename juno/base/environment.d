@@ -23,6 +23,10 @@ string getCommandLine() {
   return .toUtf8(GetCommandLine());
 }
 
+unittest {
+  assert(getCommandLine().length > 0);
+}
+
 /**
  * Gets an array containing the command-line arguments.
  */
@@ -38,6 +42,11 @@ string[] getCommandLineArgs() {
 
   LocalFree(argv);
   return a[0 .. argc];
+}
+
+unittest {
+  auto args = getCommandLineArgs();
+  assert(args.length > 0);
 }
 
 /**
@@ -67,6 +76,10 @@ string getUserName() {
   GetUserName(buffer.ptr, size);
 
   return .toUtf8(buffer.ptr, 0, size);
+}
+
+unittest {
+  getUserName();
 }
 
 /**

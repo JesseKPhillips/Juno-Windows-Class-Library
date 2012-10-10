@@ -2745,6 +2745,11 @@ int CoInitialize(void*);
 void CoUninitialize();
 int CoInitializeEx(void*, uint dwCoInit);
 
+unittest {
+  assert(juno.com.core.initAsClient());
+  scope(exit) juno.com.core.shutdown();
+}
+
 void* CoTaskMemAlloc(size_t cb);
 void* CoTaskMemRealloc(void* pv, size_t cb);
 void CoTaskMemFree(void* pv);

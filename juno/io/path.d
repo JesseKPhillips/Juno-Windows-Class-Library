@@ -42,14 +42,6 @@ string tempPath() {
   return std.path.absolutePath(buffer[0 .. len].toUtf8());
 }
 
-/// Creates a uniquely named temporary file on disk and returns the path of that file.
-string tempFileName() {
-  wchar[MaxPath] buffer;
-  GetTempPath(MaxPath, buffer.ptr);
-  GetTempFileName(buffer.ptr, "tmp", 0, buffer.ptr);
-  return toUtf8(buffer.ptr);
-}
-
 deprecated
 package int getRootLength(string path) {
   int i, len = path.length;
@@ -228,7 +220,7 @@ enum SpecialFolder {
 /**
  * Gets the path to the specified system special _folder.
  * Params: folder = A constant that identifies a system special _folder.
- * Returns: The path to the specified system special _folder, if that _folder exists on your computer; otherwise, an empty string.
+ * Returns: The path to the specified system special _folder, if that _folder exists on your computer; otherwise, a null string.
  */
 string getFolderPath(SpecialFolder folder) {
   wchar[MaxPath] buffer;
@@ -236,4 +228,24 @@ string getFolderPath(SpecialFolder folder) {
   if (SHGetFolderPath(Handle.init, cast(int)folder, Handle.init, SHGFP_TYPE_CURRENT, buffer.ptr) == 0)
     return .toUtf8(buffer.ptr);
   return null;
+}
+
+/// Creates a uniquely named temporary file on disk and returns the path of that file.
+string tempFileName() {
+  wchar[MaxPath] buffer;
+  GetTempPath(MaxPath, buffer.ptr);
+  GetTempFileName(buffer.ptr, "tmp", 0, buffer.ptr);
+  return toUtf8(buffer.ptr);
+}
+
+unittest {
+  auto tmp = tempFileName();
+  auto loc = std.path.dirName(tmp);
+  auto fil = std.path.stripExtension(std.path.baseName(tmp));
+  auto ext = std.path.extension(tmp);
+
+  import std.algorithm;
+  assert(loc == std.process.getenv("TEMP"));
+  assert(fil.startsWith("tmp"));
+  assert(ext == ".tmp");
 }
