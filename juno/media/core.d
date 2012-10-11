@@ -1,7 +1,7 @@
 /**
  * Provides access to basic GDI+ graphics functionality.
  *
- * For detailed information, refer to MSDN's documentation for the $(LINK2 http://msdn2.microsoft.com/en-us/library/system.drawing.aspx, System.Drawing) namespace.
+ * For detailed information, refer to MSDN's documentation for the $(MSDN system.drawing, System.Drawing) namespace.
  *
  * Copyright: (c) 2009 John Chapman
  *

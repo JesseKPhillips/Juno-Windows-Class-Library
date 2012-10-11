@@ -17,12 +17,18 @@ struct Struct(T...) {
 
 }
 
+/**
+ * $(MSDN system.idisposable, MSDN System.IDisposable)
+ */
 interface IDisposable {
 
   void dispose();
 
 }
 
+/**
+ * Calls dispose on obj on block() completion.
+ */
 void using(IDisposable obj, void delegate() block) {
   try {
     block();
