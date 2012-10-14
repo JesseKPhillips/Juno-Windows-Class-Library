@@ -3753,7 +3753,7 @@ R invokeMethod(R = VARIANT)(IDispatch target, string name, ...) {
  *
  *   // Invoke the Documents property
  *   //   wordApp.Document
- *   IDispatch documents = getProperty!(IDispatch)(target, "Documents");
+ *   IDispatch documents = getProperty!(IDispatch)(wordApp, "Documents");
  *
  *   // Invoke the Count property on the Documents object
  *   //   documents.Count
