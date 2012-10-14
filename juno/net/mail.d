@@ -32,34 +32,6 @@ enum SmtpDeliveryMethod {
   PickupDirectory ///
 }
 
-// Wrap any exception in SmtpException.
-private R invokeMethod(R = VARIANT)(IDispatch target, string name, ...) {
-  try {
-    return juno.com.core.invokeMethod!(R)(target, name, _arguments, _argptr);
-  }
-  catch (Exception e) {
-    throw new SmtpException(e.msg);
-  }
-}
-
-private R getProperty(R = VARIANT)(IDispatch target, string name, ...) {
-  try {
-    return juno.com.core.getProperty!(R)(target, name, _arguments, _argptr);
-  }
-  catch (Exception e) {
-    throw new SmtpException(e.msg);
-  }
-}
-
-private void setProperty(IDispatch target, string name, ...) {
-  try {
-    juno.com.core.setProperty(target, name, _arguments, _argptr);
-  }
-  catch (Exception e) {
-    throw new SmtpException(e.msg);
-  }
-}
-
 /**
  * Allows applications to send e-mail using the Simple Mail Transfer Protocol (SMTP).
  * Examples:
@@ -89,15 +61,24 @@ private void setProperty(IDispatch target, string name, ...) {
  */
 class SmtpClient {
 
-  private static int defaultPort_ = 25;
+  private static const defaultPort_ = 25;
 
-  private string host_;
-  private int port_;
-  private SmtpDeliveryMethod deliveryMethod_;
-  private string pickupDirectoryLocation_;
-  private ICredentialsByHost credentials_;
-  private bool enableSsl_;
-  private int timeout_;
+  @property {
+    /// Gets or sets the name or IP address of the host used to send an e-mail message.
+    string host;
+    /// Gets or sets the port used to send an e-mail message. The default is 25.
+    int port;
+    /// Specifies how outgoing e-mail messages will be handled.
+    SmtpDeliveryMethod deliveryMethod;
+    /// Gets or sets the folder where applications save mail messages.
+    string pickupDirectoryLocation;
+    /// Gets or sets the credentials used to authenticate the sender.
+    ICredentialsByHost credentials;
+    /// Specifies whether to use Secure Sockets Layer (SSL) to encrypt the connection.
+    bool enableSsl;
+    /// Gets or sets the amount of time after which a send call times out.
+    int timeout;
+  }
 
   ///
   this() {
@@ -106,18 +87,26 @@ class SmtpClient {
 
   ///
   this(string host) {
-    host_ = host;
+    this.host = host;
     initialize();
   }
 
   ///
   this(string host, int port) {
-    host_ = host;
-    port_ = port;
+    this.host = host;
+    this.port = port;
     initialize();
   }
 
-  /// Sends an e-mail _message to an SMTP server for delivery.
+  /**
+   * Sends an e-mail _message to an SMTP server for delivery.
+   *
+   * Throws:
+   *    I do not think this should, but may throw MissingMemberException.
+   * If it does I am interested in hearing about it as it may indicate a
+   * bug or will improve my understanding of how this works. (So file
+   * a bug report).
+   */
   final void send(MailMessage message) {
     auto m = coCreate!(IDispatch)("CDO.Message");
     scope(exit) tryRelease(m);
@@ -131,13 +120,13 @@ class SmtpClient {
     if (message.replyTo !is null)
       setProperty(m, "ReplyTo", message.replyTo.toString());
 
-    if (message.to.count > 0)
+    if (message.to.length > 0)
       setProperty(m, "To", message.to.toString());
 
-    if (message.cc.count > 0)
+    if (message.cc.length > 0)
       setProperty(m, "Cc", message.cc.toString());
 
-    if (message.bcc.count > 0)
+    if (message.bcc.length > 0)
       setProperty(m, "Bcc", message.bcc.toString());
 
     if (message.subject != null)
@@ -213,30 +202,30 @@ class SmtpClient {
 
       //invokeMethod(config, "Load", 2);
 
-      if (deliveryMethod_ == SmtpDeliveryMethod.Network) {
+      if (deliveryMethod == SmtpDeliveryMethod.Network) {
         setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/sendusing", 2);
-        setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpusessl", enableSsl_);
+        setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpusessl", enableSsl);
       }
-      else if (deliveryMethod_ == SmtpDeliveryMethod.PickupDirectory) {
+      else if (deliveryMethod == SmtpDeliveryMethod.PickupDirectory) {
         setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/sendusing", 1);
-        if (pickupDirectoryLocation_ != null)
-          setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserverpickupdirectory", pickupDirectoryLocation_);
+        if (pickupDirectoryLocation != null)
+          setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserverpickupdirectory", pickupDirectoryLocation);
       }
 
-      if (host_ != null)
-        setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserver", host_);
-      if (port_ != 0)
-        setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserverport", port_);
+      if (host != null)
+        setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserver", host);
+      if (port != 0)
+        setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpserverport", port);
 
-      if (credentials_ !is null) {
-        if (auto credential = credentials_.getCredential(host_, port_, "Basic")) {
+      if (credentials !is null) {
+        if (auto credential = credentials.getCredential(host, port, "Basic")) {
           setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpauthenticate", 1);
           setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/sendusername", credential.userName);
           setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/sendpassword", credential.password);
         }
       }
 
-      setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpconnectiontimeout", timeout_ / 1000);
+      setProperty(config, "Fields", "http://schemas.microsoft.com/cdo/configuration/smtpconnectiontimeout", timeout / 1000);
 
       if (auto fields = getProperty!(IDispatch)(config, "Fields")) {
         invokeMethod(fields, "Update");
@@ -278,73 +267,10 @@ class SmtpClient {
     send(new MailMessage(from, recipients, subject, bodyText));
   }
 
-  /// Gets or sets the name or IP address of the _host used to send an e-mail message.
-  final void host(string value) {
-    host_ = value;
-  }
-  /// ditto
-  final string host() {
-    return host_;
-  }
-
-  /// Gets or sets the _port used to send an e-mail message. The default is 25.
-  final void port(int value) {
-    port_ = value;
-  }
-  /// ditto
-  final int port() {
-    return port_;
-  }
-
-  /// Specifies how outgoing e-mail messages will be handled.
-  final void deliveryMethod(SmtpDeliveryMethod value) {
-    deliveryMethod_ = value;
-  }
-  /// ditto
-  final SmtpDeliveryMethod deliveryMethod() {
-    return deliveryMethod_;
-  }
-
-  /// Gets or sets the folder where applications save mail messages.
-  final void pickupDirectoryLocation(string value) {
-    pickupDirectoryLocation_ = value;
-  }
-  /// ditto
-  final string pickupDirectoryLocation() {
-    return pickupDirectoryLocation_;
-  }
-
-  /// Gets or sets the _credentials used to authenticate the sender.
-  final void credentials(ICredentialsByHost value) {
-    credentials_ = value;
-  }
-  /// ditto
-  final ICredentialsByHost credentials() {
-    return credentials_;
-  }
-
-  /// Specifies whether to use Secure Sockets Layer (SSL) to encrypt the connection.
-  final void enableSsl(bool value) {
-    enableSsl_ = value;
-  }
-  /// ditto
-  final bool enableSsl() {
-    return enableSsl_;
-  }
-
-  /// Gets or sets the amount of time after which a send call times out.
-  final void timeout(int value) {
-    timeout_ = value;
-  }
-  /// ditto
-  final int timeout() {
-    return timeout_;
-  }
-
   private void initialize() {
-    timeout_ = 100000;
-    if (port_ == 0)
-      port_ = defaultPort_;
+    timeout = 100000;
+    if (port == 0)
+      port = defaultPort_;
   }
 
 }
@@ -443,9 +369,25 @@ class MailAddress {
 
 }
 
+  string toString(MailAddress[] ma) {
+    string s;
+
+    bool first = true;
+    foreach (address; ma) {
+      if (!first)
+        s ~= ", ";
+      s ~= address.toString();
+      first = false;
+    }
+
+    return s;
+  }
+
+
 /**
  * Stores e-mail addresses associated with an e-mail message.
  */
+deprecated
 class MailAddressCollection : Collection!(MailAddress) {
 
   override string toString() {
@@ -464,6 +406,9 @@ class MailAddressCollection : Collection!(MailAddress) {
 
 }
 
+/**
+ * TODO: Deprecate
+ */
 class NameValueCollection {
 
   private string[string] nameAndValue_;
@@ -529,40 +474,23 @@ enum TransferEncoding {
  */
 class Attachment {
 
-  private string fileName_;
-  private TransferEncoding transferEncoding_ = TransferEncoding.Unknown;
+  @property {
+    /// Gets or sets the name of the attachment file.
+    string fileName;
+    /// Gets or sets the type of encoding of this attachment.
+    TransferEncoding transferEncoding = TransferEncoding.Unknown;
+  }
 
   /// Initializes a new instance.
   this(string fileName) {
-    fileName_ = fileName;
+    this.fileName = fileName;
   }
-
-  @property
-  {
-    /// Gets or sets the name of the attachment file.
-    final void fileName(string value) {
-      fileName_ = value;
-    }
-    /// ditto
-    final string fileName() {
-      return fileName_;
-    }
-    
-    /// Gets or sets the type of encoding of this attachment.
-    final void transferEncoding(TransferEncoding value) {
-      transferEncoding_ = value;
-    }
-    /// ditto
-    final TransferEncoding transferEncoding() {
-      return transferEncoding_;
-    }
-  } //@property
-
 }
 
 /**
  * Stores attachments to be sent as part of an e-mail message.
  */
+deprecated
 class AttachmentCollection : Collection!(Attachment) {
 }
 
@@ -579,19 +507,22 @@ enum MailPriority {
  */
 class MailMessage {
 
-  private MailAddress from_;
-  private MailAddress sender_;
-  private MailAddress replyTo_;
-  private MailAddressCollection to_;
-  private MailAddressCollection cc_;
-  private MailAddressCollection bcc_;
-  private MailPriority priority_;
-  private string subject_;
-  private NameValueCollection headers_;
-  private string bodyText_;
-  private bool isBodyHtml_;
-  private Encoding bodyEncoding_;
-  private AttachmentCollection attachments_;
+  ///
+  @property {
+    MailAddress from;
+    MailAddress sender;
+    MailAddress replyTo;
+    MailAddress[] to;
+    MailAddress[] cc;
+    MailAddress[] bcc;
+    MailPriority priority;
+    string subject;
+    NameValueCollection headers;
+    string bodyText;
+    bool isBodyHtml;
+    Encoding bodyEncoding;
+    Attachment[] attachments;
+  }
 
   /// Initializes a new instance.
   this() {
@@ -604,8 +535,8 @@ class MailMessage {
     if (to == null)
       throw new ArgumentException("The parameter 'to' cannot be an empty string.", "to");
 
-    from_ = new MailAddress(from);
-    this.to.add(new MailAddress(to));
+    this.from = new MailAddress(from);
+    this.to ~= new MailAddress(to);
   }
 
   /// ditto
@@ -622,135 +553,7 @@ class MailMessage {
     if (to is null)
       throw new ArgumentNullException("to");
 
-    from_ = from;
-    this.to.add(to);
+    this.from = from;
+    this.to ~= to;
   }
-
-  @property
-  {
-    /// Gets or sets the _from address.
-    final void from(MailAddress value) {
-      if (value is null)
-        throw new ArgumentNullException("value");
-      from_ = value;
-    }
-    /// ditto
-    final MailAddress from() {
-      return from_;
-    }
-    
-    /// Gets or sets the sender's address.
-    final void sender(MailAddress value) {
-      sender_ = value;
-    }
-    /// ditto
-    final MailAddress sender() {
-      return sender_;
-    }
-    
-    /// Gets or sets the ReplyTo address.
-    final void replyTo(MailAddress value) {
-      replyTo_ = value;
-    }
-    /// ditto
-    final MailAddress replyTo() {
-      return replyTo_;
-    }
-
-    /// Gets the address collection containing the recipients.
-    final MailAddressCollection to() {
-      if (to_ is null)
-        to_ = new MailAddressCollection;
-      return to_;
-    }
-    
-    /// Gets the address collection containing the carbon copy (CC) recipients.
-    final MailAddressCollection cc() {
-      if (cc_ is null)
-        cc_ = new MailAddressCollection;
-      return cc_;
-    }
-    
-    /// Gets the address collection containing the blind carbon copy (BCC) recipients.
-    final MailAddressCollection bcc() {
-      if (bcc_ is null)
-        bcc_ = new MailAddressCollection;
-      return bcc_;
-    }
-    
-    /// Gets or sets the _priority.
-    final void priority(MailPriority value) {
-      priority_ = value;
-    }
-    /// ditto
-    final MailPriority priority() {
-      return priority_;
-    }
-
-    /// Gets or sets the _subject line.
-    final void subject(string value) {
-      subject_ = value;
-    }
-    /// ditto
-    final string subject() {
-      return subject_;
-    }
-    
-    /// Gets the e-mail _headers.
-    final NameValueCollection headers() {
-      if (headers_ is null)
-        headers_ = new NameValueCollection;
-      return headers_;
-    }
-
-    /// Gets or sets the message body.
-    final void bodyText(string value) {
-    
-      bool isAscii(string value) {
-        foreach (ch; value) {
-          if (ch > 0x7f)
-            return false;
-        }
-        return true;
-      }
-    
-      bodyText_ = value;
-      if (bodyEncoding_ is null && bodyText_ != null) {
-        if (isAscii(bodyText_))
-          bodyEncoding_ = Encoding.ASCII();
-        else
-          bodyEncoding_ = Encoding.UTF8();
-      }
-    }
-    /// ditto
-    final string bodyText() {
-      return bodyText_;
-    }
-
-    /// Gets or sets whether the mail message body is in HTML.
-    final void isBodyHtml(bool value) {
-      isBodyHtml_ = value;
-    }
-    /// ditto
-    final bool isBodyHtml() {
-      return isBodyHtml_;
-    }
-    
-    /// Gets or sets the encoding used to encode the message body.
-    final void bodyEncoding(Encoding value) {
-      bodyEncoding_ = value;
-    }
-    /// ditto
-    final Encoding bodyEncoding() {
-      return bodyEncoding_;
-    }
-    
-    /// Gets the attachment collection used to store data attached to this e-mail message.
-    final AttachmentCollection attachments() {
-      if (attachments_ is null)
-        attachments_ = new AttachmentCollection;
-      return attachments_;
-    }
-
-  } //@property
 }
