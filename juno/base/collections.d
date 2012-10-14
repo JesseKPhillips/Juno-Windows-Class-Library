@@ -4,6 +4,7 @@
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.base.collections;
+ deprecated:
 
 import juno.base.core,
   juno.locale.core,
