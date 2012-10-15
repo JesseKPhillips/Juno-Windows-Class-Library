@@ -12,6 +12,8 @@ import juno.base.core,
   juno.base.native;
 static import std.path;
 
+import std.conv;
+
 /// The maximum character length of a path.
 const int MaxPath = 260;
 
@@ -25,21 +27,25 @@ deprecated
 string currentDirectory() {
   wchar[MaxPath + 1] buffer;
   uint len = GetCurrentDirectory(buffer.length, buffer.ptr);
-  return buffer[0 .. len].toUtf8();
+  return to!string(buffer[0 .. len]);
 }
 
 /// Returns the path of the system directory.
 string systemDirectory() {
   wchar[MaxPath + 1] buffer;
   uint len = GetSystemDirectory(buffer.ptr, buffer.length);
-  return buffer[0 .. len].toUtf8();
+  if(!len)
+    throw new Win32Exception();
+  return to!string(buffer[0 .. len]);
 }
 
 /// Returns the path of the system's temporary folder.
 string tempPath() {
   wchar[MaxPath] buffer;
   uint len = GetTempPath(MaxPath, buffer.ptr);
-  return std.path.absolutePath(buffer[0 .. len].toUtf8());
+  if(!len)
+    throw new Win32Exception();
+  return std.path.absolutePath(to!string(buffer[0 .. len]));
 }
 
 deprecated
@@ -225,17 +231,21 @@ enum SpecialFolder {
 string getFolderPath(SpecialFolder folder) {
   wchar[MaxPath] buffer;
   // SHGetFolderPath fails if folder is a virtual folder, eg SpecialFolder.Network.
-  if (SHGetFolderPath(Handle.init, cast(int)folder, Handle.init, SHGFP_TYPE_CURRENT, buffer.ptr) == 0)
-    return .toUtf8(buffer.ptr);
-  return null;
+  auto err = SHGetFolderPath(Handle.init, cast(int)folder, Handle.init, SHGFP_TYPE_CURRENT, buffer.ptr);
+  if(err)
+    return null;
+  return to!string(toArray(buffer.ptr));
 }
 
 /// Creates a uniquely named temporary file on disk and returns the path of that file.
 string tempFileName() {
   wchar[MaxPath] buffer;
-  GetTempPath(MaxPath, buffer.ptr);
-  GetTempFileName(buffer.ptr, "tmp", 0, buffer.ptr);
-  return toUtf8(buffer.ptr);
+  if(!GetTempPath(MaxPath, buffer.ptr))
+    throw new Win32Exception();
+  if(!GetTempFileName(buffer.ptr, "tmp", 0, buffer.ptr))
+    throw new Win32Exception();
+  // The string length is unknown
+  return to!string(toArray(buffer.ptr));
 }
 
 unittest {

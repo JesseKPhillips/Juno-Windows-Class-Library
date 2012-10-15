@@ -196,7 +196,7 @@ class TypeLibrary {
 
     ITypeLib typeLib = null;
     // Try to load the library from fileName.
-    int hr = LoadTypeLib(fileName.toUtf16z(), typeLib);
+    int hr = LoadTypeLib(fileName.toUTF16z(), typeLib);
     if (hr != S_OK) {
       // If that failed, treat filename as a GUID and try to load from the registry.
 

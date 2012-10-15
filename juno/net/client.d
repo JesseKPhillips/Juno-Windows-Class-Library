@@ -18,6 +18,8 @@ import juno.base.core,
   std.stream;
 static import std.c.stdlib;
 
+import std.conv;
+
 debug import std.stdio : writeln, writefln;
 
 interface IBinding : IUnknown {
@@ -521,7 +523,7 @@ private class DownloadBitsCallback : BindStatusCallback {
     Release();
 
     if (FAILED(hresult))
-      throw new NetException(toUtf8(szError));
+      throw new NetException(to!string(toArray(szError)));
 
     if (downloadCompleted !is null)
       downloadCompleted(buffer);
@@ -576,7 +578,7 @@ private ubyte[] downloadBits(string address,
   auto callback = new DownloadBitsCallback(outputStream, downloadCompleted, downloadProgress, async);
 
   IMoniker urlMoniker;
-  int hr = CreateURLMonikerEx(null, address.toUtf16z(), &urlMoniker, URL_MK_UNIFORM);
+  int hr = CreateURLMonikerEx(null, address.toUTF16z(), &urlMoniker, URL_MK_UNIFORM);
   if (FAILED(hr))
     throw new COMException(hr);
   scope(exit) tryRelease(urlMoniker);
@@ -634,7 +636,7 @@ ubyte[] downloadData(string address, DownloadProgressCallback downloadProgress =
   if (downloadProgress !is null)
     callback.downloadProgress = downloadProgress;
 
-  URLOpenStream(null, address.toUtf16z(), 0, callback);
+  URLOpenStream(null, address.toUTF16z(), 0, callback);
   return callback.buffer;*/
   return downloadBits(address, null, null, downloadProgress, false);
 }
@@ -830,9 +832,9 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
         if (state.async) {
           if (state.stage == 1) {
             if (state.uri.scheme == Uri.uriSchemeFtp)
-              FtpOpenFile(state.connection, state.uri.localPath().toUtf16z(), GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_RELOAD, cast(uint)state);
+              FtpOpenFile(state.connection, state.uri.localPath().toUTF16z(), GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_RELOAD, cast(uint)state);
             else
-              HttpOpenRequest(state.connection, state.method.toUtf16z(), state.uri.pathAndQuery().toUtf16z(), null, null, null, INTERNET_FLAG_RELOAD, cast(uint)state);
+              HttpOpenRequest(state.connection, state.method.toUTF16z(), state.uri.pathAndQuery().toUTF16z(), null, null, null, INTERNET_FLAG_RELOAD, cast(uint)state);
             state.stage = 2;
           }
           else if (state.stage == 2) {
@@ -907,10 +909,10 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
   parseUserInfo(address.userInfo, userName, password);
 
   Handle connection = InternetConnect(session,
-                                      address.host().toUtf16z(), 
+                                      address.host().toUTF16z(),
                                       cast(ushort)address.port, 
-                                      userName.toUtf16z(), 
-                                      password.toUtf16z(), 
+                                      userName.toUTF16z(),
+                                      password.toUTF16z(),
                                       schemeIsFtp ? INTERNET_SERVICE_FTP : INTERNET_SERVICE_HTTP, 
                                       INTERNET_FLAG_PASSIVE | INTERNET_FLAG_DONT_CACHE,
                                       cast(uint)state);
@@ -921,7 +923,7 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
 
   if (!async) {
     if (schemeIsFtp) {
-      Handle file = FtpOpenFile(connection, address.localPath().toUtf16z(), GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_RELOAD, cast(uint)state);
+      Handle file = FtpOpenFile(connection, address.localPath().toUTF16z(), GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_RELOAD, cast(uint)state);
       scope(exit) InternetCloseHandle(file);
 
       if (file == Handle.init)
@@ -933,7 +935,7 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
       }
     }
     else {
-      Handle request = HttpOpenRequest(connection, method.toUtf16z(), address.pathAndQuery().toUtf16z(), null, null, null, INTERNET_FLAG_RELOAD, cast(uint)state);
+      Handle request = HttpOpenRequest(connection, method.toUTF16z(), address.pathAndQuery().toUTF16z(), null, null, null, INTERNET_FLAG_RELOAD, cast(uint)state);
       scope(exit) InternetCloseHandle(request);
 
       if (request == Handle.init)
@@ -954,7 +956,7 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
         scope(exit) std.c.stdlib.free(buffer);
 
         HttpQueryInfo(request, HTTP_QUERY_STATUS_TEXT, buffer, &len, null);
-        string statusText = toUtf8(buffer[0 .. len]);
+        string statusText = to!string(buffer[0 .. len]);
 
         throw new NetException(std.string.format("The remote server returned an error: (%s) %s", statusCode, statusText));
       }

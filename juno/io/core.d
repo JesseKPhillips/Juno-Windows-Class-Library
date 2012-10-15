@@ -13,6 +13,9 @@ import juno.base.core,
   std.stream;
 debug import std.stdio : writefln;
 
+import std.conv;
+import std.string;
+
 enum FileAttributes {
   ReadOnly            = 0x00000001,
   Hidden              = 0x00000002,
@@ -37,7 +40,7 @@ package void ioError(uint errorCode, string path) {
     wchar[256] buffer;
     uint result = FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM, null, errorCode, 0, buffer.ptr, buffer.length + 1, null);
     if (result != 0)
-      return .toUtf8(buffer[0 .. result].ptr);
+      return to!string(toArray(buffer.ptr, result));
     return std.string.format("Unspecified error (0x%08X)", errorCode);
   }
 
@@ -251,7 +254,7 @@ class StringWriter : Writer {
       sb_ ~= va_arg!(string)(argptr);
     }
     else if (args.length > 0) {
-      write(format((fmt == null) ? "{0}" : fmt, args, argptr));
+      write(juno.base.string.format((fmt == null) ? "{0}" : fmt, args, argptr));
     }
   }
 
@@ -317,7 +320,7 @@ class StreamWriter : Writer {
       stream_.write(bytes);
     }
     else if (args.length > 0) {
-      write(format((fmt == null) ? "{0}" : fmt, args, argptr));
+      write(juno.base.string.format((fmt == null) ? "{0}" : fmt, args, argptr));
     }
   }
 
@@ -512,13 +515,13 @@ struct Console {
    * Params: value = The text to be displayed in the _title bar of the console.
    */
   static @property void title(string value) {
-    SetConsoleTitle(value.toUtf16z());
+    SetConsoleTitle(value.toUTF16z());
   }
   /// ditto
   static @property string title() {
     wchar[24500] buffer;
     uint len = GetConsoleTitle(buffer.ptr, buffer.length);
-    return .toUtf8(buffer.ptr, 0, len);
+    return to!string(toArray(buffer.ptr, len));
   }
 
   /**

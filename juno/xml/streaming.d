@@ -15,7 +15,9 @@ import juno.base.core,
   juno.com.core,
   juno.xml.core,
   std.stream;
+
 import std.base64;
+import std.conv;
 import std.exception;
 
 enum XmlReaderProperty : uint {
@@ -282,7 +284,7 @@ private int createStreamOnFile(string fileName, uint flags, out IStream result) 
     private Handle handle_;
 
     this(string fileName, uint mode, uint access, uint share) {
-      handle_ = CreateFile(fileName.toUtf16z(), access, share, null, mode, 0, Handle.init);
+      handle_ = CreateFile(fileName.toUTF16z(), access, share, null, mode, 0, Handle.init);
     }
 
     ~this() {
@@ -395,7 +397,7 @@ private int createStreamOnUrl(string uri, out IStream result) {
   result = null;
 
   IMoniker url;
-  int hr = CreateURLMonikerEx(null, uri.toUtf16z(), &url, 1);
+  int hr = CreateURLMonikerEx(null, uri.toUTF16z(), &url, 1);
   scope(exit) tryRelease(url);
 
   if (hr != S_OK)
@@ -425,7 +427,7 @@ abstract class XmlReader {
   static XmlReader create(string inputUri, XmlReaderSettings settings = null, XmlParserContext context = null) {
 
     IStream getStream(string uri) {
-      if (PathIsURL(uri.toUtf16z()))
+      if (PathIsURL(uri.toUTF16z()))
       {
         IStream ret;
         createStreamOnUrl(uri, ret);
@@ -946,7 +948,7 @@ private final class XmlLiteReader : XmlReader {
     stream_ = input;
 
     IUnknown readerInput;
-    hr = CreateXmlReaderInputWithEncodingName(stream_, null, encoding.webName().toUtf16z(), 0, baseUri.toUtf16z(), &readerInput);
+    hr = CreateXmlReaderInputWithEncodingName(stream_, null, encoding.webName().toUTF16z(), 0, baseUri.toUTF16z(), &readerInput);
     if (hr != S_OK)
       throw new COMException(hr);
     hr = readerImpl_.SetInput(readerInput);
@@ -987,11 +989,11 @@ private final class XmlLiteReader : XmlReader {
   }
 
   override bool moveToAttribute(string name) {
-    return readerImpl_.MoveToAttributeByName(name.toUtf16z(), null) != S_FALSE;
+    return readerImpl_.MoveToAttributeByName(name.toUTF16z(), null) != S_FALSE;
   }
 
   override bool moveToAttribute(string localName, string namespaceURI) {
-    return readerImpl_.MoveToAttributeByName(localName.toUtf16z(), namespaceURI.toUtf16z()) != S_FALSE;
+    return readerImpl_.MoveToAttributeByName(localName.toUTF16z(), namespaceURI.toUTF16z()) != S_FALSE;
   }
 
   override bool moveToElement() {
@@ -1044,35 +1046,35 @@ private final class XmlLiteReader : XmlReader {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetBaseUri(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property string name() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetQualifiedName(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property string prefix() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetPrefix(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property string localName() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetLocalName(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property string namespaceURI() {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetNamespaceUri(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property bool hasValue() {
@@ -1083,7 +1085,7 @@ private final class XmlLiteReader : XmlReader {
     wchar* pwsz;
     uint cwch;
     readerImpl_.GetValue(pwsz, cwch);
-    return toUtf8(pwsz, 0, cwch);
+    return to!string(toArray(pwsz, cwch));
   }
 
   override @property int attributeCount() {
@@ -1437,7 +1439,7 @@ private final class XmlLiteWriter : XmlWriter {
     stream_ = output;
 
     IUnknown writerOutput;
-    hr = CreateXmlWriterOutputWithEncodingName(stream_, null, encoding.webName().toUtf16z(), &writerOutput);
+    hr = CreateXmlWriterOutputWithEncodingName(stream_, null, encoding.webName().toUTF16z(), &writerOutput);
     if (hr != S_OK)
       throw new COMException(hr);
     hr = writerImpl_.SetOutput(writerOutput);
@@ -1473,11 +1475,11 @@ private final class XmlLiteWriter : XmlWriter {
   }
 
   override void writeAttributeString(string prefix, string localName, string ns, string value) {
-    writerImpl_.WriteAttributeString(prefix.toUtf16z(), localName.toUtf16z(), ns.toUtf16z(), value.toUtf16z());
+    writerImpl_.WriteAttributeString(prefix.toUTF16z(), localName.toUTF16z(), ns.toUTF16z(), value.toUTF16z());
   }
 
   override void writeCData(string text) {
-    writerImpl_.WriteCData(text.toUtf16z());
+    writerImpl_.WriteCData(text.toUTF16z());
   }
 
   override void writeCharEntity(char ch) {
@@ -1485,19 +1487,19 @@ private final class XmlLiteWriter : XmlWriter {
   }
 
   override void writeChars(in char[] buffer, int index, int count) {
-    writerImpl_.WriteChars(buffer.toUtf16z(index), count);
+    writerImpl_.WriteChars(buffer[index..$].toUTF16z(), count);
   }
 
   override void writeComment(string text) {
-    writerImpl_.WriteComment(text.toUtf16z());
+    writerImpl_.WriteComment(text.toUTF16z());
   }
 
   override void writeDocType(string name, string pubid, string sysid, string subset) {
-    writerImpl_.WriteDocType(name.toUtf16z(), pubid.toUtf16z(), sysid.toUtf16z(), subset.toUtf16z());
+    writerImpl_.WriteDocType(name.toUTF16z(), pubid.toUTF16z(), sysid.toUTF16z(), subset.toUTF16z());
   }
 
   override void writeElementString(string prefix, string localName, string ns, string value) {
-    writerImpl_.WriteElementString(prefix.toUtf16z(), localName.toUtf16z(), ns.toUtf16z(), value.toUtf16z());
+    writerImpl_.WriteElementString(prefix.toUTF16z(), localName.toUTF16z(), ns.toUTF16z(), value.toUTF16z());
   }
 
   override void writeEndDocument() {
@@ -1509,7 +1511,7 @@ private final class XmlLiteWriter : XmlWriter {
   }
 
   override void writeEntityRef(string name) {
-    writerImpl_.WriteEntityRef(name.toUtf16z());
+    writerImpl_.WriteEntityRef(name.toUTF16z());
   }
 
   override void writeFullEndElement() {
@@ -1517,11 +1519,11 @@ private final class XmlLiteWriter : XmlWriter {
   }
 
   override void writeName(string name) {
-    writerImpl_.WriteName(name.toUtf16z());
+    writerImpl_.WriteName(name.toUTF16z());
   }
 
   override void writeNmToken(string name) {
-    writerImpl_.WriteNmToken(name.toUtf16z());
+    writerImpl_.WriteNmToken(name.toUTF16z());
   }
 
   override void writeNode(XmlReader reader, bool defattr) {
@@ -1533,19 +1535,19 @@ private final class XmlLiteWriter : XmlWriter {
   }
 
   override void writeProcessingInstruction(string name, string text) {
-    writerImpl_.WriteProcessingInstruction(name.toUtf16z(), text.toUtf16z());
+    writerImpl_.WriteProcessingInstruction(name.toUTF16z(), text.toUTF16z());
   }
 
   override void writeQualifiedName(string localName, string ns) {
-    writerImpl_.WriteQualifiedName(localName.toUtf16z(), ns.toUtf16z());
+    writerImpl_.WriteQualifiedName(localName.toUTF16z(), ns.toUTF16z());
   }
 
   override void writeRaw(string data) {
-    writerImpl_.WriteRaw(data.toUtf16z());
+    writerImpl_.WriteRaw(data.toUTF16z());
   }
 
   override void writeRaw(string buffer, int index, int count) {
-    writerImpl_.WriteRawChars(buffer.toUtf16z(index), count);
+    writerImpl_.WriteRawChars(buffer[index..$].toUTF16z(), count);
   }
 
   override void writeStartDocument() {
@@ -1557,15 +1559,15 @@ private final class XmlLiteWriter : XmlWriter {
   }
   
   override void writeStartElement(string prefix, string localName, string ns) {
-    writerImpl_.WriteStartElement(prefix.toUtf16z(), localName.toUtf16z(), ns.toUtf16z());
+    writerImpl_.WriteStartElement(prefix.toUTF16z(), localName.toUTF16z(), ns.toUTF16z());
   }
 
   override void writeString(string text) {
-    writerImpl_.WriteString(text.toUtf16z());
+    writerImpl_.WriteString(text.toUTF16z());
   }
 
   override void writeWhitespace(string ws) {
-    writerImpl_.WriteWhitespace(ws.toUtf16z());
+    writerImpl_.WriteWhitespace(ws.toUTF16z());
   }
 
   override void flush() {

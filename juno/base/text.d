@@ -11,6 +11,8 @@ import juno.base.core,
   juno.base.string,
   juno.base.native,
   juno.com.core;
+
+import std.conv;
 import std.string : icmp;
 
 // MLang
@@ -226,12 +228,12 @@ private void initCodePageInfo() {
             for (uint index = 0; index < count; index++) {
               with (cpInfo[index]) {
                 codePageInfoTable[index] = CodePageInfo(
-                  uiCodePage, 
-                  uiFamilyCodePage, 
-                  toUtf8(wszWebCharset.ptr), 
-                  toUtf8(wszHeaderCharset.ptr), 
-                  toUtf8(wszBodyCharset.ptr), 
-                  toUtf8(wszDescription.ptr), 
+                  uiCodePage,
+                  uiFamilyCodePage,
+                  to!string(toArray(wszWebCharset.ptr)),
+                  to!string(toArray(wszHeaderCharset.ptr)),
+                  to!string(toArray(wszBodyCharset.ptr)),
+                  to!string(toArray(wszDescription.ptr)),
                   dwFlags);
               }
             }

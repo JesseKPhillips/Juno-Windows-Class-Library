@@ -7,8 +7,10 @@
  */
 module juno.base.environment;
 
-import std.regex;
+import std.conv;
 import std.process;
+import std.regex;
+import std.string;
 
 import juno.base.core,
   juno.base.string,
@@ -20,7 +22,8 @@ import core.memory;
  * Gets the command line.
  */
 string getCommandLine() {
-  return .toUtf8(GetCommandLine());
+  auto arr = GetCommandLine();
+  return to!string(toArray(arr));
 }
 
 unittest {
@@ -34,14 +37,14 @@ string[] getCommandLineArgs() {
   int argc;
   wchar** argv = CommandLineToArgv(GetCommandLine(), argc);
   if (argc == 0) return null;
+  scope(exit) LocalFree(argv);
 
-  string* a = cast(string*)GC.malloc(argc * string.sizeof);
-  for (int i = 0; i < argc; i++) {
-    a[i] = .toUtf8(argv[i]);
-  }
+  string[] a;
+  a.length = argc;
+  foreach(i, ref s; a)
+    s = to!string(toArray(argv[i]));
 
-  LocalFree(argv);
-  return a[0 .. argc];
+  return a;
 }
 
 unittest {
@@ -51,19 +54,29 @@ unittest {
 
 /**
  * Gets or sets the NetBIOS name of the local computer.
+ *
+ * Throws: Win32Exception
  */
-void getMachineName(string value) {
-  SetComputerName(value.toUtf16z());
+@property void machineName(string value) {
+  if(!SetComputerName(value.toUTF16z()))
+    throw new Win32Exception();
 }
 /// ditto
-string getMachineName() {
+@property string machineName() {
   wchar[256] buffer;
   uint size = buffer.length;
 
   if (!GetComputerName(buffer.ptr, size))
-    throw new InvalidOperationException;
+    throw new Win32Exception();
 
-  return .toUtf8(buffer.ptr, 0, size);
+  return to!string(toArray(buffer.ptr, size));
+}
+
+deprecated
+alias machineName getMachineName;
+
+unittest {
+  machineName();
 }
 
 /**
@@ -73,9 +86,10 @@ string getUserName() {
   wchar[256] buffer;
   uint size = buffer.length;
 
-  GetUserName(buffer.ptr, size);
+  if(!GetUserName(buffer.ptr, size))
+    throw new Win32Exception();
 
-  return .toUtf8(buffer.ptr, 0, size);
+  return to!string(toArray(buffer.ptr, size));
 }
 
 unittest {
