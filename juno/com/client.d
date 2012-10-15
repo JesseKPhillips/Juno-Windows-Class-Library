@@ -476,7 +476,7 @@ class EventProvider(T) : Implements!(T) {
               scope pathKey = typeLibKey.openSubKey(typeLibVersion ~ "\\0\\Win32");
               if (pathKey !is null) {
                 ITypeLib typeLib;
-                if (LoadTypeLib(pathKey.getValue!(string)(null).toUtf16z(), typeLib) == S_OK) {
+                if (LoadTypeLib(pathKey.getValue!(string)(null).toUTF16z(), typeLib) == S_OK) {
                   scope(exit) tryRelease(typeLib);
 
                   ITypeInfo typeInfo;
@@ -559,4 +559,12 @@ class EventProvider(T) : Implements!(T) {
     return S_OK;
   }
 
+}
+
+// Forces compilation of template class
+unittest {
+  interface TestEvents : IDispatch {
+      mixin(uuid("00000000-272f-11d2-836f-0000f87a7782"));
+  }
+  EventProvider!(TestEvents) events;
 }
