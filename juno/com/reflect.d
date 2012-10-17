@@ -1417,10 +1417,14 @@ class Parameter {
         auto bufferSize = (funcDesc.cParams + 1) * (wchar*).sizeof;
         wchar** bstrNames = cast(wchar**)CoTaskMemAlloc(bufferSize);
         scope(exit) CoTaskMemFree(bstrNames);
+        // The element at 0 is the name of the function. We've already got
+        // this, so free it.
+        freeBstr(bstrNames[0]);
 
         memset(bstrNames, 0, bufferSize);
 
         uint count;
+        // GetNames Allocates bstrNames
         checkHResult(method.typeInfo_.GetNames(funcDesc.memid, bstrNames, funcDesc.cParams + 1, count));
 
         //if ((funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUT) || (funcDesc.invkind & INVOKEKIND.INVOKE_PROPERTYPUTREF))
@@ -1440,6 +1444,8 @@ class Parameter {
               attrs |= (ParameterAttributes.In | ParameterAttributes.Out);
             }
             
+            // fromBstr Deallocates bstrNames
+            // Position 0 deallocated early
             params ~= new Parameter(method, fromBstr(bstrNames[pos + 1]), paramType, pos, attrs);
           }
         }
