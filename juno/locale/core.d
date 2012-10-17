@@ -41,19 +41,41 @@ static ~this() {
   regionNameToLcidMap = null;
 }
 
-package wchar* toUTF16zNls(string s, int offset, int length, out int translated) {
+package wchar* toUTF16zNls(string s, int offset, int len, out int translated) {
   translated = 0;
   if (s.length == 0)
     return null;
 
-  auto pChars = s.ptr + offset;
-  int cch = MultiByteToWideChar(CP_UTF8, 0, pChars, length, null, 0);
+  // Function requires inclusion of null
+  auto nulled = s[offset..len] ~ "\0";
+  len = nulled.length;
+
+  auto pChars = nulled.ptr;
+  int cch = MultiByteToWideChar(CP_UTF8, 0, pChars, len, null, 0);
   if (cch == 0)
     return null;
 
   wchar[] result = new wchar[cch];
-  translated = MultiByteToWideChar(CP_UTF8, 0, pChars, length, result.ptr, cch);
+  translated = MultiByteToWideChar(CP_UTF8, 0, pChars, len, result.ptr, cch);
+  --translated;
   return result.ptr;
+}
+
+unittest {
+    import std.utf;
+    import juno.base.string;
+    auto str = "Hello, this is testing";
+    int trans;
+    assert(toArray(toUTF16zNls(str, 0, str.length, trans))
+            == toArray(toUTFz!(wchar*)(str)));
+    assert(trans == 22);
+
+    str = "\u25A2\u25B7";
+    auto arr1 = toArray(toUTF16zNls(str, 0, str.length, trans));
+    auto arr2 = toArray(toUTFz!(wchar*)(str));
+    assert(trans == 2);
+    assert(to!string(arr1) == str);
+    assert(arr1 == arr2);
 }
 
 package string toUTF8Nls(in wchar* pChars, int cch, out int translated) {
@@ -66,6 +88,20 @@ package string toUTF8Nls(in wchar* pChars, int cch, out int translated) {
   char[] result = new char[cb];
   translated = WideCharToMultiByte(CP_UTF8, 0, pChars, cch, result.ptr, cb, null, null);
   return cast(string)result;
+}
+
+unittest {
+    import std.utf;
+    import juno.base.string;
+    auto str = "Hello, this is testing"w;
+    int trans;
+    assert(toUTF8Nls(str.ptr, 22, trans) == to!string(str));
+    assert(trans == 22);
+
+    str = "\u25A2\u25B7"w;
+    auto arr1 = toUTF8Nls(str.ptr, 2, trans);
+    assert(trans == to!string(str).length, to!string(str.length));
+    assert(arr1 == to!string(str));
 }
 
 package string getLocaleInfo(uint locale, uint field, bool userOverride = true) {
