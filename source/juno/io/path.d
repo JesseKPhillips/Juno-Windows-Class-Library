@@ -150,7 +150,7 @@ string getFileName(string path) {
  */
 deprecated
 string getFullPath(string path) {
-  auto p = path.toUtf16z();
+  auto p = path.toUTF16z();
 
   auto buffer = new wchar[MaxPath + 1];
   auto bufferLength = GetFullPathName(p, MaxPath + 1, buffer.ptr, null);
@@ -171,10 +171,10 @@ string getFullPath(string path) {
     bufferLength = GetLongPathName(buffer.ptr, tempBuffer.ptr, MaxPath);
 
     if (bufferLength > 0)
-      return tempBuffer[0 .. bufferLength].toUtf8();
+      return to!string(tempBuffer[0 .. bufferLength]);
   }
 
-  return buffer[0 .. bufferLength].toUtf8();
+  return to!string(buffer[0 .. bufferLength]);
 }
 
 /// Specifies constants used to retrieve directory paths to system special folders.

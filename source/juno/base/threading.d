@@ -13,6 +13,8 @@ import juno.base.core,
   juno.base.native,
   juno.base.time;
 
+import std.utf;
+
 /**
  *   $(RED Deprecated.
  *         Please use core.thread.sleep instead.)
@@ -140,11 +142,11 @@ final class ManualResetEvent : EventWaitHandle {
 final class Mutex : WaitHandle {
 
   this(bool initiallyOwned = false, string name = null) {
-    Handle hMutex = CreateMutex(null, (initiallyOwned ? 1 : 0), name.toUtf16z());
+    Handle hMutex = CreateMutex(null, (initiallyOwned ? 1 : 0), name.toUTF16z());
     uint error = GetLastError();
 
     if (error == ERROR_ACCESS_DENIED && (hMutex == Handle.init || hMutex == INVALID_HANDLE_VALUE))
-      hMutex = OpenMutex(MUTEX_MODIFY_STATE | SYNCHRONIZE, 0, name.toUtf16z());
+      hMutex = OpenMutex(MUTEX_MODIFY_STATE | SYNCHRONIZE, 0, name.toUTF16z());
 
     handle_ = hMutex;
   }
@@ -158,7 +160,7 @@ final class Mutex : WaitHandle {
 final class Semaphore : WaitHandle {
 
   this(int initialCount, int maximumCount, string name = null) {
-    handle_ = CreateSemaphore(null, initialCount, maximumCount, name.toUtf16z());
+    handle_ = CreateSemaphore(null, initialCount, maximumCount, name.toUTF16z());
   }
 
   int release(int releaseCount = 1) {
