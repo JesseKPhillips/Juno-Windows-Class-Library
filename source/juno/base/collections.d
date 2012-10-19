@@ -4,12 +4,13 @@
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.base.collections;
- deprecated:
 
 import juno.base.core,
   juno.locale.core,
   std.math;
 import std.c.string : memmove, memset;
+
+import std.conv;
 
 /**
  * <code>bool delegate(T a, T b)</code>
@@ -253,13 +254,13 @@ abstract class Comparer(T) : IComparer!(T) {
  *   length = The number of elements in the range to _sort.
  *   comparison = The Comparison(T) to use when comparing element.
  */
-void sort(T, TIndex = int, TLength = TIndex)(T[] array, TIndex index, TLength length, int delegate(T, T) comparison = null) {
+void sort(T, TIndex = size_t, TLength = TIndex)(T[] array, TIndex index, TLength length, int delegate(T, T) comparison = null) {
 
-  void quickSortImpl(int left, int right) {
+  void quickSortImpl(size_t left, size_t right) {
     if (left >= right)
       return;
 
-    int i = left, j = right;
+    TLength i = left, j = right;
     T pivot = array[i + ((j - i) >> 1)];
 
     do {
@@ -303,24 +304,26 @@ void sort(T)(T[] array, int delegate(T, T) comparison = null) {
 
 /**
  * Searches a range of elements in an _array for a value using the specified Comparison(T).
+ *
+ * TODO: deprecated use std.algorithms.binarySearch
  * Params:
  *   array = The _array to search.
  *   index = The starting _index of the range to search.
  *   length = The number of elements in the range to search.
  *   comparison = The Comparison(T) to use when comparing elements.
  */
-int binarySearch(T, TIndex = int, TLength = TIndex)(T[] array, TIndex index, TLength length, T value, int delegate(T, T) comparison = null) {
+sizediff_t binarySearch(T, TIndex = size_t, TLength = TIndex)(T[] array, TIndex index, TLength length, T value, int delegate(T, T) comparison = null) {
   if (comparison is null) {
     comparison = (T a, T b) {
       return comparisonImpl(a, b);
     };
   }
 
-  int lo = cast(int)index;
-  int hi = cast(int)(index + length - 1);
+  auto lo = to!(sizediff_t)(index);
+  auto hi = to!(sizediff_t)((index + length - 1));
   while (lo <= hi) {
-    int i = lo + ((hi - lo) >> 1);
-    int order = comparison(array[i], value);
+    auto i = lo + ((hi - lo) >> 1);
+    auto order = comparison(array[i], value);
     if (order == 0)
       return i;
     if (order < 0)
@@ -410,7 +413,7 @@ interface ICollection(T) : IEnumerable!(T) {
   /**
    * $(I Property.) Gets the number of elements in the collection.
    */
-  @property int count();
+  @property size_t count();
 
 }
 
@@ -419,7 +422,7 @@ interface ICollection(T) : IEnumerable!(T) {
  */
 interface IList(T) : ICollection!(T) {
 
-  int indexOf(T item);
+  size_t indexOf(T item);
 
   /**
    * Inserts an _item at the specified _index.
@@ -427,13 +430,13 @@ interface IList(T) : ICollection!(T) {
    *   index = The _index at which item should be inserted.
    *   item = The object to insert.
    */
-  void insert(int index, T item);
+  void insert(size_t index, T item);
 
   /**
    * Removes the item at the specified _index.
    * Params: index = The _index of the item to remove.
    */
-  void removeAt(int index);
+  void removeAt(size_t index);
 
   /**
    * Gets or sets the object at the specified _index.
@@ -441,12 +444,12 @@ interface IList(T) : ICollection!(T) {
    *   value = The item at the specified _index.
    *   index = The _index of the item to get or set.
    */
-  void opIndexAssign(T value, int index);
+  void opIndexAssign(T value, size_t index);
 
   /**
    * ditto
    */
-  T opIndex(int index);
+  T opIndex(size_t index);
 
 }
 
@@ -455,18 +458,18 @@ interface IList(T) : ICollection!(T) {
  */
 class List(T) : IList!(T) {
 
-  private enum DEFAULT_CAPACITY = 4;
+  private const int DEFAULT_CAPACITY = 4;
 
   private T[] items_;
-  private int size_;
+  private size_t size_;
 
-  private int index_;
+  private size_t index_;
 
   /**
    * Initializes a new instance with the specified _capacity.
    * Params: capacity = The number of elements the new list can store.
    */
-  this(int capacity = 0) {
+  this(size_t capacity = 0) {
     items_.length = capacity;
   }
 
@@ -519,7 +522,7 @@ class List(T) : IList!(T) {
    *   index = The _index at which item should be inserted.
    *   item = The element to insert.
    */
-  final void insert(int index, T item) {
+  final void insert(size_t index, T item) {
     if (size_ == items_.length)
       ensureCapacity(size_ + 1);
 
@@ -536,7 +539,7 @@ class List(T) : IList!(T) {
    *   index = The _index at which the new elements should be inserted.
    *   range = The _range whose elements should be inserted into the list.
    */
-  final void insertRange(int index, T[] range) {
+  final void insertRange(size_t index, T[] range) {
     foreach (item; range) {
       insert(index++, item);
     }
@@ -545,7 +548,7 @@ class List(T) : IList!(T) {
   /**
    * ditto
    */
-  final void insertRange(int index, IEnumerable!(T) range) {
+  final void insertRange(size_t index, IEnumerable!(T) range) {
     foreach (item; range) {
       insert(index++, item);
     }
@@ -554,7 +557,7 @@ class List(T) : IList!(T) {
   /**
    */
   final bool remove(T item) {
-    int index = indexOf(item);
+    size_t index = indexOf(item);
 
     if (index < 0)
       return false;
@@ -563,7 +566,7 @@ class List(T) : IList!(T) {
     return true;
   }
 
-  final void removeAt(int index) {
+  final void removeAt(size_t index) {
     size_--;
     if (index < size_)
       .copy(items_, index + 1, items_, index, size_ - index);
@@ -572,7 +575,7 @@ class List(T) : IList!(T) {
 
   /**
    */
-  final void removeRange(int index, int count) {
+  final void removeRange(size_t index, size_t count) {
     if (count > 0) {
       size_ -= count;
       if (index < size_)
@@ -602,13 +605,13 @@ class List(T) : IList!(T) {
 
   /**
    */
-  final int indexOf(T item) {
+  final size_t indexOf(T item) {
     return indexOf(item, null);
   }
 
   /**
    */
-  final int indexOf(T item, EqualityComparison!(T) comparison) {
+  final size_t indexOf(T item, EqualityComparison!(T) comparison) {
     if (comparison is null) {
       comparison = (T a, T b) {
         return equalityComparisonImpl(a, b);
@@ -625,7 +628,7 @@ class List(T) : IList!(T) {
 
   /**
    */
-  final int lastIndexOf(T item, EqualityComparison!(T) comparison = null) {
+  final size_t lastIndexOf(T item, EqualityComparison!(T) comparison = null) {
     if (comparison is null) {
       comparison = (T a, T b) {
         return equalityComparisonImpl(a, b);
@@ -648,7 +651,7 @@ class List(T) : IList!(T) {
 
   /**
    */
-  final int binarySearch(T item, Comparison!(T) comparison = null) {
+  final sizediff_t binarySearch(T item, Comparison!(T) comparison = null) {
     return .binarySearch(items_, 0, size_, item, comparison);
   }
 
@@ -697,7 +700,7 @@ class List(T) : IList!(T) {
 
   /**
    */
-  final int findIndex(Predicate!(T) match) {
+  final size_t findIndex(Predicate!(T) match) {
     for (auto i = 0; i < size_; i++) {
       if (match(items_[i]))
         return i;
@@ -707,7 +710,7 @@ class List(T) : IList!(T) {
 
   /**
    */
-  final int findLastIndex(Predicate!(T) match) {
+  final size_t findLastIndex(Predicate!(T) match) {
     for (auto i = size_ - 1; i >= 0; i--) {
       if (match(items_[i]))
         return i;
@@ -741,7 +744,7 @@ class List(T) : IList!(T) {
 
   /**
    */
-  final List!(T) getRange(int index, int count) {
+  final List!(T) getRange(size_t index, size_t count) {
     auto list = new List!(T)(count);
     list.items_[0 .. count] = items_[index .. index + count];
     list.size_ = count;
@@ -759,24 +762,24 @@ class List(T) : IList!(T) {
     return list;
   }
 
-  final int count() {
+  final size_t count() {
     return size_;
   }
 
-  final @property void capacity(int value) {
+  final @property void capacity(size_t value) {
     items_.length = value;
   }
-  final @property int capacity() {
+  final @property size_t capacity() {
     return items_.length;
   }
 
-  final void opIndexAssign(T value, int index) {
+  final void opIndexAssign(T value, size_t index) {
     if (index >= size_)
       throw new ArgumentOutOfRangeException("index");
 
     items_[index] = value;
   }
-  final T opIndex(int index) {
+  final T opIndex(size_t index) {
     if (index >= size_)
       throw new ArgumentOutOfRangeException("index");
 
@@ -831,9 +834,9 @@ class List(T) : IList!(T) {
     return contains(item);
   }
 
-  private void ensureCapacity(int min) {
+  private void ensureCapacity(size_t min) {
     if (items_.length < min) {
-      int n = (items_.length == 0) ? DEFAULT_CAPACITY : items_.length * 2;
+      size_t n = (items_.length == 0) ? DEFAULT_CAPACITY : items_.length * 2;
       if (n < min)
         n = min;
       this.capacity = n;
@@ -852,7 +855,7 @@ class ReadOnlyList(T) : IList!(T) {
     list_ = list;
   }
 
-  final int indexOf(T item) {
+  final size_t indexOf(T item) {
     return list_.indexOf(item);
   }
 
@@ -864,11 +867,11 @@ class ReadOnlyList(T) : IList!(T) {
     list_.clear();
   }
 
-  final int count() {
+  final size_t count() {
     return list_.count;
   }
 
-  final T opIndex(int index) {
+  final T opIndex(size_t index) {
     return list_[index];
   }
 
@@ -895,7 +898,7 @@ class ReadOnlyList(T) : IList!(T) {
     throw new NotSupportedException;
   }
 
-  protected void insert(int index, T item) {
+  protected void insert(size_t index, T item) {
     throw new NotSupportedException;
   }
 
@@ -903,11 +906,11 @@ class ReadOnlyList(T) : IList!(T) {
     throw new NotSupportedException;
   }
 
-  protected void removeAt(int index) {
+  protected void removeAt(size_t index) {
     throw new NotSupportedException;
   }
 
-  protected void opIndexAssign(T item, int index) {
+  protected void opIndexAssign(T item, size_t index) {
     throw new NotSupportedException;
   }
 
@@ -933,19 +936,19 @@ class Collection(T) : IList!(T) {
     insertItem(items_.count, item);
   }
 
-  final void insert(int index, T item) {
+  final void insert(size_t index, T item) {
     insertItem(index, item);
   }
 
   final bool remove(T item) {
-    int index = items_.indexOf(item);
+    size_t index = items_.indexOf(item);
     if (index < 0)
       return false;
     removeItem(index);
     return true;
   }
 
-  final void removeAt(int index) {
+  final void removeAt(size_t index) {
     removeItem(index);
   }
 
@@ -953,7 +956,7 @@ class Collection(T) : IList!(T) {
     clearItems();
   }
 
-  final int indexOf(T item) {
+  final size_t indexOf(T item) {
     return items_.indexOf(item);
   }
 
@@ -961,14 +964,14 @@ class Collection(T) : IList!(T) {
     return items_.contains(item);
   }
 
-  @property final int count() {
+  @property final size_t count() {
     return items_.count;
   }
 
-  final void opIndexAssign(T value, int index) {
+  final void opIndexAssign(T value, size_t index) {
     setItem(index, value);
   }
-  final T opIndex(int index) {
+  final T opIndex(size_t index) {
     return items_[index];
   }
 
@@ -991,11 +994,11 @@ class Collection(T) : IList!(T) {
     }
   }
 
-  protected void insertItem(int index, T item) {
+  protected void insertItem(size_t index, T item) {
     items_.insert(index, item);
   }
 
-  protected void removeItem(int index) {
+  protected void removeItem(size_t index) {
     items_.removeAt(index);
   }
 
@@ -1003,7 +1006,7 @@ class Collection(T) : IList!(T) {
     items_.clear();
   }
 
-  protected void setItem(int index, T value) {
+  protected void setItem(size_t index, T value) {
     items_[index] = value;
   }
 
@@ -1130,7 +1133,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
 
     /**
      */
-    int count() {
+    size_t count() {
       return this.outer.count;
     }
 
@@ -1191,7 +1194,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
 
     /**
      */
-    int count() {
+    size_t count() {
       return this.outer.count;
     }
 
@@ -1247,7 +1250,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
   private IEqualityComparer!(K) comparer_;
   private int[] buckets_;
   private Entry[] entries_;
-  private int count_;
+  private size_t count_;
   private int freeList_;
   private int freeCount_;
 
@@ -1260,7 +1263,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
 
   /**
    */
-  this(int capacity = 0, IEqualityComparer!(K) comparer = null) {
+  this(size_t capacity = 0, IEqualityComparer!(K) comparer = null) {
     if (capacity > 0)
       initialize(capacity);
     if (comparer is null)
@@ -1337,7 +1340,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
   /**
    */
   final bool tryGetValue(K key, out V value) {
-    int index = findEntry(key);
+    size_t index = findEntry(key);
     if (index >= 0) {
       value = entries_[index].value;
       return true;
@@ -1364,7 +1367,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
 
   /**
    */
-  final int count() {
+  final size_t count() {
     return count_ - freeCount_;
   }
 
@@ -1377,7 +1380,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
    * ditto
    */
   final V opIndex(K key) {
-    int index = findEntry(key);
+    size_t index = findEntry(key);
     if (index >= 0)
       return entries_[index].value;
     throw new KeyNotFoundException;
@@ -1415,7 +1418,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
     }
   }
 
-  private void initialize(int capacity) {
+  private void initialize(size_t capacity) {
     buckets_.length = entries_.length = getPrime(capacity);
     buckets_[] = -1;
   }
@@ -1431,7 +1434,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
       }
     }
 
-    int index;
+    size_t index;
     if (freeCount_ > 0) {
       index = freeList_;
       freeList_ = entries_[index].next;
@@ -1486,7 +1489,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
   }
 
   protected bool remove(KeyValuePair!(K, V) pair) {
-    int index = findEntry(pair.key);
+    size_t index = findEntry(pair.key);
     if (index >= 0 && EqualityComparer!(V).instance.equals(entries_[index].value, pair.value)) {
       remove(pair.key);
       return true;
@@ -1495,7 +1498,7 @@ class Dictionary(K, V) : IDictionary!(K, V) {
   }
 
   protected bool contains(KeyValuePair!(K, V) pair) {
-    int index = findEntry(pair.key);
+    size_t index = findEntry(pair.key);
     return index >= 0 && EqualityComparer!(V).instance.equals(entries_[index].value, pair.value);
   }
 
@@ -1505,20 +1508,20 @@ class Dictionary(K, V) : IDictionary!(K, V) {
  */
 class Queue(T) : IEnumerable!(T) {
 
-  private const int DEFAULT_CAPACITY = 4;
+  private const ubyte DEFAULT_CAPACITY = 4;
 
   private T[] array_;
   private int head_;
   private int tail_;
-  private int size_;
+  private size_t size_;
 
   version (UseRanges) {
-    private int currentIndex_ = -2;
+    private size_t currentIndex_ = -2;
   }
 
   /**
    */
-  this(int capacity = 0) {
+  this(size_t capacity = 0) {
     array_.length = capacity;
   }
 
@@ -1574,8 +1577,8 @@ class Queue(T) : IEnumerable!(T) {
   /**
    */
   final bool contains(T item) {
-    int index = head_;
-    int count = size_;
+    size_t index = head_;
+    size_t count = size_;
 
     auto comparer = EqualityComparer!(T).instance;
     while (count-- > 0) {
@@ -1606,7 +1609,7 @@ class Queue(T) : IEnumerable!(T) {
   /**
    * $(I Property.)
    */
-  final int count() {
+  final size_t count() {
     return size_;
   }
 
@@ -1648,7 +1651,7 @@ class Queue(T) : IEnumerable!(T) {
     }
   }
 
-  private void setCapacity(int capacity) {
+  private void setCapacity(size_t capacity) {
     T[] newArray = new T[capacity];
     if (size_ > 0) {
       if (head_ < tail_) {
@@ -1669,36 +1672,36 @@ class Queue(T) : IEnumerable!(T) {
 
 class SortedList(K, V) {
 
-  private const int DEFAULT_CAPACITY = 4;
+  private const ubyte DEFAULT_CAPACITY = 4;
 
   private IComparer!(K) comparer_;
   private K[] keys_;
   private V[] values_;
-  private int size_;
+  private size_t size_;
 
   this() {
     comparer_ = Comparer!(K).instance;
   }
 
-  this(int capacity) {
+  this(size_t capacity) {
     keys_.length = capacity;
     values_.length = capacity;
     comparer_ = Comparer!(K).instance;
   }
 
   final void add(K key, V value) {
-    int index = binarySearch!(K)(keys_, 0, size_, key, &comparer_.compare);
+    sizediff_t index = binarySearch!(K)(keys_, 0, size_, key, &comparer_.compare);
     insert(~index, key, value);
   }
 
   final bool remove(K key) {
-    int index = indexOfKey(key);
+    sizediff_t index = indexOfKey(key);
     if (index >= 0)
       removeAt(index);
     return index >= 0;
   }
 
-  final void removeAt(int index) {
+  final void removeAt(size_t index) {
     size_--;
     if (index < size_) {
       .copy(keys_, index + 1, keys_, index, size_ - index);
@@ -1714,14 +1717,14 @@ class SortedList(K, V) {
     size_ = 0;
   }
 
-  final int indexOfKey(K key) {
-    int index = binarySearch!(K)(keys_, 0, size_, key, &comparer_.compare);
+  final sizediff_t indexOfKey(K key) {
+    sizediff_t index = binarySearch!(K)(keys_, 0, size_, key, &comparer_.compare);
     if (index < 0)
       return -1;
     return index;
   }
 
-  final int indexOfValue(V value) {
+  final size_t indexOfValue(V value) {
     foreach (i, v; values_) {
       if (equalityComparisonImpl(v, value))
         return i;
@@ -1737,7 +1740,7 @@ class SortedList(K, V) {
     return indexOfValue(value) >= 0;
   }
 
-  final int count() {
+  final size_t count() {
     return size_;
   }
 
@@ -1760,13 +1763,13 @@ class SortedList(K, V) {
   }
 
   final V opIndex(K key) {
-    int index = indexOfKey(key);
+    sizediff_t index = indexOfKey(key);
     if (index >= 0)
       return values_[index];
     return V.init;
   }
 
-  private void insert(int index, K key, V value) {
+  private void insert(size_t index, K key, V value) {
     if (size_ == keys_.length)
       ensureCapacity(size_ + 1);
 
@@ -1780,7 +1783,7 @@ class SortedList(K, V) {
     size_++;
   }
 
-  private void ensureCapacity(int min) {
+  private void ensureCapacity(size_t min) {
     int n = (keys_.length == 0) ? DEFAULT_CAPACITY : keys_.length * 2;
     if (n < min)
       n = min;

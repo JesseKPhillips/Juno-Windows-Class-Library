@@ -6,6 +6,9 @@ import juno.base.core,
   juno.locale.time,
   std.stream,
   etc.c.zlib;
+
+import std.conv;
+
 //debug import std.stdio : writeln, writefln;
 
 private enum : uint {
@@ -93,7 +96,7 @@ private void copyStream(Stream input, Stream output) {
   input.position = 0;
 
   while (true) {
-    uint n = input.readBlock(buffer.ptr, buffer.length);
+    size_t n = input.readBlock(buffer.ptr, buffer.length);
     if (n == 0)
       return;
     output.writeBlock(buffer.ptr, n);
@@ -146,13 +149,13 @@ private class InflateStream : CopyFilterStream {
 
   override size_t readBlock(void* buffer, size_t size) {
     if (zs_.avail_in == 0) {
-      if ((zs_.avail_in = source().read(buffer_)) <= 0)
+      if ((zs_.avail_in = to!uint(source().read(buffer_))) <= 0)
         return 0;
       zs_.next_in = buffer_.ptr;
     }
 
     zs_.next_out = cast(ubyte*)buffer;
-    zs_.avail_out = size;
+    zs_.avail_out = to!uint(size);
 
     int result = inflate(&zs_, Z_NO_FLUSH);
     if (result != Z_STREAM_END && result != Z_OK)
@@ -200,18 +203,18 @@ private class DeflateStream : CopyFilterStream {
   }
 
   override size_t writeBlock(in void* buffer, size_t size) {
-    zs_.avail_in = size;
+    zs_.avail_in = to!uint(size);
     zs_.next_in = cast(ubyte*)buffer;
 
     do {
-      zs_.avail_out = buffer_.length;
+      zs_.avail_out = to!uint(buffer_.length);
       zs_.next_out = buffer_.ptr;
 
       int result = deflate(&zs_, Z_NO_FLUSH);
       if (result == Z_STREAM_ERROR)
         throw new ZipException(result);
 
-      uint n = buffer_.length - zs_.avail_out;
+      size_t n = buffer_.length - zs_.avail_out;
       ubyte[] b = buffer_[0 .. n];
       do {
         size_t written = source().write(b);
@@ -235,7 +238,7 @@ private class DeflateStream : CopyFilterStream {
 
     bool done;
     do {
-      zs_.avail_out = buffer_.length;
+      zs_.avail_out = to!uint(buffer_.length);
       zs_.next_out = cast(ubyte*)buffer_.ptr;
 
       int result = deflate(&zs_, Z_FINISH);
@@ -249,7 +252,7 @@ private class DeflateStream : CopyFilterStream {
           throw new ZipException(result);
       }
 
-      uint n = buffer_.length - zs_.avail_out;
+      size_t n = buffer_.length - zs_.avail_out;
       ubyte[] b = buffer_[0 .. n];
       do {
         size_t written = source().write(b);
@@ -280,7 +283,7 @@ private class CrcStream : CopyFilterStream {
   override size_t readBlock(void* buffer, size_t size) {
     size_t n = source().readBlock(buffer, size);
     if (n != 0)
-      value = etc.c.zlib.crc32(value, cast(ubyte*)buffer, n);
+      value = etc.c.zlib.crc32(value, cast(ubyte*)buffer, to!uint(n));
     return n;
   }
 
@@ -480,7 +483,7 @@ final class ZipReader {
     input_.position = end;
 
     size_t n = input_.read(buffer);
-    for (int i = n - 22; i >= 0; i--) {
+    for (size_t i = n - 22; i >= 0; i--) {
       if (i < end)
         throw new ZipException("File contains corrupt data.");
 

@@ -180,7 +180,7 @@ abstract final class CMultiLanguage {
 
 extern(Windows)
 alias DllImport!("mlang.dll", "ConvertINetString",
-  int function(uint* lpdwMode, uint dwSrcEncoding, uint dwDstEncoding, in ubyte* lpSrcStr, uint* lpnSrcSize, ubyte* lpDstStr, uint* lpnDstSize))
+  int function(uint* lpdwMode, uint dwSrcEncoding, uint dwDstEncoding, in ubyte* lpSrcStr, int* lpnSrcSize, ubyte* lpDstStr, int* lpnDstSize))
   ConvertINetString;
 
 extern(Windows)
@@ -341,7 +341,7 @@ abstract class Encoding {
    * Returns: A byte array containing the results of converting bytes from srcEncoding to destEncoding.
    */
   static ubyte[] convert(Encoding sourceEncoding, Encoding destEncoding, in ubyte[] bytes) {
-    return convert(sourceEncoding, destEncoding, bytes, 0, bytes.length);
+    return convert(sourceEncoding, destEncoding, bytes, 0, to!int(bytes.length));
   }
 
   /**
@@ -366,7 +366,7 @@ abstract class Encoding {
    * ditto
    */
   int encodeLength(in char[] chars) {
-    return encodeLength(chars, 0, chars.length);
+    return encodeLength(chars, 0, to!int(chars.length));
   }
 
   /**
@@ -377,7 +377,7 @@ abstract class Encoding {
    * ditto
    */
   int decodeLength(in ubyte[] bytes) {
-    return decodeLength(bytes, 0, bytes.length);
+    return decodeLength(bytes, 0, to!int(bytes.length));
   }
 
   abstract int encode(in char[] chars, int charIndex, int charCount, ubyte[] bytes, int byteIndex);
@@ -400,7 +400,7 @@ abstract class Encoding {
    * ditto
    */
   ubyte[] encode(in char[] chars) {
-    return encode(chars, 0, chars.length);
+    return encode(chars, 0, to!int(chars.length));
   }
 
   /**
@@ -425,7 +425,7 @@ abstract class Encoding {
    * ditto
    */
   char[] decode(in ubyte[] bytes) {
-    return decode(bytes, 0, bytes.length);
+    return decode(bytes, 0, to!int(bytes.length));
   }
 
   /**
@@ -629,8 +629,8 @@ private final class MLangEncoding : Encoding {
       throw new ArgumentException("Could not encode.");
 
     uint dwMode;
-    uint bytesLength;
-    uint charsLength = count;
+    int bytesLength;
+    int charsLength = count;
     ConvertINetString(&dwMode, CP_UTF8, codePage_, cast(ubyte*)(chars.ptr + index), &charsLength, null, &bytesLength);
     return bytesLength;
   }
@@ -640,8 +640,8 @@ private final class MLangEncoding : Encoding {
       throw new ArgumentException("Could not decode.");
 
     uint dwMode;
-    uint charsLength;
-    uint bytesLength = count;
+    int charsLength;
+    int bytesLength = count;
     ConvertINetString(&dwMode, codePage_, CP_UTF8, bytes.ptr + index, &bytesLength, null, &charsLength);
     return charsLength;
   }
@@ -651,8 +651,8 @@ private final class MLangEncoding : Encoding {
       throw new ArgumentException("Could not encode.");
 
     uint dwMode;
-    uint charsLength = charCount;
-    uint bytesLength = bytes.length - byteIndex;
+    int charsLength = charCount;
+    int bytesLength = to!int(bytes.length - byteIndex);
     ConvertINetString(&dwMode, CP_UTF8, codePage_, cast(ubyte*)(chars.ptr + charIndex), &charsLength, bytes.ptr + byteIndex, &bytesLength);
     return bytesLength;
   }
@@ -662,8 +662,8 @@ private final class MLangEncoding : Encoding {
       throw new ArgumentException("Could not decode.");
 
     uint dwMode;
-    uint bytesLength = byteCount;
-    uint charsLength = chars.length - charIndex;
+    int bytesLength = byteCount;
+    int charsLength = to!int(chars.length - charIndex);
     ConvertINetString(&dwMode, codePage_, CP_UTF8, bytes.ptr + byteIndex, &bytesLength, cast(ubyte*)chars.ptr + charIndex, &charsLength);
     return charsLength;
   }

@@ -134,12 +134,12 @@ interface ICryptoTransform {
   /**
    * Transforms the specified input array and copies the resulting transform to the specified output array.
    */
-  uint transformBlock(ubyte[] inputBuffer, uint inputOffset, uint inputCount, ubyte[] outputBuffer, uint outputOffset);
+  size_t transformBlock(ubyte[] inputBuffer, size_t inputOffset, uint inputCount, ubyte[] outputBuffer, size_t outputOffset);
 
   /**
    * Transforms the specified array.
    */
-  ubyte[] transformFinalBlock(ubyte[] inputBuffer, uint inputOffset, uint inputCount);
+  ubyte[] transformFinalBlock(ubyte[] inputBuffer, size_t inputOffset, uint inputCount);
   //ubyte[] transformFinalBlock(ubyte[] buffer);
 
   /**
@@ -199,7 +199,7 @@ class CryptoStream : Stream {
   private uint inputBufferIndex_;
   private uint outputBlockSize_;
   private ubyte[] outputBuffer_;
-  private uint outputBufferIndex_;
+  private size_t outputBufferIndex_;
 
   private bool finalBlockTransformed_;
 
@@ -274,8 +274,8 @@ class CryptoStream : Stream {
   }
 
   override size_t readBlock(void* buffer, size_t size) {
-    uint readBytes = size;
-    uint outputIndex = 0;
+    size_t readBytes = size;
+    size_t outputIndex = 0;
 
     if (outputBufferIndex_ > 0) {
       if (outputBufferIndex_ <= size) {
@@ -296,8 +296,8 @@ class CryptoStream : Stream {
     if (finalBlockTransformed_)
       return size - readBytes;
 
-    uint outputBytes;
-    uint numRead;
+    size_t outputBytes;
+    size_t numRead;
 
     while (readBytes > 0) {
       while (inputBufferIndex_ < inputBlockSize_) {
@@ -343,8 +343,8 @@ class CryptoStream : Stream {
   }
 
   override size_t writeBlock(in void* buffer, size_t size) {
-    uint writeBytes = size;
-    uint inputIndex = 0;
+    size_t writeBytes = size;
+    size_t inputIndex = 0;
 
     if (inputBufferIndex_ > 0) {
       if (size >= inputBlockSize_ - inputBufferIndex_) {
@@ -365,7 +365,7 @@ class CryptoStream : Stream {
       outputBufferIndex_ = 0;
     }
 
-    uint outputBytes;
+    size_t outputBytes;
     if (inputBufferIndex_ == inputBlockSize_) {
       outputBytes = transform_.transformBlock(inputBuffer_, 0, inputBlockSize_, outputBuffer_, 0);
       stream_.writeBlock(outputBuffer_.ptr, outputBytes);
@@ -374,8 +374,8 @@ class CryptoStream : Stream {
 
     while (writeBytes > 0) {
       if (writeBytes >= inputBlockSize_) {
-        uint wholeBlocks = writeBytes / inputBlockSize_;
-        uint wholeBlocksBytes = wholeBlocks * inputBlockSize_;
+        size_t wholeBlocks = writeBytes / inputBlockSize_;
+        uint wholeBlocksBytes = to!uint(wholeBlocks * inputBlockSize_);
 
         ubyte[] tempBuffer = new ubyte[wholeBlocks * outputBlockSize_];
         outputBytes = transform_.transformBlock(cast(ubyte[])buffer[0 .. size], inputIndex, wholeBlocksBytes, tempBuffer, 0);
@@ -425,7 +425,7 @@ abstract class HashAlgorithm : ICryptoTransform, IDisposable {
   /**
    * Computes the hash for the specified data.
    */
-  final ubyte[] computeHash(ubyte[] buffer, uint offset, uint count) {
+  final ubyte[] computeHash(ubyte[] buffer, size_t offset, uint count) {
     hashCore(buffer, offset, count);
     hashValue = hashFinal();
 
@@ -436,17 +436,17 @@ abstract class HashAlgorithm : ICryptoTransform, IDisposable {
 
   /// ditto
   final ubyte[] computeHash(ubyte[] buffer) {
-    return computeHash(buffer, 0, buffer.length);
+    return computeHash(buffer, 0, to!uint(buffer.length));
   }
 
   /// ditto
   final ubyte[] computeHash(Stream input) {
     ubyte[] buffer = new ubyte[4096];
-    uint len;
+    size_t len;
     do {
       len = input.read(buffer);
       if (len > 0)
-        hashCore(buffer, 0, len);
+        hashCore(buffer, 0, to!uint(len));
     } while (len > 0);
     hashValue = hashFinal();
 
@@ -458,7 +458,7 @@ abstract class HashAlgorithm : ICryptoTransform, IDisposable {
   /**
    * Computes the hash value for the specified input array and copies the resulting hash value to the specified output array.
    */
-  final uint transformBlock(ubyte[] inputBuffer, uint inputOffset, uint inputCount, ubyte[] outputBuffer, uint outputOffset) {
+  final size_t transformBlock(ubyte[] inputBuffer, size_t inputOffset, uint inputCount, ubyte[] outputBuffer, size_t outputOffset) {
     hashCore(inputBuffer, inputOffset, inputCount);
     if (outputBuffer != null && (inputBuffer != outputBuffer || inputOffset != outputOffset))
       //memmove(outputBuffer.ptr + outputOffset, inputBuffer.ptr + inputOffset, inputCount);
@@ -469,7 +469,7 @@ abstract class HashAlgorithm : ICryptoTransform, IDisposable {
   /**
    * Computes the hash value for the specified input array.
    */
-  final ubyte[] transformFinalBlock(ubyte[] inputBuffer, uint inputOffset, uint inputCount) {
+  final ubyte[] transformFinalBlock(ubyte[] inputBuffer, size_t inputOffset, uint inputCount) {
     hashCore(inputBuffer, inputOffset, inputCount);
     hashValue = hashFinal();
 
@@ -483,7 +483,7 @@ abstract class HashAlgorithm : ICryptoTransform, IDisposable {
   abstract void initialize() {
   }
 
-  protected void hashCore(ubyte[] array, uint start, uint size);
+  protected void hashCore(ubyte[] array, size_t start, uint size);
 
   protected ubyte[] hashFinal();
 
@@ -564,7 +564,7 @@ final class KeySizes {
 abstract class SymmetricAlgorithm : IDisposable {
 
   protected ubyte[] keyValue;
-  protected uint keySizeValue;
+  protected size_t keySizeValue;
   protected KeySizes[] legalKeySizesValue;
   protected ubyte[] ivValue;
   protected uint blockSizeValue;
@@ -616,14 +616,14 @@ abstract class SymmetricAlgorithm : IDisposable {
   /**
    * Determines whether the specified key size is valid for the algorithm.
    */
-  final bool isValidKeySize(uint bitLength) {
+  final bool isValidKeySize(size_t bitLength) {
     foreach (keySize; legalKeySizes) {
       if (keySize.skip == 0) {
         if (keySize.min == bitLength)
           return true;
       }
       else {
-        for (uint i = keySize.min; i <= keySize.max; i += keySize.skip) {
+        for (size_t i = keySize.min; i <= keySize.max; i += keySize.skip) {
           if (i == bitLength)
             return true;
         }
@@ -649,7 +649,7 @@ abstract class SymmetricAlgorithm : IDisposable {
   /**
    * Gets or sets the size in bits of the secret key used by the symmetric algorithm.
    */
-  @property void keySize(uint value) {
+  @property void keySize(size_t value) {
     if (!isValidKeySize(value))
       throw new CryptoException;
 
@@ -657,7 +657,7 @@ abstract class SymmetricAlgorithm : IDisposable {
     keyValue = null;
   }
   /// ditto
-  @property uint keySize() {
+  @property size_t keySize() {
     return keySizeValue;
   }
 
@@ -723,7 +723,7 @@ abstract class SymmetricAlgorithm : IDisposable {
 abstract class AsymmetricAlgorithm : IDisposable {
 
   protected KeySizes[] legalKeySizesValue;
-  protected uint keySizeValue;
+  protected size_t keySizeValue;
 
   protected this() {
   }
@@ -731,7 +731,7 @@ abstract class AsymmetricAlgorithm : IDisposable {
   /**
    * Gets or sets the size in bits of the key used by the asymmetric algorithm.
    */
-  void keySize(uint value) {
+  void keySize(size_t value) {
     foreach (keySize; legalKeySizesValue) {
       if (keySize.skip == 0) {
         if (keySize.min == value) {
@@ -751,7 +751,7 @@ abstract class AsymmetricAlgorithm : IDisposable {
     throw new CryptoException;
   }
   /// ditto
-  uint keySize() {
+  size_t keySize() {
     return keySizeValue;
   }
 
@@ -835,7 +835,7 @@ private final class CAPIHashAlgorithm {
     hash_ = newHash;
   }
 
-  void hashCore(ubyte[] array, uint start, uint size) {
+  void hashCore(ubyte[] array, size_t start, uint size) {
     if (!CryptHashData(hash_, array.ptr + start, size, 0))
       throw new CryptoException(GetLastError());
   }
@@ -917,7 +917,7 @@ private final class BCryptHashAlgorithm {
     hashObject_ = newHashObject;
   }
 
-  void hashCore(ubyte[] array, uint start, uint size) {
+  void hashCore(ubyte[] array, size_t start, uint size) {
     int r = BCryptHashData(hash_, array.ptr + start, size, 0);
     if (r != ERROR_SUCCESS)
       throw new CryptoException(r);
@@ -931,7 +931,7 @@ private final class BCryptHashAlgorithm {
       throw new CryptoException(r);
 
     ubyte[] output = new ubyte[hashSize];
-    r = BCryptFinishHash(hash_, output.ptr, output.length, 0);
+    r = BCryptFinishHash(hash_, output.ptr, to!uint(output.length), 0);
     if (r != ERROR_SUCCESS)
       throw new CryptoException(r);
     return output;
@@ -996,7 +996,7 @@ final class Md5CryptoServiceProvider : Md5 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1032,7 +1032,7 @@ final class Md5Cng : Md5 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1083,7 +1083,7 @@ final class Sha1CryptoServiceProvider : Sha1 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1119,7 +1119,7 @@ final class Sha1Cng : Sha1 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1170,7 +1170,7 @@ final class Sha256CryptoServiceProvider : Sha256 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1206,7 +1206,7 @@ final class Sha256Cng : Sha256 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1257,7 +1257,7 @@ final class Sha384CryptoServiceProvider : Sha384 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1293,7 +1293,7 @@ final class Sha384Cng : Sha384 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1344,7 +1344,7 @@ final class Sha512CryptoServiceProvider : Sha512 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1380,7 +1380,7 @@ final class Sha512Cng : Sha512 {
     hashAlgorithm_.initialize();
   }
 
-  protected override void hashCore(ubyte[] array, uint start, uint size) {
+  protected override void hashCore(ubyte[] array, size_t start, uint size) {
     hashAlgorithm_.hashCore(array, start, size);
   }
 
@@ -1483,7 +1483,8 @@ final class TripleDesCryptoServiceProvider : TripleDes {
 
   override void generateIV() {
     ubyte[] iv = new ubyte[8];
-    if (!CryptGenRandom(provider_, iv.length, iv.ptr))
+    assert(iv.length < ubyte.max);
+    if (!CryptGenRandom(provider_, cast(ubyte)iv.length, iv.ptr))
       throw new CryptoException(GetLastError());
     ivValue = iv;
   }
@@ -1501,12 +1502,12 @@ final class TripleDesCryptoServiceProvider : TripleDes {
     return exportSymmetricKey(key_);
   }
 
-  override void keySize(uint value) {
+  override void keySize(size_t value) {
     super.keySize = value;
     if (key_ != Handle.init)
       CryptDestroyKey(key_);
   }
-  override uint keySize() {
+  override size_t keySize() {
     return super.keySize;
   }
 
@@ -1683,7 +1684,7 @@ final class AesCryptoServiceProvider : Aes {
 
   override void generateIV() {
     ubyte[] iv = new ubyte[blockSizeValue / 8];
-    if (!CryptGenRandom(provider_, iv.length, iv.ptr))
+    if (!CryptGenRandom(provider_, to!uint(iv.length), iv.ptr))
       throw new CryptoException(GetLastError());
     ivValue = iv;
   }
@@ -1701,16 +1702,16 @@ final class AesCryptoServiceProvider : Aes {
     return exportSymmetricKey(key_);
   }
 
-  override void keySize(uint value) {
+  override void keySize(size_t value) {
     super.keySize = value;
     if (key_ != Handle.init)
       CryptDestroyKey(key_);
   }
-  override uint keySize() {
+  override size_t keySize() {
     return super.keySize;
   }
 
-  private static uint algorithmId(uint keySize) {
+  private static uint algorithmId(size_t keySize) {
     switch (keySize) {
       case 128: return CALG_AES_128;
       case 192: return CALG_AES_192;
@@ -1744,7 +1745,7 @@ private ubyte[] exportSymmetricKey(Handle key) {
 }
 
 private Handle importSymmetricKey(Handle provider, uint algorithm, ubyte[] key) {
-  uint cbData = BLOBHEADER.sizeof + uint.sizeof + key.length;
+  uint cbData = to!uint(BLOBHEADER.sizeof + uint.sizeof + key.length);
   auto pbData = cast(ubyte*)malloc(cbData);
 
   auto pBlob = cast(BLOBHEADER*)pbData;
@@ -1753,7 +1754,7 @@ private Handle importSymmetricKey(Handle provider, uint algorithm, ubyte[] key) 
   pBlob.reserved = 0;
   pBlob.aiKeyAlg = algorithm;
 
-  *(cast(uint*)pbData + BLOBHEADER.sizeof) = key.length;
+  *(cast(uint*)pbData + BLOBHEADER.sizeof) = to!uint(key.length);
   memmove(pbData + BLOBHEADER.sizeof + uint.sizeof, key.ptr, key.length);
 
   Handle importedKey;
@@ -1881,7 +1882,7 @@ final class RsaCryptoServiceProvider : Rsa {
       isPublic = false;
 
     if (isPublic) {
-      if (!CryptImportKey(provider_, keyBlob.ptr, keyBlob.length, exchangeKey, CRYPT_EXPORTABLE, key_))
+      if (!CryptImportKey(provider_, keyBlob.ptr, to!uint(keyBlob.length), exchangeKey, CRYPT_EXPORTABLE, key_))
         throw new CryptoException(GetLastError());
     }
     else {
@@ -2013,15 +2014,15 @@ final class RsaCryptoServiceProvider : Rsa {
   ubyte[] encrypt(ubyte[] rgb, bool useOAEP) {
     ensureKeyPair();
 
-    uint cb = rgb.length;
-    if (!CryptEncrypt(key_, Handle.init, TRUE, useOAEP ? CRYPT_OAEP : 0, null, cb, rgb.length))
+    uint cb = to!uint(rgb.length);
+    if (!CryptEncrypt(key_, Handle.init, TRUE, useOAEP ? CRYPT_OAEP : 0, null, cb, to!uint(rgb.length)))
       throw new CryptoException(GetLastError());
 
     auto encryptedData = new ubyte[cb];
     encryptedData[0 .. rgb.length] = rgb;
 
-    cb = rgb.length;
-    if (!CryptEncrypt(key_, Handle.init, TRUE, useOAEP ? CRYPT_OAEP : 0, encryptedData.ptr, cb, encryptedData.length))
+    cb = to!uint(rgb.length);
+    if (!CryptEncrypt(key_, Handle.init, TRUE, useOAEP ? CRYPT_OAEP : 0, encryptedData.ptr, cb, to!uint(encryptedData.length)))
       throw new CryptoException(GetLastError());
 
     return encryptedData;
@@ -2031,21 +2032,21 @@ final class RsaCryptoServiceProvider : Rsa {
   ubyte[] decrypt(ubyte[] rgb, bool useOAEP) {
     ensureKeyPair();
 
-    uint cb = rgb.length;
+    uint cb = to!uint(rgb.length);
     if (!CryptDecrypt(key_, Handle.init, TRUE, useOAEP ? CRYPT_OAEP : 0, null, cb))
       throw new CryptoException(GetLastError());
 
     auto decryptedData = new ubyte[cb];
     decryptedData[0 .. rgb.length] = rgb;
 
-    cb = rgb.length;
+    cb = to!uint(rgb.length);
     if (!CryptDecrypt(key_, Handle.init, TRUE, useOAEP ? CRYPT_OAEP : 0, decryptedData.ptr, cb))
       throw new CryptoException(GetLastError());
     return decryptedData;
   }
 
   ///
-  ubyte[] signData(ubyte[] buffer, uint offset, uint count, string algorithm) {
+  ubyte[] signData(ubyte[] buffer, size_t offset, uint count, string algorithm) {
     CRYPT_OID_INFO oidInfo;
     if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
@@ -2058,7 +2059,7 @@ final class RsaCryptoServiceProvider : Rsa {
 
   /// ditto
   ubyte[] signData(ubyte[] buffer, string algorithm) {
-    return signData(buffer, 0, buffer.length, algorithm);
+    return signData(buffer, 0, to!uint(buffer.length), algorithm);
   }
 
   /// ditto
@@ -2098,11 +2099,11 @@ final class RsaCryptoServiceProvider : Rsa {
 
   ///
   bool verifyData(ubyte[] data, string algorithm, ubyte[] signature) {
-    return verifyData(data, 0, data.length, algorithm, signature);
+    return verifyData(data, 0, to!uint(data.length), algorithm, signature);
   }
 
   ///
-  bool verifyData(ubyte[] data, uint offset, uint count, string algorithm, ubyte[] signature) {
+  bool verifyData(ubyte[] data, size_t offset, uint count, string algorithm, ubyte[] signature) {
     CRYPT_OID_INFO oidInfo;
     if (auto pOidInfo = CryptFindOIDInfo(CRYPT_OID_INFO_NAME_KEY, algorithm.toUTF16z(), 0))
       oidInfo = *pOidInfo;
@@ -2138,7 +2139,7 @@ final class RsaCryptoServiceProvider : Rsa {
       throw new CryptoException(GetLastError());
     scope(exit) CryptDestroyHash(tempHash);
 
-    if (!CryptVerifySignature(tempHash, hash.ptr, hash.length, key_, null, 0)) {
+    if (!CryptVerifySignature(tempHash, hash.ptr, to!uint(hash.length), key_, null, 0)) {
       uint lastError = GetLastError();
       if (lastError != NTE_BAD_SIGNATURE)
         throw new CryptoException(lastError);
@@ -2147,7 +2148,7 @@ final class RsaCryptoServiceProvider : Rsa {
     return true;
   }
 
-  override uint keySize() {
+  override size_t keySize() {
     ensureKeyPair();
 
     uint cbKeySize = uint.sizeof;
@@ -2257,7 +2258,7 @@ final class DsaCryptoServiceProvider : Dsa {
       isPublic = false;
 
     if (isPublic) {
-      if (!CryptImportKey(provider_, keyBlob.ptr, keyBlob.length, Handle.init, /*CRYPT_EXPORTABLE*/ 0, key_))
+      if (!CryptImportKey(provider_, keyBlob.ptr, to!uint(keyBlob.length), Handle.init, /*CRYPT_EXPORTABLE*/ 0, key_))
         throw new CryptoException(GetLastError());
     }
     else {
@@ -2281,14 +2282,14 @@ final class DsaCryptoServiceProvider : Dsa {
   }
 
   ///
-  ubyte[] signData(ubyte[] buffer, uint offset, uint count) {
+  ubyte[] signData(ubyte[] buffer, size_t offset, uint count) {
     ubyte[] hash = hashAlgorithm_.computeHash(buffer, offset, count);
     return signHash(hash, null);
   }
 
   /// ditto
   ubyte[] signData(ubyte[] buffer) {
-    return signData(buffer, 0, buffer.length);
+    return signData(buffer, 0, to!uint(buffer.length));
   }
 
   /// ditto
@@ -2322,11 +2323,11 @@ final class DsaCryptoServiceProvider : Dsa {
 
   ///
   bool verifyData(ubyte[] data, ubyte[] signature) {
-    return verifyData(data, 0, data.length, signature);
+    return verifyData(data, 0, to!uint(data.length), signature);
   }
 
   /// ditto
-  bool verifyData(ubyte[] data, uint offset, uint count, ubyte[] signature) {
+  bool verifyData(ubyte[] data, size_t offset, uint count, ubyte[] signature) {
     ubyte[] hash = hashAlgorithm_.computeHash(data, offset, count);
     return verifyHash(hash, null, signature);
   }
@@ -2350,7 +2351,7 @@ final class DsaCryptoServiceProvider : Dsa {
       throw new CryptoException(GetLastError());
     scope(exit) CryptDestroyHash(tempHash);
 
-    if (!CryptVerifySignature(tempHash, hash.ptr, hash.length, key_, null, 0)) {
+    if (!CryptVerifySignature(tempHash, hash.ptr, to!uint(hash.length), key_, null, 0)) {
       uint lastError = GetLastError();
       if (lastError != NTE_BAD_SIGNATURE)
         throw new CryptoException(lastError);
@@ -2359,7 +2360,7 @@ final class DsaCryptoServiceProvider : Dsa {
     return true;
   }
 
-  override uint keySize() {
+  override size_t keySize() {
     ensureKeyPair();
 
     uint cbKeySize = uint.sizeof;
@@ -2430,22 +2431,22 @@ private final class CAPITransform : ICryptoTransform {
     }
   }
 
-  private uint encryptBlocks(ubyte[] buffer, uint offset, uint count) {
-    uint length = count;
-    if (!CryptEncrypt(key_, Handle.init, FALSE, 0, buffer.ptr + offset, length, buffer.length))
+  private uint encryptBlocks(ubyte[] buffer, size_t offset, uint count) {
+    auto length = count;
+    if (!CryptEncrypt(key_, Handle.init, FALSE, 0, buffer.ptr + offset, length, to!uint(buffer.length)))
       throw new CryptoException(GetLastError());
     //writefln("CryptEncrypt");
     return length;
   }
 
-  private uint decryptBlocks(ubyte[] buffer, uint offset, uint count) {
-    uint length = count;
+  private size_t decryptBlocks(ubyte[] buffer, size_t offset, uint count) {
+    auto length = count;
     if (!CryptDecrypt(key_, Handle.init, FALSE, 0, buffer.ptr + offset, length))
       throw new CryptoException(GetLastError());
     return length;
   }
 
-  uint transformBlock(ubyte[] inputBuffer, uint inputOffset, uint inputCount, ubyte[] outputBuffer, uint outputOffset) {
+  size_t transformBlock(ubyte[] inputBuffer, size_t inputOffset, uint inputCount, ubyte[] outputBuffer, size_t outputOffset) {
     //writefln("transformBlock");
     if (encryptionMode_ == EncryptionMode.Encrypt) {
       //memmove(outputBuffer.ptr + outputOffset, inputBuffer.ptr + inputOffset, inputCount);
@@ -2459,7 +2460,7 @@ private final class CAPITransform : ICryptoTransform {
           depadBuffer_.length = inputBlockSize;
         }
         else {
-          uint c = decryptBlocks(depadBuffer_, 0, depadBuffer_.length);
+          auto c = decryptBlocks(depadBuffer_, 0, to!uint(depadBuffer_.length));
           //memmove(outputBuffer.ptr + outputOffset, depadBuffer_.ptr, c);
           blockCopy(depadBuffer_, 0, outputBuffer, outputOffset, c);
           depadBuffer_[] = 0;
@@ -2480,13 +2481,13 @@ private final class CAPITransform : ICryptoTransform {
     }
   }
 
-  ubyte[] transformFinalBlock(ubyte[] inputBuffer, uint inputOffset, uint inputCount) {
+  ubyte[] transformFinalBlock(ubyte[] inputBuffer, size_t inputOffset, uint inputCount) {
 
-    ubyte[] padBlock(ubyte[] block, uint offset, uint count) {
+    ubyte[] padBlock(ubyte[] block, size_t offset, size_t count) {
       assert(block != null && count <= block.length - offset);
 
       ubyte[] bytes;
-      uint padding = inputBlockSize - (count % inputBlockSize);
+      auto padding = inputBlockSize - (count % inputBlockSize);
       switch (paddingMode_) {
         case PaddingMode.None:
           bytes.length = count;
@@ -2514,7 +2515,7 @@ private final class CAPITransform : ICryptoTransform {
 
         case PaddingMode.ISO10126:
           bytes.length = count + padding;
-          CryptGenRandom(provider_, bytes.length - 1, bytes.ptr);
+          CryptGenRandom(provider_, to!uint(bytes.length - 1), bytes.ptr);
           bytes[0 .. count] = block[0 .. count];
           bytes[$ - 1] = cast(ubyte)padding;
           break;
@@ -2525,7 +2526,7 @@ private final class CAPITransform : ICryptoTransform {
       return bytes;
     }
 
-    ubyte[] depadBlock(ubyte[] block, uint offset, uint count) {
+    ubyte[] depadBlock(ubyte[] block, size_t offset, size_t count) {
       assert(block != null && count >= block.length - offset);
 
       uint padding;
@@ -2539,7 +2540,7 @@ private final class CAPITransform : ICryptoTransform {
           if (0 > padding || padding > inputBlockSize)
             throw new CryptoException("Padding is invalid.");
 
-          for (uint i = offset + count - padding; i < offset + count; i++) {
+          for (auto i = offset + count - padding; i < offset + count; i++) {
             if (block[i] != cast(ubyte)padding)
               throw new CryptoException("Padding is invalid");
           }
@@ -2550,7 +2551,7 @@ private final class CAPITransform : ICryptoTransform {
           if (0 > padding || padding > inputBlockSize)
             throw new CryptoException("Padding is invalid.");
 
-          for (uint i = offset + count - padding; i < offset + count - 1; i++) {
+          for (auto i = offset + count - padding; i < offset + count - 1; i++) {
             if (block[i] != 0)
               throw new CryptoException("Padding is invalid.");
           }
@@ -2579,7 +2580,7 @@ private final class CAPITransform : ICryptoTransform {
       memmove(bytes.ptr, inputBuffer.ptr + inputOffset, inputCount);*/
       finalBytes = padBlock(inputBuffer, inputOffset, inputCount);
       if (finalBytes.length > 0)
-        encryptBlocks(finalBytes, 0, finalBytes.length);
+        encryptBlocks(finalBytes, 0, to!uint(finalBytes.length));
     }
     else {
       ubyte[] temp;
@@ -2596,7 +2597,7 @@ private final class CAPITransform : ICryptoTransform {
         blockCopy(inputBuffer, inputOffset, temp, depadBuffer_.length, inputCount);
       }
       if (temp.length > 0) {
-        uint c = decryptBlocks(temp, 0, temp.length);
+        auto c = decryptBlocks(temp, 0, to!uint(temp.length));
         finalBytes = depadBlock(temp, 0, c);
       }
     }
@@ -2604,7 +2605,7 @@ private final class CAPITransform : ICryptoTransform {
     ubyte[] temp = new ubyte[outputBlockSize];
     uint count = 0;
     if (encryptionMode_ == EncryptionMode.Encrypt)
-      CryptEncrypt(key_, Handle.init, TRUE, 0, temp.ptr, count, temp.length);
+      CryptEncrypt(key_, Handle.init, TRUE, 0, temp.ptr, count, to!uint(temp.length));
     else
       CryptDecrypt(key_, Handle.init, TRUE, 0, temp.ptr, count);
     delete temp;
@@ -2621,7 +2622,7 @@ private final class CAPITransform : ICryptoTransform {
       output = new ubyte[inputBlockSize];
       memmove(output.ptr, buffer.ptr, buffer.length);
 
-      uint count = output.length;
+      size_t count = output.length;
       if (!CryptEncrypt(key_, Handle.init, FALSE, 0, output.ptr, count, output.length))
         throw new CryptoException(GetLastError());
 
@@ -2631,7 +2632,7 @@ private final class CAPITransform : ICryptoTransform {
       output = new ubyte[outputBlockSize];
       memmove(output.ptr, buffer.ptr, buffer.length);
 
-      uint count = output.length;
+      size_t count = output.length;
       if (!CryptDecrypt(key_, Handle.init, FALSE, 0, output.ptr, count))
         throw new CryptoException(GetLastError());
 
@@ -2639,7 +2640,7 @@ private final class CAPITransform : ICryptoTransform {
     }
 
     ubyte[] temp = new ubyte[outputBlockSize];
-    uint count = 0;
+    size_t count = 0;
     if (encryptionMode_ == EncryptionMode.Encrypt)
       CryptEncrypt(key_, Handle.init, TRUE, 0, temp.ptr, count, temp.length);
     else
@@ -2681,7 +2682,7 @@ final class RngCryptoServiceProvider : RandomNumberGenerator {
   }
 
   override void getBytes(ubyte[] data) {
-    if (!CryptGenRandom(provider_, data.length, data.ptr))
+    if (!CryptGenRandom(provider_, to!uint(data.length), data.ptr))
       throw new CryptoException(GetLastError());
   }
 
@@ -2725,7 +2726,7 @@ final class RngCng : RandomNumberGenerator {
   }
 
   override void getBytes(ubyte[] data) {
-    int r = BCryptGenRandom(algorithm_, data.ptr, data.length, 0);
+    int r = BCryptGenRandom(algorithm_, data.ptr, to!uint(data.length), 0);
     if (r != ERROR_SUCCESS)
       throw new CryptoException(r);
   }
@@ -2759,9 +2760,9 @@ enum DataProtectionScope {
 ubyte[] protectData(ubyte[] userData, ubyte[] optionalEntropy, DataProtectionScope protectionScope) {
   DATA_BLOB dataBlob, entropyBlob, resultBlob;
 
-  dataBlob = DATA_BLOB(userData.length, userData.ptr);
+  dataBlob = DATA_BLOB(to!uint(userData.length), userData.ptr);
   if (optionalEntropy != null)
-    entropyBlob = DATA_BLOB(optionalEntropy.length, optionalEntropy.ptr);
+    entropyBlob = DATA_BLOB(to!uint(optionalEntropy.length), optionalEntropy.ptr);
 
   uint flags = CRYPTPROTECT_UI_FORBIDDEN;
   if (protectionScope == DataProtectionScope.LocalMachine)
@@ -2784,9 +2785,9 @@ ubyte[] protectData(ubyte[] userData, ubyte[] optionalEntropy, DataProtectionSco
 ubyte[] unprotectData(ubyte[] protectedData, ubyte[] optionalEntropy, DataProtectionScope protectionScope) {
   DATA_BLOB dataBlob, entropyBlob, resultBlob;
 
-  dataBlob = DATA_BLOB(protectedData.length, protectedData.ptr);
+  dataBlob = DATA_BLOB(to!uint(protectedData.length), protectedData.ptr);
   if (optionalEntropy != null)
-    entropyBlob = DATA_BLOB(optionalEntropy.length, optionalEntropy.ptr);
+    entropyBlob = DATA_BLOB(to!uint(optionalEntropy.length), optionalEntropy.ptr);
 
   uint flags = CRYPTPROTECT_UI_FORBIDDEN;
   if (protectionScope == DataProtectionScope.LocalMachine)
@@ -2837,7 +2838,7 @@ void protectMemory(ubyte[] userData, MemoryProtectionScope protectionScope) {
   if (userData.length == 0 || (userData.length % 16) != 0)
     throw new CryptoException("The length of the data must be a multiple of 16 bytes.");
 
-  int status = RtlEncryptMemory(userData.ptr, userData.length, cast(uint)protectionScope);
+  int status = RtlEncryptMemory(userData.ptr, to!uint(userData.length), cast(uint)protectionScope);
   if (status < 0)
     throw new CryptoException(LsaNtStatusToWinError(status));
 }
@@ -2849,7 +2850,7 @@ void unprotectMemory(ubyte[] encryptedData, MemoryProtectionScope protectionScop
   if (encryptedData.length == 0 || (encryptedData.length % 16) != 0)
     throw new CryptoException("The length of the data must be a multiple of 16 bytes.");
 
-  int status = RtlDecryptMemory(encryptedData.ptr, encryptedData.length, cast(uint)protectionScope);
+  int status = RtlDecryptMemory(encryptedData.ptr, to!uint(encryptedData.length), cast(uint)protectionScope);
   if (status < 0)
     throw new CryptoException(LsaNtStatusToWinError(status));
 }

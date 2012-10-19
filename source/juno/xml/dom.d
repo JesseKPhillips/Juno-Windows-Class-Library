@@ -1100,7 +1100,7 @@ class XmlNode {
   }
 
   private static void splitName(string name, out string prefix, out string localName) {
-    int i = name.indexOf(':');
+    auto i = name.indexOf(':');
     if (i == -1 || i == 0 || name.length - 1 == i) {
       prefix = "";
       localName = name;

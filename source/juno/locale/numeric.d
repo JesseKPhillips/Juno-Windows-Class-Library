@@ -41,7 +41,9 @@ package struct Number {
       value /= 10;
     }
 
-    int end = n.scale = -(i - buffer.length);
+    // buffer is static length 20
+    static assert(buffer.length == 20);
+    auto end = n.scale = -(i - cast(int)buffer.length);
     n.digits[0 .. end] = buffer[i .. i + end];
     n.digits[end] = '\0';
 
@@ -101,8 +103,10 @@ package struct Number {
       buffer[--i] = cast(char)(x % 10 + '0');
       x /= 10;
     }
-    int end = -(i - buffer.length);
-    n.scale = -(i - buffer.length) - d.scale;
+    // buffer is static length 30
+    static assert(buffer.length == 30);
+    auto end = -(i - cast(int)buffer.length);
+    n.scale = -(i - cast(int)buffer.length) - d.scale;
     n.digits[0 .. end] = buffer[i .. i + end];
     n.digits[end] = '\0';
 
@@ -244,8 +248,8 @@ package struct Number {
     }
 
     char* p = digits.ptr;
-    int count = strlen(p);
-    int left = count;
+    int count = to!int(strlen(p));
+    auto left = count;
 
     while (*p == '0') {
       left--;
@@ -258,11 +262,11 @@ package struct Number {
     }
 
     // Get digits, 9 at a time.
-    int n = (left > 9) ? 9 : left;
+    byte n = cast(byte)((left > 9) ? 9 : left);
     left -= n;
     ulong bits = getDigits(p, n);
     if (left > 0) {
-      n = (left > 9) ? 9 : left;
+      n = cast(byte)((left > 9) ? 9 : left);
       left -= n;
       bits = mult64(cast(uint)bits, cast(uint)(pow10[n - 1] >>> (64 - pow10Exp[n - 1])));
       bits += getDigits(p + 9, n);
@@ -1167,7 +1171,7 @@ private void formatFixed(ref Number number, ref string dst, int length, int[] gr
       size = (count == 0) ? 0 : groupSizes[0];
 
       // Insert separator at positions specified by groupSizes.
-      int end = strlen(p);
+      int end = to!int(strlen(p));
       int start = (pos < end) ? pos : end;
       auto separator = array(retro(groupSeparator));
       dchar[] temp;

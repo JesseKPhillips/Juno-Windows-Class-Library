@@ -49,8 +49,8 @@ string tempPath() {
 }
 
 deprecated
-package int getRootLength(string path) {
-  int i, len = path.length;
+package size_t getRootLength(string path) {
+  size_t i, len = path.length;
   if (len >= 1 && std.path.isDirSeparator(path[0])) {
     i = 1;
     if (len >= 2 && (std.path.isDirSeparator(path[1]))) {
@@ -112,8 +112,8 @@ string combine(string path1, string path2) {
 
 deprecated
 string getDirectoryName(string path) {
-  int root = getRootLength(path);
-  int i = path.length;
+  size_t root = getRootLength(path);
+  size_t i = path.length;
   if (i > root) {
     i = path.length;
     if (i == root)
@@ -134,7 +134,7 @@ string getDirectoryName(string path) {
  */
 deprecated
 string getFileName(string path) {
-  for (int i = path.length; --i >= 0;) {
+  for (size_t i = path.length; --i >= 0;) {
     char ch = path[i];
     if (std.path.isDirSeparator(ch) || ch == ':')
       return path[i + 1 .. $];

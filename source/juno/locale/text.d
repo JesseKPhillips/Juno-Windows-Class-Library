@@ -11,6 +11,7 @@ private import juno.base.native,
 private import juno.locale.core : Culture, toUTF16zNls, toUTF8Nls;
 
 private import std.c.string : memcmp, memicmp;
+import std.conv;
 
 class Collator {
 
@@ -52,7 +53,7 @@ class Collator {
   }
 
   int compare(string string1, int offset1, string string2, int offset2, CompareOptions options = CompareOptions.None) {
-    return compare(string1, offset1, string1.length - offset1, string2, offset2, string2.length - offset2, options);
+    return compare(string1, offset1, to!int(string1.length - offset1), string2, offset2, to!int(string2.length - offset2), options);
   }
 
   int compare(string string1, string string2, CompareOptions options = CompareOptions.None) {
@@ -67,13 +68,13 @@ class Collator {
     //if ((options & CompareOptions.Ordinal) != 0 || (options & CompareOptions.OrdinalIgnoreCase) != 0)
     //  return compareStringOrdinal(string1, 0, string1.length, string2, 0, string2.length, (options & CompareOptions.OrdinalIgnoreCase) != 0);
 
-    return compareString(sortingId_, string1, 0, string1.length, string2, 0, string2.length, getCompareFlags(options));
+    return compareString(sortingId_, string1, 0, to!int(string1.length), string2, 0, to!int(string2.length), getCompareFlags(options));
   }
 
   int indexOf(string source, string value, int index, int count, CompareOptions options = CompareOptions.None) {
     uint flags = getCompareFlags(options);
 
-    int n = findString(sortingId_, flags | FIND_FROMSTART, source, index, count, value, value.length);
+    int n = findString(sortingId_, flags | FIND_FROMSTART, source, index, count, value, to!int(value.length));
     if (n > -1)
       return n + index;
     if (n == -1)
@@ -87,11 +88,11 @@ class Collator {
   }
 
   int indexOf(string source, string value, int index, CompareOptions options = CompareOptions.None) {
-    return indexOf(source, value, index, source.length - index, options);
+    return indexOf(source, value, index, to!int(source.length - index), options);
   }
 
   int indexOf(string source, string value, CompareOptions options = CompareOptions.None) {
-    return indexOf(source, value, 0, source.length, options);
+    return indexOf(source, value, 0, to!int(source.length), options);
   }
 
   int lastIndexOf(string source, string value, int index, int count, CompareOptions options = CompareOptions.None) {
@@ -111,7 +112,7 @@ class Collator {
 
     uint flags = getCompareFlags(options);
 
-    int n = findString(sortingId_, flags | FIND_FROMEND, source, (index - count) + 1, count, value, value.length);
+    int n = findString(sortingId_, flags | FIND_FROMEND, source, (index - count) + 1, count, value, to!int(value.length));
     if (n > -1)
       return n + (index - count) + 1;
     if (n == -1)
@@ -129,19 +130,19 @@ class Collator {
   }
 
   int lastIndexOf(string source, string value, CompareOptions options = CompareOptions.None) {
-    return lastIndexOf(source, value, source.length - 1, source.length, options);
+    return lastIndexOf(source, value, to!int(source.length - 1), to!int(source.length), options);
   }
 
   bool isPrefix(string source, string prefix, CompareOptions options = CompareOptions.None) {
     if (prefix.length == 0)
       return true;
-    return isPrefix(source, 0, source.length, prefix, getCompareFlags(options));
+    return isPrefix(source, 0, to!int(source.length), prefix, getCompareFlags(options));
   }
 
   bool isSuffix(string source, string suffix, CompareOptions options = CompareOptions.None) {
     if (suffix.length == 0)
       return true;
-    return isSuffix(source, source.length - 1, source.length, suffix, getCompareFlags(options));
+    return isSuffix(source, to!int(source.length - 1), to!int(source.length), suffix, getCompareFlags(options));
   }
 
   string toLower(string str) {
@@ -206,14 +207,14 @@ class Collator {
 
   private bool isPrefix(string source, int start, int length, string prefix, uint flags) {
     // Call FindNLSString if the API is present on the system, otherwise call CompareString. 
-    int i = findString(sortingId_, flags | FIND_STARTSWITH, source, start, length, prefix, prefix.length);
+    int i = findString(sortingId_, flags | FIND_STARTSWITH, source, start, length, prefix, to!int(prefix.length));
     if (i == -1)
       return false;
     else if (i > -1)
       return true;
 
     for (i = 1; i <= length; i++) {
-      if (compareString(sortingId_, prefix, 0, prefix.length, source, start, i, flags) == 0)
+      if (compareString(sortingId_, prefix, 0, to!int(prefix.length), source, start, i, flags) == 0)
         return true;
     }
     return false;
@@ -221,22 +222,22 @@ class Collator {
 
   private bool isSuffix(string source, int end, int length, string suffix, uint flags) {
     // Call FindNLSString if the API is present on the system, otherwise call CompareString. 
-    int i = findString(sortingId_, flags | FIND_ENDSWITH, source, 0, length, suffix, suffix.length);
+    int i = findString(sortingId_, flags | FIND_ENDSWITH, source, 0, length, suffix, to!int(suffix.length));
     if (i == -1)
       return false;
     else if (i > -1)
       return true;
 
     for (i = 0; i < length; i++) {
-      if (compareString(sortingId_, suffix, 0, suffix.length, source, end - i, i + 1, flags))
+      if (compareString(sortingId_, suffix, 0, to!int(suffix.length), source, end - i, i + 1, flags))
         return true;
     }
     return false;
   }
 
-  private static string changeCaseString(uint lcid, string string, bool upperCase) {
+  private static string changeCaseString(uint lcid, string str, bool upperCase) {
     int cch, cb;
-    wchar* pChars = toUTF16zNls(string, 0, string.length, cch);
+    wchar* pChars = toUTF16zNls(str, 0, to!int(str.length), cch);
     LCMapString(lcid, (upperCase ? LCMAP_UPPERCASE : LCMAP_LOWERCASE) | LCMAP_LINGUISTIC_CASING, pChars, cch, pChars, cch);
     return toUTF8Nls(pChars, cch, cb);
   }

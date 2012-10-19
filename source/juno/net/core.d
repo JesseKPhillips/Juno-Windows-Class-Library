@@ -446,9 +446,9 @@ class Uri {
     string path = getComponents(UriComponents.Path | UriComponents.KeepDelimiter);
 
     if (path.length != 0) {
-      int current;
+      size_t current;
       while (current < path.length) {
-        int next = path.indexOf('/', current);
+        auto next = path.indexOf('/', current);
         if (next == -1)
           next = path.length - 1;
 
@@ -462,7 +462,7 @@ class Uri {
   }
 
   private void parseUri(string s) {
-    int i = s.indexOf(':');
+    auto i = s.indexOf(':');
     if (i < 0)
       return;
 
@@ -574,7 +574,7 @@ interface ICredentialsByHost {
 private class CredentialKey {
 
   Uri uriPrefix;
-  int uriPrefixLength = -1;
+  size_t uriPrefixLength = -1;
   string authType;
 
   this(Uri uriPrefix, string authType) {
@@ -1514,7 +1514,7 @@ class PingReply {
     }
   }
 
-  private this(ICMPV6_ECHO_REPLY* reply, void* data, uint dataSize) {
+  private this(ICMPV6_ECHO_REPLY* reply, void* data, size_t dataSize) {
     address_ = new IPAddress(reply.address.sin6_addr, reply.address.sin6_scope_id);
     status_ = cast(IPStatus)reply.status;
     if (status_ == IPStatus.Success) {
@@ -1613,6 +1613,8 @@ class Ping : IDisposable {
   PingReply send(IPAddress address, uint timeout, ubyte[] buffer) {
     if (address is null)
       throw new ArgumentNullException("address");
+    if(buffer.length > ushort.max)
+      throw new ArgumentException("buffer");
 
     ipv6_ = (address.addressFamily == AddressFamily.INET6);
 
@@ -1633,7 +1635,8 @@ class Ping : IDisposable {
     memcpy(requestBuffer_, buffer.ptr, buffer.length);
     scope(exit) LocalFree(requestBuffer_);
 
-    uint replyBufferSize = ICMPV6_ECHO_REPLY.sizeof + buffer.length + 8;
+    uint replyBufferSize = ICMPV6_ECHO_REPLY.sizeof +
+                           cast(ushort)buffer.length + 8;
     if (replyBuffer_ == null)
       replyBuffer_ = cast(void*)LocalAlloc(LMEM_FIXED, replyBufferSize);
 

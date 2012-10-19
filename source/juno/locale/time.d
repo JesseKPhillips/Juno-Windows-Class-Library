@@ -1,6 +1,8 @@
 /**
  * Copyright: (c) 2009 John Chapman
  *
+ * TODO: deprecated should use std.datetime
+ *
  * License: See $(LINK2 ..\..\licence.txt, licence.txt) for use and distribution terms.
  */
 module juno.locale.time;
@@ -15,6 +17,8 @@ import juno.base.core,
 import std.algorithm : reverse;
 
 debug import std.stdio : writefln;
+
+import std.conv;
 
 // This module or classes contained within must not have any 
 // static ctors/dtors, otherwise there will be circular references 
@@ -443,7 +447,7 @@ package class CalendarData {
         break;
     }
 
-    currentEra = eraNames.length;
+    currentEra = cast(int)eraNames.length;
   }
 
   private bool getCalendarData(string localeName, uint calendarId) {
@@ -2092,7 +2096,7 @@ private bool tryParseExact(string s, string pattern, DateTimeFormat dtf, ref Dat
 
   bool doParse() {
 
-    int parseDigits(string s, ref int pos, int max) {
+    int parseDigits(string s, ref size_t pos, int max) {
       int result = s[pos++] - '0';
       while (max > 1 && pos < s.length && s[pos] >= '0' && s[pos] <= '9') {
         result = result * 10 + s[pos++] - '0';
@@ -2101,15 +2105,15 @@ private bool tryParseExact(string s, string pattern, DateTimeFormat dtf, ref Dat
       return result;
     }
 
-    bool parseOne(string s, ref int pos, string value) {
+    bool parseOne(string s, ref size_t pos, string value) {
       if (s[pos .. pos + value.length] != value)
         return false;
       pos += value.length;
       return true;
     }
 
-    int parseMultiple(string s, ref int pos, string[] values ...) {
-      int result = -1, max;
+    int parseMultiple(string s, ref size_t pos, string[] values ...) {
+      size_t result = -1, max;
       foreach (i, value; values) {
         if (value.length == 0 || s.length - pos < value.length)
           continue;
@@ -2122,10 +2126,10 @@ private bool tryParseExact(string s, string pattern, DateTimeFormat dtf, ref Dat
         }
       }
       pos += max;
-      return result;
+      return to!int(result);
     }
 
-    TimeSpan parseTimeZoneOffset(string s, ref int pos) {
+    TimeSpan parseTimeZoneOffset(string s, ref size_t pos) {
       bool sign;
       if (pos < s.length) {
         if (s[pos] == '-') {
@@ -2153,7 +2157,7 @@ private bool tryParseExact(string s, string pattern, DateTimeFormat dtf, ref Dat
     result.hour = result.minute = result.second = 0;
     result.fraction = 0.0;
 
-    int pos, i, count;
+    size_t pos, i, count;
     char c;
 
     while (pos < pattern.length && i < s.length) {

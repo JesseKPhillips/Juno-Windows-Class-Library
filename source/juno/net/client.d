@@ -19,6 +19,7 @@ import juno.base.core,
 static import std.c.stdlib;
 
 import std.conv;
+import core.sys.windows.windows : DWORD_PTR;
 
 debug import std.stdio : writeln, writefln;
 
@@ -197,7 +198,7 @@ enum : uint {
 }
 
 extern(Windows)
-alias void function(Handle hInternet, uint dwContext, uint dwInternetStatus, void* lpvStatusInformation, uint dwStatusInformationLength) INTERNET_STATUS_CALLBACK;
+alias void function(Handle hInternet, DWORD_PTR dwContext, uint dwInternetStatus, void* lpvStatusInformation, uint dwStatusInformationLength) INTERNET_STATUS_CALLBACK;
 
 extern(Windows)
 alias DllImport!("wininet.dll", "InternetSetStatusCallbackW", 
@@ -227,17 +228,17 @@ enum : uint {
 
 extern(Windows)
 alias DllImport!("wininet.dll", "InternetConnectW",
-  Handle function(Handle hInternet, in wchar* lpszServerName, ushort nServerPort, in wchar* lpszUserName, in wchar* lpszPassword, uint dwService, uint dwFlags, uint dwContext)) InternetConnect;
+  Handle function(Handle hInternet, in wchar* lpszServerName, ushort nServerPort, in wchar* lpszUserName, in wchar* lpszPassword, uint dwService, uint dwFlags, DWORD_PTR dwContext)) InternetConnect;
 
 extern(Windows)
 alias DllImport!("wininet.dll", "InternetOpenUrlW",
-  Handle function(Handle hInternet, in wchar* lpszUrl, in wchar* lpszHeaders, uint dwHeadersLength, uint dwFlags, uint dwContext)) InternetOpenUrl;
+  Handle function(Handle hInternet, in wchar* lpszUrl, in wchar* lpszHeaders, uint dwHeadersLength, uint dwFlags, DWORD_PTR dwContext)) InternetOpenUrl;
 
 const wchar* HTTP_VERSION = "HTTP/1.0";
 
 extern(Windows)
 alias DllImport!("wininet.dll", "HttpOpenRequestW",
-  Handle function(Handle hConnect, in wchar* lpszVerb, in wchar* lpszObjectName, in wchar* lpszVersion, in wchar* lpszReferrer, in wchar** lplpszAcceptTypes, uint dwFlags, uint dwContext)) HttpOpenRequest;
+  Handle function(Handle hConnect, in wchar* lpszVerb, in wchar* lpszObjectName, in wchar* lpszVersion, in wchar* lpszReferrer, in wchar** lplpszAcceptTypes, uint dwFlags, DWORD_PTR dwContext)) HttpOpenRequest;
 
 extern(Windows)
 alias DllImport!("wininet.dll", "HttpSendRequestW",
@@ -263,11 +264,11 @@ enum : uint {
 
 extern(Windows)
 alias DllImport!("wininet.dll", "HttpSendRequestExW",
-  int function(Handle hRequest, INTERNET_BUFFERSW* lpBuffersIn, INTERNET_BUFFERSW* lpBuffersOut, uint dwFlags, uint dwContext)) HttpSendRequestEx;
+  int function(Handle hRequest, INTERNET_BUFFERSW* lpBuffersIn, INTERNET_BUFFERSW* lpBuffersOut, uint dwFlags, DWORD_PTR dwContext)) HttpSendRequestEx;
 
 extern(Windows)
 alias DllImport!("wininet.dll", "HttpEndRequestW",
-  int function(Handle hRequest, INTERNET_BUFFERSW* lpBuffersOut, uint dwFlags, uint dwContext)) HttpEndRequest;
+  int function(Handle hRequest, INTERNET_BUFFERSW* lpBuffersOut, uint dwFlags, DWORD_PTR dwContext)) HttpEndRequest;
 
 enum : uint {
   HTTP_QUERY_MIME_VERSION                = 0,
@@ -416,15 +417,15 @@ enum : ushort {
 
 extern(Windows)
 alias DllImport!("wininet.dll", "FtpPutFileW",
-  int function(Handle hConnect, in wchar* lpszLocalFile, in wchar* lpszNewRemoteFile, uint dwFlags, uint dwContext)) FtpPutFile;
+  int function(Handle hConnect, in wchar* lpszLocalFile, in wchar* lpszNewRemoteFile, uint dwFlags, DWORD_PTR dwContext)) FtpPutFile;
 
 extern(Windows)
 alias DllImport!("wininet.dll", "FtpOpenFileW",
-  Handle function(Handle hConnect, in wchar* lpszFileName, uint dwAccess, uint dwFlags, uint dwContext)) FtpOpenFile;
+  Handle function(Handle hConnect, in wchar* lpszFileName, uint dwAccess, uint dwFlags, DWORD_PTR dwContext)) FtpOpenFile;
 
 extern(Windows)
 alias DllImport!("wininet.dll", "InternetQueryDataAvailable",
-  int function(Handle hFile, uint* lpdwNumberOfBytesAvailable, uint dwFlags, uint dwContext)) InternetQueryDataAvailable;
+  int function(Handle hFile, uint* lpdwNumberOfBytesAvailable, uint dwFlags, DWORD_PTR dwContext)) InternetQueryDataAvailable;
 
 extern(Windows)
 alias DllImport!("wininet.dll", "InternetReadFile",
@@ -443,7 +444,7 @@ enum : uint {
 
 extern(Windows)
 alias DllImport!("wininet.dll", "InternetReadFileExW",
-  int function(Handle hFile, INTERNET_BUFFERSW* lpBuffersOut, uint dwFlags, uint dwContext)) InternetReadFileEx;
+  int function(Handle hFile, INTERNET_BUFFERSW* lpBuffersOut, uint dwFlags, DWORD_PTR dwContext)) InternetReadFileEx;
 
 /// <code class="d_code">void delegate(int percent, long bytesReceived, long bytesToReceive, ref bool abort)</code><br>
 alias void delegate(int percent, long bytesReceived, long bytesToReceive, out bool abort) DownloadProgressCallback;
@@ -797,7 +798,7 @@ private struct UploadBitsState {
 private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDataCompletedCallback uploadCompleted, UploadProgressCallback uploadProgress, bool async) {
 
   extern(Windows)
-  static void statusCallback(Handle handle, uint context, uint status, void* statusInformation, uint statusInformationLength) {
+  static void statusCallback(Handle handle, DWORD_PTR context, uint status, void* statusInformation, uint statusInformationLength) {
     auto state = cast(UploadBitsState*)context;
 
     switch (status) {
@@ -832,18 +833,18 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
         if (state.async) {
           if (state.stage == 1) {
             if (state.uri.scheme == Uri.uriSchemeFtp)
-              FtpOpenFile(state.connection, state.uri.localPath().toUTF16z(), GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_RELOAD, cast(uint)state);
+              FtpOpenFile(state.connection, state.uri.localPath().toUTF16z(), GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_RELOAD, cast(DWORD_PTR)state);
             else
-              HttpOpenRequest(state.connection, state.method.toUTF16z(), state.uri.pathAndQuery().toUTF16z(), null, null, null, INTERNET_FLAG_RELOAD, cast(uint)state);
+              HttpOpenRequest(state.connection, state.method.toUTF16z(), state.uri.pathAndQuery().toUTF16z(), null, null, null, INTERNET_FLAG_RELOAD, cast(DWORD_PTR)state);
             state.stage = 2;
           }
           else if (state.stage == 2) {
             if (state.uri.scheme == Uri.uriSchemeFtp) {
               uint bytesWritten;
-              InternetWriteFile(state.file, state.buffer.ptr, state.buffer.length, &bytesWritten);
+              InternetWriteFile(state.file, state.buffer.ptr, to!uint(state.buffer.length), &bytesWritten);
             }
             else {
-              HttpSendRequest(state.file, null, 0, state.buffer.ptr, state.buffer.length);
+              HttpSendRequest(state.file, null, 0, state.buffer.ptr, to!uint(state.buffer.length));
             }
             state.stage = 3;
           }
@@ -915,7 +916,7 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
                                       password.toUTF16z(),
                                       schemeIsFtp ? INTERNET_SERVICE_FTP : INTERNET_SERVICE_HTTP, 
                                       INTERNET_FLAG_PASSIVE | INTERNET_FLAG_DONT_CACHE,
-                                      cast(uint)state);
+                                      cast(DWORD_PTR)state);
   if (!async) scope(exit) InternetCloseHandle(connection);
 
   if ((async && connection == Handle.init && GetLastError() != ERROR_IO_PENDING) || (!async && connection == Handle.init))
@@ -923,25 +924,25 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
 
   if (!async) {
     if (schemeIsFtp) {
-      Handle file = FtpOpenFile(connection, address.localPath().toUTF16z(), GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_RELOAD, cast(uint)state);
+      Handle file = FtpOpenFile(connection, address.localPath().toUTF16z(), GENERIC_WRITE, FTP_TRANSFER_TYPE_BINARY | INTERNET_FLAG_RELOAD, cast(DWORD_PTR)state);
       scope(exit) InternetCloseHandle(file);
 
       if (file == Handle.init)
         throw new NetException;
 
       uint bytesWritten;
-      if (!InternetWriteFile(file, data.ptr, data.length, &bytesWritten)) {
+      if (!InternetWriteFile(file, data.ptr, to!uint(data.length), &bytesWritten)) {
         //throw new NetException;
       }
     }
     else {
-      Handle request = HttpOpenRequest(connection, method.toUTF16z(), address.pathAndQuery().toUTF16z(), null, null, null, INTERNET_FLAG_RELOAD, cast(uint)state);
+      Handle request = HttpOpenRequest(connection, method.toUTF16z(), address.pathAndQuery().toUTF16z(), null, null, null, INTERNET_FLAG_RELOAD, cast(DWORD_PTR)state);
       scope(exit) InternetCloseHandle(request);
 
       if (request == Handle.init)
         throw new NetException;
 
-      if (!HttpSendRequest(request, null, 0, data.ptr, data.length)) {
+      if (!HttpSendRequest(request, null, 0, data.ptr, to!uint(data.length))) {
       }
 
       uint statusCode;

@@ -42,7 +42,7 @@ alias const(wchar*) wstringz;
  * if the string length is already known. Or the string
  * is not null teminated.
  */
-const(T)[] toArray(T)(in T* s, size_t len = 0) if(isSomeChar!T
+const(T)[] toArray(T)(in T* s, sizediff_t len = 0) if(isSomeChar!T
                                                && !is(T == dchar)) {
   if(len)
     return s[0..len];
@@ -105,11 +105,15 @@ int compare(string stringA, string stringB) {
 
 /**
  * Compares two specified strings, ignoring or honouring their case.
+ *
+ * TODO: deprecated and provide a function which enables selection
+ * of the same compare options as the Win32 function.
+ *
  * Params:
  *   stringA = The first string.
- *   indexA = The position of the substring withing stringA.
+ *   indexA = The position of the substring within stringA.
  *   stringB = The second string.
- *   indexB = The position of the substring withing stringB.
+ *   indexB = The position of the substring within stringB.
  *   ignoreCase = A value indicating a case- sensitive or insensitive comparison.
  * Returns: An integer indicating the lexical relationship between the two strings (less than zero if the substring in stringA is less then the substring in stringB; zero if the substrings are equal; greater than zero if the substring in stringA is greater than the substring in stringB).
  */
@@ -120,9 +124,9 @@ int compare(string stringA, int indexA, string stringB, int indexB, int length, 
   if (length != 0 && (stringA != stringB || indexA != indexB)) {
     int lengthA = length, lengthB = length;
     if (stringA.length - indexA < lengthA)
-      lengthA = stringA.length - indexA;
+      lengthA = cast(int)stringA.length - indexA;
     if (stringB.length - indexB < lengthB)
-      lengthB = stringB.length - indexB;
+      lengthB = cast(int)stringB.length - indexB;
 
     return culture.collator.compare(stringA, indexA, lengthA, stringB, indexB, lengthB, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
   }
@@ -163,6 +167,9 @@ bool contains(string s, string value) {
 
 /**
  * Retrieves the index of the first occurrence of the specified character within the specified string.
+ *
+ * TODO: deprecated
+ *
  * Params:
  *   s = The string to search within.
  *   value = The character to find.
@@ -170,21 +177,19 @@ bool contains(string s, string value) {
  *   count = The number of characters to examine.
  * Returns: The index of value if that character is found, or -1 if it is not.
  */
-int indexOf(string s, char value, int index = 0, int count = -1) {
+sizediff_t indexOf(string s, char value, size_t index = 0, size_t count = -1) {
   if (count == -1)
     count = s.length - index;
 
-  int end = index + count;
-  for (int i = index; i < end; i++) {
-    if (s[i] == value)
-      return i;
-  }
-
-  return -1;
+  return std.string.indexOf(s[index..index+count], value) + index;
 }
 
 /**
  * Retrieves the index of the first occurrence of the specified value in the specified string s.
+ *
+ * TODO: deprecated and provide a function which enables selection
+ * of the same compare options as the Win32 function.
+ *
  * Params:
  *   s = The string to search within.
  *   value = The string to find.
@@ -203,19 +208,21 @@ int indexOf(string s, string value, int index, int count, bool ignoreCase = fals
  * ditto
  */
 int indexOf(string s, string value, int index, bool ignoreCase = false, Culture culture = null) {
-  return indexOf(s, value, index, s.length - index, ignoreCase, culture);
+  return indexOf(s, value, index, to!int(s.length - index),
+                 ignoreCase, culture);
 }
 
 /**
  * ditto
  */
 int indexOf(string s, string value, bool ignoreCase = false, Culture culture = null) {
-  return indexOf(s, value, 0, s.length, ignoreCase, culture);
+  return indexOf(s, value, 0, to!int(s.length), ignoreCase, culture);
 }
 
+deprecated
 int indexOfAny(string s, in char[] anyOf, int index = 0, int count = -1) {
   if (count == -1)
-    count = s.length - index;
+    count = to!int(s.length - index);
 
   int end = index + count;
   for (int i = index; i < end; i++) {
@@ -235,6 +242,10 @@ int indexOfAny(string s, in char[] anyOf, int index = 0, int count = -1) {
 
 /**
  * Retrieves the index of the last occurrence of the specified character within the specified string.
+ *
+ * TODO: deprecated and provide a function which enables selection
+ * of the same compare options as the Win32 function.
+ *
  * Params:
  *   s = The string to search within.
  *   value = The character to find.
@@ -242,21 +253,11 @@ int indexOfAny(string s, in char[] anyOf, int index = 0, int count = -1) {
  *   count = The number of characters to examine.
  * Returns: The index of value if that character is found, or -1 if it is not.
  */
-int lastIndexOf(string s, char value, int index = 0, int count = -1) {
-  if (s.length == 0)
-    return -1;
-  if (count == -1) {
-    index = s.length - 1;
-    count = s.length;
-  }
+sizediff_t lastIndexOf(string s, char value, sizediff_t index = 0, sizediff_t count = -1) {
+  if (count == -1)
+    count = index+1;
 
-  int end = index - count + 1;
-  for (int i = index; i >= end; i--) {
-    if (s[i] == value)
-      return i;
-  }
-
-  return -1;
+  return std.string.lastIndexOf(s[index-count..index+1], value) + index;
 }
 
 /**
@@ -300,10 +301,12 @@ int lastIndexOf(string s, string value, int index, bool ignoreCase = false, Cult
  * ditto
  */
 int lastIndexOf(string s, string value, bool ignoreCase = false, Culture culture = null) {
-  return lastIndexOf(s, value, s.length - 1, s.length, ignoreCase, culture);
+  return lastIndexOf(s, value, to!int(s.length - 1), to!int(s.length),
+                     ignoreCase, culture);
 }
 
-int lastIndexOfAny(string s, in char[] anyOf, int index = -1, int count = -1) {
+deprecated
+sizediff_t lastIndexOfAny(string s, in char[] anyOf, sizediff_t index = -1, sizediff_t count = -1) {
   if (s.length == 0)
     return -1;
   if (count == -1) {
@@ -311,8 +314,8 @@ int lastIndexOfAny(string s, in char[] anyOf, int index = -1, int count = -1) {
     count = s.length;
   }
 
-  int end = index - count + 1;
-  for (int i = index; i >= end; i--) {
+  auto end = index - count + 1;
+  for (auto i = index; i >= end; i--) {
     int k = -1;
     for (int j = 0; j < anyOf.length; j++) {
       if (s[i] == anyOf[j]) {
@@ -369,12 +372,12 @@ bool endsWith(string s, string value, bool ignoreCase = false, Culture culture =
  * Returns: A new string with value inserted at index.
  */
 //@@TODO@@ The currently disabled std.array.insert is pretty much the same as this
-string insert(string s, size_t index, string value) {
+string insert(string s, sizediff_t index, string value) {
   if (value.length == 0 || s.length == 0) {
     return s.idup;
   }
 
-  size_t newLength = s.length + value.length;
+  sizediff_t newLength = s.length + value.length;
   char[] newString = new char[newLength];
 
   newString[0 .. index] = s[0 .. index];
@@ -391,7 +394,7 @@ string insert(string s, size_t index, string value) {
  *   count = The number of characters to delete.
  * Returns: A new string equivalent to s less count number of characters.
  */
-string remove(string s, int index, int count) {
+string remove(string s, size_t index, size_t count) {
   char[] ret = new char[s.length - count];
   memcpy(ret.ptr, s.ptr, index);
   memcpy(ret.ptr + index, s.ptr + (index + count), s.length - (index + count));
@@ -474,6 +477,9 @@ string[] split(string s, char[] separator...) {
 
 /**
  * Returns a string array containing the substrings in s that are delimited by elements of the specified string array.
+ *
+ * TODO: deprecated
+ *
  * Params:
  *   s = The string to _split.
  *   separator = An array of strings that delimit the substrings in s.
@@ -483,7 +489,7 @@ string[] split(string s, char[] separator...) {
  */
 string[] split(string s, string[] separator, int count = int.max, bool removeEmptyEntries = false) {
 
-  int createSeparatorList(ref int[] sepList, ref int[] lengthList) {
+  int createSeparatorList(ref int[] sepList, ref sizediff_t[] lengthList) {
     int foundCount;
 
     for (int i = 0; i < s.length && foundCount < sepList.length; i++) {
@@ -508,8 +514,8 @@ string[] split(string s, string[] separator, int count = int.max, bool removeEmp
   if (count == 0 || (removeEmptyEntries && s.length == 0))
     return new string[0];
 
-  int[] sepList = new int[s.length];
-  int[] lengthList = new int[s.length];
+  auto sepList = new int[s.length];
+  auto lengthList = new sizediff_t[s.length];
   int replaceCount = createSeparatorList(sepList, lengthList);
 
   if (replaceCount == 0 || count == 1)
@@ -525,9 +531,9 @@ string[] split(string s, string[] separator, bool removeEmptyEntries) {
   return split(s, separator, int.max, removeEmptyEntries);
 }
 
-private string[] splitImpl(string s, int[] sepList, int[] lengthList, int replaceCount, int count, bool removeEmptyEntries) {
+private string[] splitImpl(string s, int[] sepList, sizediff_t[] lengthList, int replaceCount, int count, bool removeEmptyEntries) {
   string[] splitStrings;
-  int arrayIndex, currentIndex;
+  sizediff_t arrayIndex, currentIndex;
 
   if (removeEmptyEntries) {
     int max = (replaceCount < count) ? replaceCount + 1 : count;
@@ -575,6 +581,9 @@ private string[] splitImpl(string s, int[] sepList, int[] lengthList, int replac
 
 /**
  * Concatenates separator between each element of value, returning a single concatenated string.
+ *
+ * TODO: deprecated
+ *
  * Params:
  *   separator = A string.
  *   value = An array of strings.
@@ -582,15 +591,15 @@ private string[] splitImpl(string s, int[] sepList, int[] lengthList, int replac
  *   count = The number of elements of value to use.
  * Returns: A string containing the strings in value joined by separator.
  */
-string join(string separator, string[] value, int index = 0, int count = -1) {
+string join(string separator, string[] value, sizediff_t index = 0, sizediff_t count = -1) {
   if (count == -1)
     count = value.length;
   if (count == 0)
     return "";
 
-  int end = index + count - 1;
+  auto end = index + count - 1;
   string ret = value[index];
-  for (int i = index + 1; i <= end; i++) {
+  for (sizediff_t i = index + 1; i <= end; i++) {
     ret ~= separator;
     ret ~= value[i];
   }
@@ -600,13 +609,16 @@ string join(string separator, string[] value, int index = 0, int count = -1) {
 /**
  * Replaces all instances of oldChar with newChar in s.
  * Params:
+ *
+ * TODO: deprecated
+ *
  *   s = A string containing oldChar.
  *   oldChar = The character to be replaced.
  *   newChar = The character to replace all instances of oldChar.
  * Returns: A string equivalent to s but with all instances of oldChar replaced with newChar.
  */
 string replace(string s, char oldChar, char newChar) {
-  int len = s.length;
+  sizediff_t len = s.length;
   int firstFound = -1;
   for (int i = 0; i < len; i++) {
     if (oldChar == s[i]) {
@@ -620,7 +632,7 @@ string replace(string s, char oldChar, char newChar) {
 
   char[] ret = s[0 .. firstFound].dup;
   ret.length = len;
-  for (int i = firstFound; i < len; i++)
+  for (sizediff_t i = firstFound; i < len; i++)
     ret[i] = (s[i] == oldChar) ? newChar : s[i];
   return assumeUnique(ret);
 }
@@ -628,16 +640,19 @@ string replace(string s, char oldChar, char newChar) {
 /**
  * Replaces all instances of oldValue with newValue in s.
  * Params:
+ *
+ * TODO: deprecated
+ *
  *   s = A string containing oldValue.
  *   oldValue = The string to be replaced.
  *   newValue = The string to replace all instances of oldValue.
  * Returns: A string equivalent to s but with all instances of oldValue replaced with newValue.
  */
 string replace(string s, string oldValue, string newValue) {
-  int[] indices = new int[s.length + oldValue.length];
+  auto indices = new int[s.length + oldValue.length];
 
   int index, count;
-  while (((index = indexOf(s, oldValue, index, s.length)) > -1) &&
+  while (((index = indexOf(s, oldValue, index, to!int(s.length))) > -1) &&
     (index <= s.length - oldValue.length)) {
     indices[count++] = index;
     index += oldValue.length;
@@ -727,6 +742,9 @@ string trimStart(string s, char[] trimChars ...) {
 
 /**
  * Removes all trailing occurrences of a set of characters specified in trimChars from s.
+ *
+ * TODO: deprecated
+ *
  * Returns: The string that remains after all occurrences of the characters in trimChars are removed from the end of s.
  */
 string trimEnd(string s, char[] trimChars ...) {
@@ -737,8 +755,8 @@ string trimEnd(string s, char[] trimChars ...) {
 
 @safe nothrow pure
 private string trimHelper(string s, in char[] trimChars, Trim trimType) {
-  int right = s.length - 1;
-  int left;
+  size_t right = s.length - 1;
+  size_t left;
 
   // Trim head
   if (trimType != Trim.Tail) {
@@ -769,7 +787,7 @@ private string trimHelper(string s, in char[] trimChars, Trim trimType) {
     }
   }
 
-  int len = right - left + 1;
+  size_t len = right - left + 1;
   if (len == s.length)
     return s;
   if (len == 0)
@@ -1033,9 +1051,9 @@ private struct ArgumentList {
 }
 
 pure
-private void append(ref string s, char value, int count) {
+private void append(ref string s, char value, size_t count) {
   char[] d = s.dup;
-  int n = d.length;
+  size_t n = d.length;
   d.length = d.length + count;
   d[n..$] = value;
 
@@ -1081,11 +1099,11 @@ string format(IFormatProvider provider, string format, ...) {
 
   string result;
   char[] chars = format.dup;
-  int pos, len = format.length;
+  size_t pos, len = format.length;
   char c;
 
   while (true) {
-    int p = pos, i = pos;
+    size_t p = pos, i = pos;
     while (pos < len) {
       c = chars[pos];
       pos++;
@@ -1192,7 +1210,7 @@ string format(IFormatProvider provider, string format, ...) {
 
     string s = arg.toString(fmt, provider);
 
-    int padding = width - s.length;
+    size_t padding = width - s.length;
     if (!leftAlign && padding > 0)
       append(result, ' ', padding);
 

@@ -334,7 +334,7 @@ class MailAddress {
 
   private void parse(string address) {
     string display;
-    int i = address.indexOf('\"');
+    auto i = address.indexOf('\"');
     if (i > 0)
       throw new FormatException("The string is not in the form required for an e-mail address.");
 
@@ -427,7 +427,7 @@ class NameValueCollection {
     nameAndValue_[name] = value;
   }
 
-  @property int count() {
+  @property size_t count() {
     return nameAndValue_.keys.length;
   }
 

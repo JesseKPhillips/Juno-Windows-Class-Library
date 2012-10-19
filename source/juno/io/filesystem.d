@@ -58,16 +58,16 @@ deprecated
 void createDirectory(string path) {
   string fullPath = getFullPath(path);
 
-  int len = fullPath.length;
+  auto len = fullPath.length;
   if (len >= 2 && std.path.isDirSeparator(fullPath[len - 1]))
     len--;
 
   string[] list;
   bool pathExists;
 
-  int rootLen = getRootLength(fullPath);
+  size_t rootLen = getRootLength(fullPath);
   if (len > rootLen) {
-    for (int i = len - 1; i >= rootLen; i--) {
+    for (auto i = len - 1; i >= rootLen; i--) {
       string dir = fullPath[0 .. i + 1];
 
       if (!directoryExists(dir))

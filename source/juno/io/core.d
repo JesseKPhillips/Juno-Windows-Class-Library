@@ -125,7 +125,7 @@ abstract class Reader {
    *   count = The maximum number of character to _read.
    * Returns: The number of characters that have been _read.
    */
-  int read(char[] buffer, int index, int count) {
+  size_t read(char[] buffer, size_t index, size_t count) {
     int n = 0;
     do {
       char ch = read();
@@ -143,7 +143,7 @@ abstract class Reader {
   string readToEnd() {
     string s;
     char[] buffer = new char[4096];
-    int len;
+    size_t len;
     while ((len = read(buffer, 0, buffer.length)) != 0) {
       s ~= buffer[0 .. len];
     }
@@ -357,13 +357,13 @@ private class ConsoleStream : Stream {
 
   protected override size_t readBlock(void* buffer, size_t size) {
     uint bytesRead = 0;
-    ReadFile(handle_, buffer, size, bytesRead, null);
+    ReadFile(handle_, buffer, to!uint(size), bytesRead, null);
     return bytesRead;
   }
 
   protected override size_t writeBlock(in void* buffer, size_t size) {
     uint bytesWritten = 0;
-    WriteFile(handle_, buffer, size, bytesWritten, null);
+    WriteFile(handle_, buffer, to!uint(size), bytesWritten, null);
     return bytesWritten;
   }
 
