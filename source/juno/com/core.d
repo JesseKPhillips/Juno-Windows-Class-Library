@@ -19,7 +19,7 @@ import juno.base.core,
 import std.algorithm;
 import std.array;
 import std.utf : toUTF8, toUTF16z;
-import core.exception, core.memory;
+import core.atomic, core.exception, core.memory;
 import core.stdc.wchar_ : wcslen;
 
 import std.system;
@@ -3147,17 +3147,17 @@ template QueryInterfaceImpl(TList...) {
 // Implements AddRef & Release for IUnknown subclasses.
 template ReferenceCountImpl() {
 
-  private int refCount_ = 1;
-  private bool finalized_;
+  private shared int refCount_ = 1;
+  private shared bool finalized_;
 
   extern(Windows):
 
   uint AddRef() {
-    return InterlockedIncrement(refCount_);
+    return atomicOp!"+="(refCount_, 1);
   }
 
   uint Release() {
-    if (InterlockedDecrement(refCount_) == 0) {
+    if (atomicOp!"-="(refCount_, 1) == 0) {
       if (!finalized_) {
         finalized_ = true;
         runFinalizer(this);
