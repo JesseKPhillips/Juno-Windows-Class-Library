@@ -38,33 +38,33 @@ struct MIMECPINFO {
   uint dwFlags;
   uint uiCodePage;
   uint uiFamilyCodePage;
-  wchar[64] wszDescription;
-  wchar[50] wszWebCharset;
-  wchar[50] wszHeaderCharset;
-  wchar[50] wszBodyCharset;
-  wchar[32] wszFixedWidthFont;
-  wchar[32] wszProportionalFont;
+  wchar wszDescription[64];
+  wchar wszWebCharset[50];
+  wchar wszHeaderCharset[50];
+  wchar wszBodyCharset[50];
+  wchar wszFixedWidthFont[32];
+  wchar wszProportionalFont[32];
   ubyte bGDICharset;
 }
 
 struct MIMECSETINFO {
   uint uiCodePage;
   uint uiInternetEncoding;
-  wchar[50] wszCharset;
+  wchar wszCharset[50];
 }
 
 struct RFC1766INFO {
   uint lcid;
-  wchar[6] wszRfc1766;
-  wchar[32] wszLocaleName;
+  wchar wszRfc1766[6];
+  wchar wszLocaleName[32];
 }
 
 struct SCRIPTINFO {
   ubyte ScriptId;
   uint uiCodePage;
-  wchar[64] wszDescription;
-  wchar[32] wszFixedWidthFont;
-  wchar[32] wszProportionalFont;
+  wchar wszDescription[64];
+  wchar wszFixedWidthFont[32];
+  wchar wszProportionalFont[32];
 }
 
 struct DetectEncodingInfo {
@@ -290,28 +290,28 @@ private uint getCodePageFromName(string name) {
  */
 abstract class Encoding {
 
-  private const uint CP_DEFAULT = 0;
-  private const uint CP_ASCII = 20127;
-  private const uint CP_UTF16 = 1200;
-  private const uint CP_UTF16BE = 1201;
-  private const uint CP_UTF32 = 12000;
-  private const uint CP_UTF32BE = 12001;
-  private const uint CP_WINDOWS_1252 = 1252;
-  private const uint ISO_8859_1 = 28591;
+  private static const uint CP_DEFAULT = 0;
+  private static const uint CP_ASCII = 20127;
+  private static const uint CP_UTF16 = 1200;
+  private static const uint CP_UTF16BE = 1201;
+  private static const uint CP_UTF32 = 12000;
+  private static const uint CP_UTF32BE = 12001;
+  private static const uint CP_WINDOWS_1252 = 1252;
+  private static const uint ISO_8859_1 = 28591;
 
-  private const uint ISO_SIMPLIFIED_CN = 50227;
-  private const uint GB18030 = 54936;
-  private const uint ISO_8859_8I = 38598;
-  private const uint ISCII_DEVANAGARI = 57002;
-  private const uint ISCII_BENGALI = 57003;
-  private const uint ISCII_TAMIL = 57004;
-  private const uint ISCII_TELUGU = 57005;
-  private const uint ISCII_ASSEMESE = 57006;
-  private const uint ISCII_ORIYA = 57007;
-  private const uint ISCII_KANNADA = 57008;
-  private const uint ISCII_MALAYALAM = 57009;
-  private const uint ISCII_GUJARATHI = 57010;
-  private const uint ISCII_PUNJABI = 507011;
+  private static const uint ISO_SIMPLIFIED_CN = 50227;
+  private static const uint GB18030 = 54936;
+  private static const uint ISO_8859_8I = 38598;
+  private static const uint ISCII_DEVANAGARI = 57002;
+  private static const uint ISCII_BENGALI = 57003;
+  private static const uint ISCII_TAMIL = 57004;
+  private static const uint ISCII_TELUGU = 57005;
+  private static const uint ISCII_ASSEMESE = 57006;
+  private static const uint ISCII_ORIYA = 57007;
+  private static const uint ISCII_KANNADA = 57008;
+  private static const uint ISCII_MALAYALAM = 57009;
+  private static const uint ISCII_GUJARATHI = 57010;
+  private static const uint ISCII_PUNJABI = 507011;
 
   private static Encoding[uint] encodings_;
   private static Encoding defaultEncoding_;

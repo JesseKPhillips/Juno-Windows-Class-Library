@@ -65,7 +65,7 @@ enum RegistryOptions {
  */
 final class RegistryKey {
 
-  private const string[] keyNames_ = [
+  private static const string[] keyNames_ = [
     "HKEY_CLASSES_ROOT",
     "HKEY_CURRENT_USER",
     "HKEY_LOCAL_MACHINE",

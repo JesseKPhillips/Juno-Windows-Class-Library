@@ -94,13 +94,13 @@ class Uri {
     int defaultPort;
   }
 
-  const string uriSchemeHttp = "http";      /// Specifies that the URI is accessed through HTTP.
-  const string uriSchemeHttps = "https";    /// Specifies that the URI is accessed through HTTPS.
-  const string uriSchemeFtp = "ftp";        /// Specifies that the URI is accessed through FTP.
-  const string uriSchemeFile = "file";      /// Specifies that the URI is a pointer to a file.
-  const string uriSchemeNews = "news";      /// Specifies that the URI is a news groups and is accessed through NNTP.
-  const string uriSchemeMailTo = "mailto";  /// Specifies that the URI is an e-mail address and is accessed through SMTP.
-  const string schemeDelimiter = "://";
+  const static string uriSchemeHttp = "http";      /// Specifies that the URI is accessed through HTTP.
+  const static string uriSchemeHttps = "https";    /// Specifies that the URI is accessed through HTTPS.
+  const static string uriSchemeFtp = "ftp";        /// Specifies that the URI is accessed through FTP.
+  const static string uriSchemeFile = "file";      /// Specifies that the URI is a pointer to a file.
+  const static string uriSchemeNews = "news";      /// Specifies that the URI is a news groups and is accessed through NNTP.
+  const static string uriSchemeMailTo = "mailto";  /// Specifies that the URI is an e-mail address and is accessed through SMTP.
+  const static string schemeDelimiter = "://";
 
   private const UriScheme httpScheme = { uriSchemeHttp, 80 };
   private const UriScheme httpsScheme = { uriSchemeHttps, 443 };
@@ -152,8 +152,8 @@ class Uri {
   }
 
   /// ditto
-  override typeof(super.opEquals(Object)) opEquals(Object obj) {
-    return cast(typeof(super.opEquals(Object)))equals(obj);
+  override bool opEquals(Object obj) {
+    return equals(obj);
   }
 
   /**
@@ -593,7 +593,7 @@ private class CredentialKey {
     return std.string.icmp(uriPrefix.absolutePath, uri.absolutePath) == 0;
   }
 
-  override typeof(super.opEquals(Object)) opEquals(Object obj) {
+  override bool opEquals(Object obj) {
     if (auto other = cast(CredentialKey)obj)
       return (std.string.icmp(authType, other.authType) == 0 && uriPrefix.equals(other.uriPrefix));
     return false;
@@ -627,7 +627,7 @@ private class CredentialHostKey {
     return true;
   }
 
-  override typeof(super.opEquals(Object)) opEquals(Object obj) {
+  override bool opEquals(Object obj) {
     if (auto other = cast(CredentialHostKey)obj)
       return (std.string.icmp(host, other.host) == 0 && std.string.icmp(authType, other.authType) == 0 && port == other.port);
     return false;
@@ -1292,7 +1292,7 @@ class IPAddress {
     return false;
   }
 
-  override typeof(super.opEquals(Object)) opEquals(Object obj) {
+  override bool opEquals(Object obj) {
     return this.equals(obj);
   }
 
@@ -1558,8 +1558,8 @@ class PingReply {
  */
 class Ping : IDisposable {
 
-  private const uint DEFAULT_TIMEOUT = 5000;
-  private const uint DEFAULT_BUFFER_SIZE = 32;
+  private static const uint DEFAULT_TIMEOUT = 5000;
+  private static const uint DEFAULT_BUFFER_SIZE = 32;
 
   private Handle pingHandleV4_;
   private Handle pingHandleV6_;

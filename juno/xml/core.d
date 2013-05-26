@@ -119,7 +119,7 @@ class XmlQualifiedName {
     ns_ = ns;
   }
 
-  override typeof(super.opEquals(Object)) opEquals(Object other) {
+  override bool opEquals(Object other) {
     if (this is other)
       return true;
     if (auto qname = cast(XmlQualifiedName)other) {

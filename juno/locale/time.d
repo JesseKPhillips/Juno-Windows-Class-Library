@@ -997,12 +997,12 @@ enum DateTimeKind {
  */
 struct DateTime {
 
-  private const ulong KindUnspecified = 0x0000000000000000;
-  private const ulong KindUtc         = 0x4000000000000000;
-  private const ulong KindLocal       = 0x8000000000000000;
-  private const ulong KindMask        = 0xC000000000000000;
-  private const ulong TicksMask       = 0x3FFFFFFFFFFFFFFF;
-  private const int KindShift         = 0x3E;
+  private static const ulong KindUnspecified = 0x0000000000000000;
+  private static const ulong KindUtc         = 0x4000000000000000;
+  private static const ulong KindLocal       = 0x8000000000000000;
+  private static const ulong KindMask        = 0xC000000000000000;
+  private static const ulong TicksMask       = 0x3FFFFFFFFFFFFFFF;
+  private static const int KindShift         = 0x3E;
 
   /// Represents the smallest possible DateTime value.
   static DateTime min = { 0 };

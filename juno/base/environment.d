@@ -202,7 +202,7 @@ final class Version {
     return 0;
   }
 
-  override typeof(super.opEquals(Object)) opEquals(Object other) {
+  override bool opEquals(Object other) {
     auto v = cast(Version)other;
     if (v is null)
       return false;
