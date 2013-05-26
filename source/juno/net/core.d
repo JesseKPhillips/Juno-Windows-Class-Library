@@ -873,7 +873,7 @@ private @property bool isWin2k() {
 private @property bool supportsIPv6() {
   static Nullable!(bool) supportsIPv6_;
   if (supportsIPv6_.isNull) {
-    uint s = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
+    size_t s = socket(AF_INET6, SOCK_DGRAM, IPPROTO_IP);
     if (GetLastError() != WSAEAFNOSUPPORT)
       supportsIPv6_ = true;
     else
