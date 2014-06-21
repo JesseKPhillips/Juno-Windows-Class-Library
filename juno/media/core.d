@@ -60,7 +60,7 @@ private int stringToInt(string value, int fromBase) {
     if (isDigit(c))
       n = c - '0';
     else if (isAlpha(c))
-      n = toLower(c) - 'a' + 10;
+      n = std.ascii.toLower(c) - 'a' + 10;
 
     result = fromBase * result + n;
   }
@@ -7492,7 +7492,7 @@ final class Path {
 
   private Handle nativePath_;
 
-  private const float FlatnessDefault = 1.0f / 4.0f;
+  private enum FlatnessDefault = 1.0f / 4.0f;
 
   /**
    */

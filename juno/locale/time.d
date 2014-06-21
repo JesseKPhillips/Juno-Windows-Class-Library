@@ -82,7 +82,7 @@ private int getDatePart(long ticks, DatePart part) {
 abstract class Calendar {
 
   /// Represents the current era.
-  const int CurrentEra = 0;
+  static const CurrentEra = 0;
 
   package bool isReadOnly_;
 
@@ -477,7 +477,7 @@ package class CalendarData {
 class GregorianCalendar : Calendar {
 
   /// Represents the current era.
-  const int ADEra = 1;
+  static const ADEra = 1;
 
   private static GregorianCalendar defaultInstance_;
 
@@ -808,7 +808,7 @@ class KoreanCalendar : Calendar {
   private static EraInfo[] eraInfo_;
   private GregorianCalendar base_;
 
-  const int KoreanEra = 1;
+  static const KoreanEra = 1;
 
   /**
    */
@@ -899,7 +899,7 @@ class ThaiBuddhistCalendar : Calendar {
   private static EraInfo[] eraInfo_;
   private GregorianCalendar base_;
 
-  const int ThaiBuddhistEra = 1;
+  static const ThaiBuddhistEra = 1;
 
   /**
    */

@@ -1830,7 +1830,7 @@ class XmlProcessingInstruction : XmlLinkedNode {
  */
 class XmlDeclaration : XmlLinkedNode {
 
-  private const string VERSION = "1.0";
+  private enum VERSION = "1.0";
 
   mixin(TypedNode("IXMLDOMProcessingInstruction"));
   private string encoding_;

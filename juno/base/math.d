@@ -20,8 +20,8 @@ double random() {
 // Based on ran3 algorithm.
 class Random {
 
-  private const int SEED = 161803398;
-  private const int BITS = 1000000000;
+  enum SEED = 161803398;
+  enum BITS = 1000000000;
 
   private int[56] seedList_;
   private int next_, nextp_;

@@ -232,7 +232,7 @@ enum QualityMode {
 
 /// Specifies whether smoothing (antialiasing) is applied to lines, curves and the edges of filled areas.
 enum SmoothingMode {
-  Invalid = QualityMode.Invalid,  /// Specifies an invalid mode.
+  Invalid = cast(int)QualityMode.Invalid,  /// Specifies an invalid mode.
   Default = QualityMode.Default,  /// Specifies the default mode.
   HighSpeed,                      /// Specifies high speed, low quality rendering.
   HighQuality,                    /// Specifies high quality, low speed rendering.
@@ -242,7 +242,7 @@ enum SmoothingMode {
 
 /// Specifies how data is interpolated between endpoints.
 enum InterpolationMode {
-  Invalid = QualityMode.Invalid,  /// Specifies an invalid mode.
+  Invalid = cast(int)QualityMode.Invalid,  /// Specifies an invalid mode.
   Default = QualityMode.Default,  /// Specifies the default mode.
   Low = QualityMode.Low,          /// Specifies low quality interpolation.
   High = QualityMode.High,        /// Specifies high quality interpolation.
@@ -261,7 +261,7 @@ enum CompositingMode {
 
 /// Specifies the quality level to use during compositing.
 enum CompositingQuality {
-  Invalid = QualityMode.Invalid,  /// Invalid quality.
+  Invalid = cast(int)QualityMode.Invalid,  /// Invalid quality.
   Default = QualityMode.Default,  /// Default quality.
   HighSpeed = QualityMode.Low,    /// High speed, low quality.
   HighQuality = QualityMode.High, /// High quality, low speed.
@@ -271,7 +271,7 @@ enum CompositingQuality {
 
 /// Specifies how pixels are offset during rendering.
 enum PixelOffsetMode {
-  Invalid = QualityMode.Invalid,  /// Specifies an invalid mode.
+  Invalid = cast(int)QualityMode.Invalid,  /// Specifies an invalid mode.
   Default = QualityMode.Default,  /// Specifies the default mode.
   HighSpeed = QualityMode.Low,    /// Specifies high speed, low quality rendering.
   HighQuality = QualityMode.High, /// Specifies high quality, low speed rendering.

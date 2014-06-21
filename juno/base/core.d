@@ -223,11 +223,11 @@ class InvalidOperationException : Exception {
 
   private static const E_INVALIDOPERATION = "Operation is not valid.";
 
-  this() {
+  this() @safe {
     super(E_INVALIDOPERATION);
   }
 
-  this(string message) {
+  this(string message) @safe {
     super(message);
   }
 
@@ -340,7 +340,7 @@ class ArithmeticException : Exception {
  */
 class OverflowException : ArithmeticException {
 
-  private const E_OVERFLOW = "Arithmetic operation resulted in an overflow.";
+  private enum E_OVERFLOW = "Arithmetic operation resulted in an overflow.";
 
   this() {
     super(E_OVERFLOW);
@@ -356,7 +356,7 @@ class OverflowException : ArithmeticException {
 deprecated
 class OutOfMemoryException : Exception {
 
-  private const E_OUTOFMEMORY = "Out of memory.";
+  private enum E_OUTOFMEMORY = "Out of memory.";
 
   this() {
     super(E_OUTOFMEMORY);

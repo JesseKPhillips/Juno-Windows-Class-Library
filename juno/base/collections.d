@@ -455,7 +455,7 @@ interface IList(T) : ICollection!(T) {
  */
 class List(T) : IList!(T) {
 
-  private const int DEFAULT_CAPACITY = 4;
+  private enum DEFAULT_CAPACITY = 4;
 
   private T[] items_;
   private int size_;

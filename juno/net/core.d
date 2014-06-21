@@ -102,12 +102,12 @@ class Uri {
   const static string uriSchemeMailTo = "mailto";  /// Specifies that the URI is an e-mail address and is accessed through SMTP.
   const static string schemeDelimiter = "://";
 
-  private const UriScheme httpScheme = { uriSchemeHttp, 80 };
-  private const UriScheme httpsScheme = { uriSchemeHttps, 443 };
-  private const UriScheme ftpScheme = { uriSchemeFtp, 21 };
-  private const UriScheme fileScheme = { uriSchemeFile, -1 };
-  private const UriScheme newsScheme = { uriSchemeNews, -1 };
-  private const UriScheme mailtoScheme = { uriSchemeMailTo, 25 };
+  private static const UriScheme httpScheme = { uriSchemeHttp, 80 };
+  private static const UriScheme httpsScheme = { uriSchemeHttps, 443 };
+  private static const UriScheme ftpScheme = { uriSchemeFtp, 21 };
+  private static const UriScheme fileScheme = { uriSchemeFile, -1 };
+  private static const UriScheme newsScheme = { uriSchemeNews, -1 };
+  private static const UriScheme mailtoScheme = { uriSchemeMailTo, 25 };
 
   private string string_;
   private string cache_;
@@ -1045,8 +1045,8 @@ class IPHost {
 
 class SocketAddress {
 
-  const uint ipv4AddressSize = sockaddr_in.sizeof;
-  const uint ipv6AddressSize = sockaddr_in6.sizeof;
+  enum ipv4AddressSize = sockaddr_in.sizeof;
+  enum ipv6AddressSize = sockaddr_in6.sizeof;
 
   private ubyte[] buffer_;
   private uint size_;
@@ -1302,7 +1302,7 @@ class IPAddress {
       return host;
     }
     else {
-      return ((cast(int)host & 0xff) << 8) | ((host >> 8) & 0xff);
+      return 0xff & ((cast(int)host & 0xff) << 8) | ((host >> 8) & 0xff);
     }
   }
 
@@ -1378,9 +1378,9 @@ class IPAddress {
 
 class IPEndPoint {
 
-  const ushort minPort = 0x00000000;
-  const ushort maxPort = 0x0000FFFF;
-  const ushort anyPort = minPort;
+  static const ushort minPort = 0x00000000;
+  static const ushort maxPort = 0x0000FFFF;
+  static const ushort anyPort = minPort;
 
   static IPEndPoint any;
   static IPEndPoint ipv6Any;

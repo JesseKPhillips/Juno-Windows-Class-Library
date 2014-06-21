@@ -305,7 +305,7 @@ struct GUID {
    * Params: other = A GUID to compare to this instance.
    * Returns: A number indicating the relative values of this instance and other.
    */
-  int opCmp(GUID other) {
+  int opCmp(ref const GUID other) const {
     if (a != other.a)
       return (a < other.a) ? -1 : 1;
     if (b != other.b)
@@ -3551,7 +3551,7 @@ enum DispatchFlags : ushort {
 /// The exception thrown when there is an attempt to dynamically access a member that does not exist.
 class MissingMemberException : Exception {
 
-  private const string E_MISSINGMEMBER = "Member not found.";
+  private enum E_MISSINGMEMBER = "Member not found.";
 
   this() {
     super(E_MISSINGMEMBER);
