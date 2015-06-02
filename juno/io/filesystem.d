@@ -14,6 +14,7 @@ import juno.base.core,
   juno.io.path;
 
 import core.thread;
+import core.stdc.wchar_ : wcslen, wcscmp;
 
 /// Returns an array of strings containing the names of the logical drives on the current computer.
 string[] logicalDrives() {
@@ -1035,7 +1036,7 @@ class FileSystemIterator : Iterator!(string) {
     }
 
     string getSearchResult(string path, WIN32_FIND_DATA findData) {
-      return combine(path, toUtf8(findData.cFileName[0 .. std.string.wcslen(findData.cFileName.ptr)]));
+      return combine(path, toUtf8(findData.cFileName[0 .. wcslen(findData.cFileName.ptr)]));
     }
 
     int ret = 0;
@@ -1066,8 +1067,8 @@ class FileSystemIterator : Iterator!(string) {
       scope(exit) FindClose(hFind);
 
       do {
-        if (std.string.wcscmp(findData.cFileName.ptr, ".") == 0
-          || std.string.wcscmp(findData.cFileName.ptr, "..") == 0)
+        if (wcscmp(findData.cFileName.ptr, ".") == 0
+          || wcscmp(findData.cFileName.ptr, "..") == 0)
           continue;
 
         string result = getSearchResult(userPath, findData);

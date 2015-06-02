@@ -20,6 +20,7 @@ import std.algorithm;
 import std.array;
 import std.utf : toUTF8, toUTF16z;
 import core.exception, core.memory;
+import core.stdc.wchar_ : wcslen;
 
 import std.system;
 import std.uuid;

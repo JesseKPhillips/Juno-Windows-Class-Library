@@ -1,15 +1,13 @@
-DEPS=juno\base\collections.d juno\base\core.d juno\base\environment.d juno\base\events.d juno\base\math.d juno\base\native.d juno\base\string.d juno\base\text.d juno\base\threading.d juno\base\time.d juno\locale\constants.d juno\locale\convert.d juno\locale\core.d juno\locale\numeric.d juno\locale\text.d juno\locale\time.d juno\io\core.d juno\io\filesystem.d juno\io\path.d juno\io\zip.d juno\com\core.d juno\com\client.d juno\com\server.d juno\com\reflect.d juno\xml\core.d juno\xml\xsl.d juno\xml\msxml.d juno\xml\streaming.d juno\xml\all.d juno\net\all.d juno\net\core.d juno\net\client.d juno\security\crypto.d juno\utils\process.d juno\utils\registry.d juno\media\constants.d juno\media\geometry.d juno\media\core.d juno\media\imaging.d juno\media\native.d
+DEPS=juno\base\collections.d juno\base\core.d juno\base\environment.d juno\base\events.d juno\base\math.d juno\base\native.d juno\base\string.d juno\base\text.d juno\base\threading.d juno\base\time.d juno\locale\constants.d juno\locale\convert.d juno\locale\core.d juno\locale\numeric.d juno\locale\text.d juno\locale\time.d juno\io\core.d juno\io\filesystem.d juno\io\path.d juno\io\zip.d juno\com\core.d juno\com\client.d juno\com\server.d juno\com\reflect.d juno\xml\core.d juno\xml\xsl.d juno\xml\msxml.d juno\xml\streaming.d juno\xml\all.d juno\net\all.d juno\net\core.d juno\net\client.d juno\security\crypto.d juno\utils\process.d juno\utils\registry.d juno\media\constants.d juno\media\geometry.d juno\media\core.d juno\media\imaging.d juno\media\native.d juno\xml\xsl.d
 
 juno: juno.lib juno/juno.args
 release: junoRelease juno/juno.args
 
-xsl.obj: juno/xml/xsl.d
-	dmd -c -property juno/macro.ddoc juno/xml/xsl.d -Dddocs
-juno.lib: xsl.obj $(DEPS)
-	dmd -lib -ofjuno.lib -property $(args) juno/macro.ddoc @juno/juno.args xsl.obj -Dddocs
+juno.lib: $(DEPS)
+	dmd -lib -ofjuno.lib $(args) juno/macro.ddoc @juno/juno.args -Dddocs
 
-junoRelease: xsl.obj $(DEPS)
-	dmd -lib -ofjuno.lib -property -O -inline -release $(args) juno/macro.ddoc @juno/juno.args xsl.obj -Dddocs
+junoRelease: $(DEPS)
+	dmd -lib -ofjuno.lib -O -inline -release $(args) juno/macro.ddoc @juno/juno.args -Dddocs
 
 events: juno examples/com/events.d
 	dmd $(args) examples/com/events.d juno.lib -Ijuno
