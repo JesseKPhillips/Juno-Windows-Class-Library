@@ -5,7 +5,7 @@
  */
 module juno.base.math;
 
-private import std.math : isnan, abs;
+private import std.math : isNaN, abs;
 private import std.c.windows.windows : GetTickCount;
 
 double random() {

@@ -18,7 +18,8 @@ import juno.locale.time : Calendar,
   KoreanCalendar,
   ThaiBuddhistCalendar;
 import std.utf : toUTF8;
-import std.string : icmp, toLower, toUpper, wcslen;
+import std.string : icmp, toLower, toUpper;
+import core.stdc.wchar_ : wcslen;
 import std.c.stdio : sprintf;
 import std.c.string : memcmp, memicmp;
 import std.exception;

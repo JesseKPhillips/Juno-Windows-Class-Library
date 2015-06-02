@@ -388,7 +388,7 @@ struct GUID {
    * Retrieves the hash code for this instance.
    * Returns: The hash code for this instance.
    */
-  hash_t toHash() {
+  hash_t toHash() const nothrow @safe {
     return a ^ ((b >> 16) | c) ^ ((f << 24) | k);
   }
 
