@@ -38,33 +38,33 @@ struct MIMECPINFO {
   uint dwFlags;
   uint uiCodePage;
   uint uiFamilyCodePage;
-  wchar wszDescription[64];
-  wchar wszWebCharset[50];
-  wchar wszHeaderCharset[50];
-  wchar wszBodyCharset[50];
-  wchar wszFixedWidthFont[32];
-  wchar wszProportionalFont[32];
+  wchar[64] wszDescription;
+  wchar[50] wszWebCharset;
+  wchar[50] wszHeaderCharset;
+  wchar[50] wszBodyCharset;
+  wchar[32] wszFixedWidthFont;
+  wchar[32] wszProportionalFont;
   ubyte bGDICharset;
 }
 
 struct MIMECSETINFO {
   uint uiCodePage;
   uint uiInternetEncoding;
-  wchar wszCharset[50];
+  wchar[50] wszCharset;
 }
 
 struct RFC1766INFO {
   uint lcid;
-  wchar wszRfc1766[6];
-  wchar wszLocaleName[32];
+  wchar[6] wszRfc1766;
+  wchar[32] wszLocaleName;
 }
 
 struct SCRIPTINFO {
   ubyte ScriptId;
   uint uiCodePage;
-  wchar wszDescription[64];
-  wchar wszFixedWidthFont[32];
-  wchar wszProportionalFont[32];
+  wchar[64] wszDescription;
+  wchar[32] wszFixedWidthFont;
+  wchar[32] wszProportionalFont;
 }
 
 struct DetectEncodingInfo {

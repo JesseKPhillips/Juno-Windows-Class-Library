@@ -17,6 +17,7 @@ import juno.locale.time : Calendar,
   TaiwanCalendar,
   KoreanCalendar,
   ThaiBuddhistCalendar;
+import std.algorithm : sort;
 import std.utf : toUTF8;
 import std.string : icmp, toLower, toUpper;
 import core.stdc.wchar_ : wcslen;
@@ -258,7 +259,7 @@ private void ensureNameMapping() {
     synchronized {
       uint[] locales;
       if (enumSystemLocales(locales)) {
-        locales.sort;
+        sort(locales);
         foreach (lcid; locales) {
           string name = getLocaleName(lcid);
           if (name != null) {
@@ -551,7 +552,7 @@ class Culture : IFormatProvider {
       if (lcidToNameMap == null)
         ensureNameMapping();
 
-      foreach (name; lcidToNameMap.keys.sort) {
+      foreach (name; sort(lcidToNameMap.keys)) {
         Culture c = new Culture(lcidToNameMap[name]);
         CultureTypes ct = c.types;
 

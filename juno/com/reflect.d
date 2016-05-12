@@ -13,6 +13,7 @@ import juno.base.core,
   juno.com.core,
   juno.utils.registry;
 
+import std.algorithm : sort;
 import std.c.string : memset;
 //debug import std.stdio : writefln;
 
@@ -210,7 +211,7 @@ class TypeLibrary {
       if (typeLibKey !is null && typeLibKey.subKeyCount > 0) {
         // The subkeys are the type library's version numbers.
         // Sort then iterate in reverse order so that the most recent version is attempted first.
-        string[] versions = typeLibKey.subKeyNames.sort;
+        auto versions = sort(typeLibKey.subKeyNames);
         foreach_reverse (v; versions) {
           scope versionKey = typeLibKey.openSubKey(v);
           if (versionKey !is null && versionKey.subKeyCount > 0) {

@@ -39,7 +39,7 @@ string toString(T)(T value, string format = null, IFormatProvider provider = nul
     return std.utf.toUTF8([value]);
   else static if (is(T == string))
     return value;
-  static if (is(T == struct)) {
+  else static if (is(T == struct)) {
     static if (is(T == DateTime))
       return value.toString(format, DateTimeFormat.get(provider));
     else static if (is(T == juno.com.core.Decimal))

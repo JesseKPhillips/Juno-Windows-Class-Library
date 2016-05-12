@@ -12,6 +12,8 @@ import juno.base.core,
   juno.locale.constants,
   juno.locale.core;
 
+import std.algorithm : reverse;
+
 debug import std.stdio : writefln;
 
 // This module or classes contained within must not have any 
@@ -455,7 +457,7 @@ package class CalendarData {
     static int enumCalendarsProc(wchar* lpCalendarInfoString) {
       import std.string, std.utf;
       temp ~= toUTF8(lpCalendarInfoString[0 .. wcslen(lpCalendarInfoString)]);
-      return 1;
+      return true;
     }
 
     uint culture;
@@ -465,7 +467,8 @@ package class CalendarData {
     temp = null;
     if (!EnumCalendarInfo(&enumCalendarsProc, culture, calendar, calType))
       return false;
-    result = temp.reverse;
+    reverse(temp);
+    result = temp;
     return true;
   }
 

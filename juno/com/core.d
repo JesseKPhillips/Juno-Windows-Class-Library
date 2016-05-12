@@ -3579,7 +3579,7 @@ class MissingMemberException : Exception {
  * Throws: COMException if the call failed.
  */
 VARIANT invokeMemberById(int dispId, DispatchFlags flags, IDispatch target, VARIANT[] args...) {
-  args.reverse;
+  reverse(args);
 
   DISPPARAMS params;
   if (args.length > 0) {
