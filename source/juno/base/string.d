@@ -20,7 +20,7 @@ import juno.base.core,
   juno.locale.core,
   juno.locale.time,
   juno.locale.convert;
-import std.utf : toUTF8, toUTF16, toUTF16z;
+public import std.utf : toUTF8, toUTF16, toUTF16z;
 import std.string : toStringz;
 import core.stdc.string : strlen, memcpy, memcmp;
 import core.stdc.wchar_ : wcslen;

@@ -13,9 +13,10 @@ import juno.base.core,
   juno.base.environment,
   juno.base.native,
   juno.locale.convert,
-  std.c.windows.winsock,
+  core.sys.windows.winsock2,
   std.socket;
 import std.utf : toUTF8, toUTFz;
+static import std.string;
 import core.stdc.string : memcpy;
 debug import std.stdio : writefln;
 

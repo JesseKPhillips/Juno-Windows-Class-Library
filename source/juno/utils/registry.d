@@ -11,7 +11,7 @@ import juno.base.core,
   juno.base.string,
   juno.base.native,
   std.utf;
-static import std.c.stdlib;
+static import core.stdc.stdlib;
 
 import std.conv;
 

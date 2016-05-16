@@ -16,7 +16,7 @@ import juno.base.core,
   juno.media.constants,
   juno.media.core,
   juno.media.native;
-import std.c.string;
+import core.stdc.string;
 
 import std.conv;
 
@@ -204,8 +204,8 @@ final class ImageCodecInfo {
           for (int j = 0; j < SigCount; j++) {
             signaturePatterns[j].length = SigSize;
             signatureMasks[j].length = SigSize;
-            std.c.string.memcpy(signaturePatterns[j].ptr, SigPattern + (j * SigSize), SigSize);
-            std.c.string.memcpy(signatureMasks[j].ptr, SigMask + (j * SigSize), SigSize);
+            core.stdc.string.memcpy(signaturePatterns[j].ptr, SigPattern + (j * SigSize), SigSize);
+            core.stdc.string.memcpy(signatureMasks[j].ptr, SigMask + (j * SigSize), SigSize);
           }
         }
       }
@@ -249,8 +249,8 @@ final class ImageCodecInfo {
           for (int j = 0; j < SigCount; j++) {
             signaturePatterns[j].length = SigSize;
             signatureMasks[j].length = SigSize;
-            std.c.string.memcpy(signaturePatterns[j].ptr, SigPattern + (j * SigSize), SigSize);
-            std.c.string.memcpy(signatureMasks[j].ptr, SigMask + (j * SigSize), SigSize);
+            core.stdc.string.memcpy(signaturePatterns[j].ptr, SigPattern + (j * SigSize), SigSize);
+            core.stdc.string.memcpy(signatureMasks[j].ptr, SigMask + (j * SigSize), SigSize);
           }
         }
       }

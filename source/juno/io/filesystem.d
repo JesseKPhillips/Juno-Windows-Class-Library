@@ -15,6 +15,7 @@ import juno.base.core,
 
 import core.thread;
 import core.stdc.wchar_ : wcslen, wcscmp;
+import core.stdc.stdlib;
 
 /// Returns an array of strings containing the names of the logical drives on the current computer.
 string[] logicalDrives() {
@@ -832,7 +833,7 @@ class Watcher {
       return;
 
     if (buffer == null)
-      buffer = std.c.stdlib.malloc(bufferSize_);
+      buffer = core.stdc.stdlib.malloc(bufferSize_);
 
     auto overlapped = new Overlapped;
     auto lpOverlapped = overlapped.pack(&completionCallback);
@@ -849,7 +850,7 @@ class Watcher {
 
     if (!result) {
       Overlapped.free(lpOverlapped);
-      std.c.stdlib.free(buffer);
+      core.stdc.stdlib.free(buffer);
 
       if (!isHandleInvalid)
         onError(new ErrorEventArgs(new Win32Exception));
@@ -985,7 +986,7 @@ class Watcher {
 
       if (stopWatching_) {
         if (buffer != null)
-          std.c.stdlib.free(buffer);
+          core.stdc.stdlib.free(buffer);
       }
       else {
         watch(buffer);

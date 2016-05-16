@@ -21,6 +21,7 @@ import std.array;
 import std.utf : toUTF8, toUTF16z;
 import core.exception, core.memory;
 import core.stdc.wchar_ : wcslen;
+static import core.stdc.stdlib;
 
 import std.system;
 import std.uuid;
@@ -3035,7 +3036,7 @@ template coCreate(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
         guid = GUID(clsid);
       }
       catch (FormatException) {
-        int hr = CLSIDFromProgID(std.utf.toUTF16z(clsid), guid);
+        int hr = CLSIDFromProgID(toUTF16z(clsid), guid);
         if (FAILED(hr)) {
           static if (policy == ExceptionPolicy.Throw)
             throw new COMException(hr);
@@ -3073,7 +3074,7 @@ template coCreateEx(T, ExceptionPolicy policy = ExceptionPolicy.NoThrow) {
         guid = GUID(clsid);
       }
       catch (FormatException) {
-        int hr = CLSIDFromProgID(std.utf.toUTF16z(clsid), guid);
+        int hr = CLSIDFromProgID(toUTF16z(clsid), guid);
         if (FAILED(hr)) {
           static if (policy == ExceptionPolicy.Throw)
             throw new COMException(hr);
@@ -3173,7 +3174,7 @@ template ReferenceCountImpl() {
 
   // IUnknown subclasses must manage their memory manually.
   new(size_t sz) {
-    void* p = std.c.stdlib.malloc(sz);
+    void* p = core.stdc.stdlib.malloc(sz);
     if (p is null)
       throw new OutOfMemoryError;
 
@@ -3399,7 +3400,7 @@ wchar* toBstr(string s) {
   if (s == null)
     return null;
 
-  return SysAllocString(std.utf.toUTF16z(s));
+  return SysAllocString(toUTF16z(s));
 }
 
 /**
@@ -3415,7 +3416,7 @@ string fromBstr(wchar* s, bool free = true) {
   if (len == 0)
     return null;
 
-  string ret = std.utf.toUTF8(s[0 .. len]);
+  string ret = toUTF8(s[0 .. len]);
   /*int cb = WideCharToMultiByte(CP_UTF8, 0, s, len, null, 0, null, null);
   char[] ret = new char[cb];
   WideCharToMultiByte(CP_UTF8, 0, s, len, ret.ptr, cb, null, null);*/

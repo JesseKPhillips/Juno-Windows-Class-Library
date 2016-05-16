@@ -6,7 +6,7 @@
 module juno.base.math;
 
 private import std.math : isNaN, abs;
-private import std.c.windows.windows : GetTickCount;
+private import core.sys.windows.windows : GetTickCount;
 
 double random() {
   synchronized {

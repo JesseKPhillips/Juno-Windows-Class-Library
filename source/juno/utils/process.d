@@ -9,7 +9,7 @@ import juno.base.core,
   juno.base.native,
   juno.com.core;
 static import juno.io.path;
-import std.c.stdlib : malloc, realloc, free;
+import core.stdc.stdlib : malloc, realloc, free;
 
 import std.conv;
 

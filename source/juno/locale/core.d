@@ -20,9 +20,9 @@ import juno.locale.time : Calendar,
 import std.algorithm : sort;
 import std.utf : toUTF8;
 import std.string : icmp, toLower, toUpper;
-import core.stdc.wchar_ : wcslen;
-import std.c.stdio : sprintf;
-import std.c.string : memcmp, memicmp;
+public import core.stdc.wchar_ : wcslen;
+import core.stdc.stdio : sprintf;
+import core.stdc.string : memcmp, memicmp;
 import std.exception;
 import std.range;
 import std.conv;

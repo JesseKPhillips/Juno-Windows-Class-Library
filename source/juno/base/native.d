@@ -10,7 +10,7 @@ import juno.base.core,
   std.typetuple;
 import std.utf : toUTF8, toUTF16z;
 import std.string : toStringz;
-import std.c.windows.windows : 
+import core.sys.windows.windows : 
   HIWORD, LOWORD;
 static import std.string,
   std.conv;

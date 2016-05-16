@@ -9,7 +9,7 @@ module juno.base.collections;
 import juno.base.core,
   juno.locale.core,
   std.math;
-import std.c.string : memmove, memset;
+import core.stdc.string : memmove, memset;
 
 /**
  * <code>bool delegate(T a, T b)</code>

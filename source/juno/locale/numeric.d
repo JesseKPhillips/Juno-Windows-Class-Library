@@ -8,6 +8,7 @@ import std.algorithm;
 import std.conv;
 import std.exception;
 import std.range;
+static import std.math;
 import core.stdc.string : strlen;
 debug import std.stdio : writefln;
 

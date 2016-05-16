@@ -11,6 +11,7 @@ import juno.base.core,
   juno.utils.registry,
   juno.locale.constants,
   juno.locale.core;
+static import juno.locale.numeric;
 
 import std.algorithm : reverse;
 

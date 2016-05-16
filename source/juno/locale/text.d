@@ -10,7 +10,7 @@ private import juno.base.native,
 
 private import juno.locale.core : Culture, toUTF16zNls, toUTF8Nls;
 
-private import std.c.string : memcmp, memicmp;
+private import core.stdc.string : memcmp, memicmp;
 
 class Collator {
 

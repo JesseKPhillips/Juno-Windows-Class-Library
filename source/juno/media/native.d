@@ -523,7 +523,7 @@ Status GdipSaveImageToStream(Handle image, IStream stream, ref GUID clsidEncoder
 Status GdipSaveAdd(Handle image, GpEncoderParameters* encoderParams);
 Status GdipSaveAddImage(Handle image, Handle newImage, GpEncoderParameters* encoderParams);
 Status GdipCloneImage(Handle image, out Handle cloneImage);
-Status GdipGetImageType(Handle image, out int type);
+Status GdipGetImageType(Handle image, out ImageType type);
 Status GdipGetImageFlags(Handle image, out uint flags);
 Status GdipGetImageWidth(Handle image, out int width);
 Status GdipGetImageHeight(Handle image, out int height);

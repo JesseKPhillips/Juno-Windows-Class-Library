@@ -18,8 +18,8 @@ import juno.base.core,
   //juno.com.core,
   std.stream;
 static import std.string;
-import std.c.string : memmove;
-import std.c.stdlib : malloc, free;
+import core.stdc.string : memmove;
+import core.stdc.stdlib : malloc, free;
 
 import std.conv;
 import std.utf : toUTFz;

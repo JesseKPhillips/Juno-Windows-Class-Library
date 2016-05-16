@@ -14,7 +14,7 @@ import juno.base.core,
   juno.utils.registry;
 
 import std.algorithm : sort;
-import std.c.string : memset;
+import core.stdc.string : memset;
 //debug import std.stdio : writefln;
 
 // Check if the name if reserved word such as a keyword or other global symbol.

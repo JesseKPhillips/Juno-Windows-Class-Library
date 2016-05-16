@@ -16,7 +16,8 @@ import juno.base.core,
   juno.com.core,
   juno.net.core,
   std.stream;
-static import std.c.stdlib;
+static import core.stdc.stdlib;
+static import std.string, std.file;
 
 import std.conv;
 
@@ -952,8 +953,8 @@ private ubyte[] uploadBits(Uri address, string method, in ubyte[] data, UploadDa
         len = 0;
         HttpQueryInfo(request, HTTP_QUERY_STATUS_TEXT, null, &len, null);
 
-        auto buffer = cast(wchar*)std.c.stdlib.malloc(len * wchar.sizeof);
-        scope(exit) std.c.stdlib.free(buffer);
+        auto buffer = cast(wchar*)core.stdc.stdlib.malloc(len * wchar.sizeof);
+        scope(exit) core.stdc.stdlib.free(buffer);
 
         HttpQueryInfo(request, HTTP_QUERY_STATUS_TEXT, buffer, &len, null);
         string statusText = to!string(buffer[0 .. len]);
